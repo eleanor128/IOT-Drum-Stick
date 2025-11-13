@@ -1,0 +1,7 @@
+flask
+yt-dlp
+spleeter
+
+# Notes:
+# - Spleeter brings additional heavy dependencies (tensorflow). Consider using a virtualenv.
+# - ffmpeg must be installed on the system PATH (not installed via pip).
