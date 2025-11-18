@@ -46,10 +46,10 @@ class DrumStickDetector:
         self.sound = None
         self.load_sound()
         
-        # 校準重力基準值
+        # 校準重力基準值和單位轉換係數
         print("\n正在校準重力基準值...")
         print("請保持感測器靜止 3 秒...")
-        self.gravity_baseline = self.calibrate_gravity()
+        self.gravity_baseline, self.unit_scale = self.calibrate_gravity()
         print(f"✓ 校準完成！重力基準值: {self.gravity_baseline:.2f}g")
         
         # 打擊偵測參數
@@ -75,14 +75,33 @@ class DrumStickDetector:
         extensions = ['.wav', '.mp3', '.ogg']
         sound_path = None
         
-        # 尋找音效檔案
-        for ext in extensions:
-            # 嘗試不同的檔案名稱
-            for filename in [self.sound_file, f'big_drum{ext}', f'sounds/big_drum{ext}']:
-                if os.path.exists(filename):
-                    sound_path = filename
-                    break
-            if sound_path:
+        # 取得腳本所在目錄
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # 嘗試的檔案路徑列表
+        search_paths = [
+            self.sound_file,                                      # 直接使用提供的檔案名
+            os.path.join(script_dir, self.sound_file),           # 腳本目錄
+            os.path.join(script_dir, 'sounds', self.sound_file), # sounds 資料夾
+        ]
+        
+        # 如果沒有副檔名，嘗試加上各種副檔名
+        if not any(self.sound_file.endswith(ext) for ext in extensions):
+            base_paths = search_paths.copy()
+            search_paths = []
+            for base in base_paths:
+                for ext in extensions:
+                    search_paths.append(base + ext)
+                    search_paths.append(os.path.join(os.path.dirname(base), 
+                                                    os.path.splitext(os.path.basename(base))[0] + ext))
+        
+        # 嘗試尋找檔案
+        print(f"\n尋找音效檔案: {self.sound_file}")
+        for path in search_paths:
+            print(f"  檢查: {path}")
+            if os.path.exists(path):
+                sound_path = path
+                print(f"  ✓ 找到！")
                 break
         
         if sound_path:
@@ -100,18 +119,22 @@ class DrumStickDetector:
                 print(f"✗ 音效載入失敗: {e}")
                 self.sound = None
         else:
-            print(f"⚠ 找不到音效檔案: {self.sound_file}")
-            print("  請確認檔案存在，支援格式: .wav, .mp3, .ogg")
-            print("  程式將繼續運行，但不會播放音效")
+            print(f"\n✗ 找不到音效檔案: {self.sound_file}")
+            print(f"  當前工作目錄: {os.getcwd()}")
+            print(f"  腳本所在目錄: {script_dir}")
+            print("  請確認檔案存在於以下任一位置:")
+            print(f"    - {os.path.join(script_dir, self.sound_file)}")
+            print(f"    - {os.path.join(script_dir, 'sounds', self.sound_file)}")
+            print("  程式將繼續運行，但不會播放音效\n")
     
     def calibrate_gravity(self, samples=50):
-        """校準重力基準值
+        """校準重力基準值並偵測單位
         
         Args:
             samples: 採樣次數
             
         Returns:
-            float: 平均重力加速度
+            tuple: (平均重力加速度, 單位縮放係數)
         """
         gravity_values = []
         
@@ -132,17 +155,22 @@ class DrumStickDetector:
         
         if not gravity_values:
             print("  ⚠ 校準失敗，使用預設值 1.0g")
-            return 1.0
+            return 1.0, 1.0
         
         avg_gravity = sum(gravity_values) / len(gravity_values)
         
-        # 檢查是否異常
+        # 檢查單位並記錄縮放係數
         if avg_gravity > 8.0:
-            print(f"  ⚠ 偵測到異常數值 ({avg_gravity:.2f}g)")
-            print(f"  → 可能單位為 m/s²，自動轉換為 g")
-            avg_gravity = avg_gravity / 9.8
+            print(f"  ⚠ 偵測到異常數值 ({avg_gravity:.2f})")
+            print(f"  → 單位為 m/s²，自動轉換為 g (除以 9.8)")
+            unit_scale = 1.0 / 9.8  # 縮放係數
+            avg_gravity = avg_gravity * unit_scale
+            print(f"  → 轉換後: {avg_gravity:.2f}g")
+        else:
+            print(f"  → 單位已是 g，無需轉換")
+            unit_scale = 1.0  # 不需縮放
         
-        return avg_gravity
+        return avg_gravity, unit_scale
     
     def calculate_acceleration_magnitude(self, accel_data):
         """計算加速度向量的大小（總加速度）
@@ -159,6 +187,9 @@ class DrumStickDetector:
         
         # 計算向量長度: sqrt(x^2 + y^2 + z^2)
         magnitude = math.sqrt(x**2 + y**2 + z**2)
+        
+        # 套用單位縮放係數（如果是 m/s² 則轉換為 g）
+        magnitude = magnitude * self.unit_scale
         
         # 扣除重力影響（使用校準後的基準值）
         net_acceleration = abs(magnitude - self.gravity_baseline)
