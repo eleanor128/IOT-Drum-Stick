@@ -34,16 +34,38 @@ class DrumStickDetector:
         
         # 初始化 Pygame 音效系統
         print("正在初始化音效系統...")
-        try:
-            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-            print("✓ 音效系統初始化成功")
-        except Exception as e:
-            print(f"✗ 音效系統初始化失敗: {e}")
-            raise
+        mixer_initialized = False
+        
+        # 嘗試不同的 mixer 配置
+        mixer_configs = [
+            {'frequency': 44100, 'size': -16, 'channels': 2, 'buffer': 512},
+            {'frequency': 22050, 'size': -16, 'channels': 2, 'buffer': 1024},
+            {'frequency': 44100, 'size': -16, 'channels': 1, 'buffer': 512},
+            {'frequency': 22050, 'size': -16, 'channels': 1, 'buffer': 1024},
+        ]
+        
+        for i, config in enumerate(mixer_configs, 1):
+            try:
+                pygame.mixer.quit()  # 先關閉舊的
+                pygame.mixer.init(**config)
+                mixer_initialized = True
+                print(f"✓ 音效系統初始化成功 (配置 {i}: {config['frequency']}Hz, {config['channels']}ch)")
+                break
+            except Exception as e:
+                if i == len(mixer_configs):
+                    print(f"✗ 所有音效配置都失敗: {e}")
+                    raise
+                continue
+        
+        if not mixer_initialized:
+            raise Exception("無法初始化 Pygame mixer")
         
         # 載入音效檔案
         self.sound_file = sound_file
         self.sound = None
+        self.sound_path = None
+        self.use_system_player = False
+        self.system_player_cmd = None
         self.load_sound()
         
         # 校準重力基準值和單位轉換係數
@@ -130,8 +152,13 @@ class DrumStickDetector:
         
         # 嘗試載入音效
         print(f"\n嘗試載入音效...")
+        
+        # 方法 1: 使用 pygame.mixer.Sound
         try:
             self.sound = pygame.mixer.Sound(sound_path)
+            self.sound_path = sound_path
+            self.use_system_player = False
+            
             print(f"✓ 音效載入成功！")
             print(f"  音效長度: {self.sound.get_length():.2f} 秒")
             
@@ -147,8 +174,77 @@ class DrumStickDetector:
             
         except pygame.error as e:
             print(f"✗ Pygame 音效載入失敗: {e}")
+            
+            # 方法 2: 使用系統播放器作為備用方案
+            print(f"\n嘗試使用系統播放器作為備用方案...")
+            
+            # 檢查可用的播放器
+            players = []
+            import subprocess
+            
+            # 檢查 aplay (ALSA)
+            try:
+                subprocess.run(['which', 'aplay'], capture_output=True, check=True)
+                players.append(('aplay', ['aplay', '-q', sound_path]))
+                print(f"  ✓ 找到 aplay")
+            except:
+                pass
+            
+            # 檢查 omxplayer
+            try:
+                subprocess.run(['which', 'omxplayer'], capture_output=True, check=True)
+                players.append(('omxplayer', ['omxplayer', '-o', 'local', '--no-keys', sound_path]))
+                print(f"  ✓ 找到 omxplayer")
+            except:
+                pass
+            
+            # 檢查 mpg123
+            try:
+                subprocess.run(['which', 'mpg123'], capture_output=True, check=True)
+                players.append(('mpg123', ['mpg123', '-q', sound_path]))
+                print(f"  ✓ 找到 mpg123")
+            except:
+                pass
+            
+            if players:
+                self.sound = None
+                self.sound_path = sound_path
+                self.system_player_cmd = players[0][1]
+                self.use_system_player = True
+                
+                print(f"\n✓ 將使用 {players[0][0]} 播放音效")
+                print(f"  指令: {' '.join(players[0][1])}")
+                
+                # 測試播放
+                try:
+                    print(f"\n  測試播放...")
+                    subprocess.run(self.system_player_cmd, 
+                                 stdout=subprocess.DEVNULL, 
+                                 stderr=subprocess.DEVNULL,
+                                 timeout=2)
+                    print(f"  ✓ 系統播放器測試成功\n")
+                    return True
+                except Exception as test_err:
+                    print(f"  ⚠ 測試播放失敗: {test_err}")
+                    print(f"  → 程式將繼續，但音效可能無法播放\n")
+                    return True
+            
+            # 方法 3: 都失敗了
             print(f"\n可能的原因:")
             print(f"  1. 音效格式不相容 (pygame 需要標準 WAV 格式)")
+            print(f"  2. 音效驅動程式問題")
+            print(f"\n建議解決方法:")
+            print(f"  1. 轉換音效格式:")
+            print(f"     ffmpeg -i {sound_path} -acodec pcm_s16le -ar 44100 -ac 2 {os.path.splitext(sound_path)[0]}_fixed.wav")
+            print(f"\n  2. 安裝系統播放器:")
+            print(f"     sudo apt-get install alsa-utils")
+            print(f"\n  3. 執行診斷:")
+            print(f"     python3 check_audio.py {sound_path}\n")
+            
+            self.sound = None
+            self.sound_path = None
+            self.use_system_player = False
+            return False
             print(f"  2. 檔案損壞")
             print(f"\n建議解決方法:")
             print(f"  用 ffmpeg 轉換為標準格式:")
@@ -272,8 +368,17 @@ class DrumStickDetector:
         Args:
             intensity: 強度 (0.0 ~ 1.0)，影響音量
         """
-        if self.sound:
-            # 根據打擊強度調整音量
+        if self.use_system_player and self.sound_path:
+            # 使用系統播放器
+            try:
+                import subprocess
+                subprocess.Popen(self.system_player_cmd, 
+                               stdout=subprocess.DEVNULL, 
+                               stderr=subprocess.DEVNULL)
+            except Exception as e:
+                pass  # 靜默失敗，不影響偵測
+        elif self.sound:
+            # 使用 pygame
             volume = min(1.0, 0.5 + intensity * 0.5)
             self.sound.set_volume(volume)
             self.sound.play()
