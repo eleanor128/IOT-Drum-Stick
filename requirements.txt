@@ -2,6 +2,18 @@ flask
 yt-dlp
 spleeter
 
+# Raspberry Pi MPU6050 support
+smbus2
+mpu6050-raspberrypi
+
 # Notes:
 # - Spleeter brings additional heavy dependencies (tensorflow). Consider using a virtualenv.
 # - ffmpeg must be installed on the system PATH (not installed via pip).
+# - For Raspberry Pi I2C: sudo apt-get install python3-smbus i2c-tools
+# - Enable I2C: sudo raspi-config → Interface Options → I2C
+# 3D Visualization
+pygame
+PyOpenGL
+PyOpenGL-accelerate
+
+# For 3D visualization on Raspberry Pi: sudo apt-get install python3-pygame python3-opengl
