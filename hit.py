@@ -46,6 +46,12 @@ class DrumStickDetector:
         self.sound = None
         self.load_sound()
         
+        # 校準重力基準值
+        print("\n正在校準重力基準值...")
+        print("請保持感測器靜止 3 秒...")
+        self.gravity_baseline = self.calibrate_gravity()
+        print(f"✓ 校準完成！重力基準值: {self.gravity_baseline:.2f}g")
+        
         # 打擊偵測參數
         self.threshold = 2.0  # 加速度閾值 (g)
         self.cooldown = 0.1   # 冷卻時間 (秒)
@@ -53,10 +59,14 @@ class DrumStickDetector:
         
         # 統計資料
         self.hit_count = 0
+        self.light_hits = 0
+        self.medium_hits = 0
+        self.heavy_hits = 0
         self.max_acceleration = 0.0
         
         print("\n" + "=" * 60)
         print("系統就緒！準備偵測打擊...")
+        print(f"閾值: {self.threshold}g | 冷卻: {self.cooldown}s")
         print("=" * 60)
     
     def load_sound(self):
@@ -94,6 +104,46 @@ class DrumStickDetector:
             print("  請確認檔案存在，支援格式: .wav, .mp3, .ogg")
             print("  程式將繼續運行，但不會播放音效")
     
+    def calibrate_gravity(self, samples=50):
+        """校準重力基準值
+        
+        Args:
+            samples: 採樣次數
+            
+        Returns:
+            float: 平均重力加速度
+        """
+        gravity_values = []
+        
+        for i in range(samples):
+            try:
+                accel = self.sensor.get_accel_data()
+                x, y, z = accel['x'], accel['y'], accel['z']
+                magnitude = math.sqrt(x**2 + y**2 + z**2)
+                gravity_values.append(magnitude)
+                
+                if (i + 1) % 10 == 0:
+                    print(f"  校準進度: {i+1}/{samples}")
+                
+                time.sleep(0.02)  # 20ms 間隔
+            except Exception as e:
+                print(f"  校準錯誤: {e}")
+                continue
+        
+        if not gravity_values:
+            print("  ⚠ 校準失敗，使用預設值 1.0g")
+            return 1.0
+        
+        avg_gravity = sum(gravity_values) / len(gravity_values)
+        
+        # 檢查是否異常
+        if avg_gravity > 8.0:
+            print(f"  ⚠ 偵測到異常數值 ({avg_gravity:.2f}g)")
+            print(f"  → 可能單位為 m/s²，自動轉換為 g")
+            avg_gravity = avg_gravity / 9.8
+        
+        return avg_gravity
+    
     def calculate_acceleration_magnitude(self, accel_data):
         """計算加速度向量的大小（總加速度）
         
@@ -110,9 +160,8 @@ class DrumStickDetector:
         # 計算向量長度: sqrt(x^2 + y^2 + z^2)
         magnitude = math.sqrt(x**2 + y**2 + z**2)
         
-        # 扣除重力影響 (靜止時約 1g)
-        # 實際加速度 = 總加速度 - 重力
-        net_acceleration = abs(magnitude - 1.0)
+        # 扣除重力影響（使用校準後的基準值）
+        net_acceleration = abs(magnitude - self.gravity_baseline)
         
         return net_acceleration
     
@@ -196,6 +245,14 @@ class DrumStickDetector:
                     # 計算打擊強度
                     intensity_level, intensity_value = self.get_hit_intensity(acceleration)
                     
+                    # 更新統計
+                    if intensity_level == '輕':
+                        self.light_hits += 1
+                    elif intensity_level == '中':
+                        self.medium_hits += 1
+                    else:
+                        self.heavy_hits += 1
+                    
                     # 播放音效
                     self.play_sound(intensity_value)
                     
@@ -211,10 +268,19 @@ class DrumStickDetector:
             print("\n\n" + "=" * 60)
             print("程式已停止")
             print("=" * 60)
+            
+            elapsed_time = time.time() - (self.last_hit_time - self.hit_count * self.cooldown)
+            
             print(f"\n統計資料:")
             print(f"  總打擊次數: {self.hit_count}")
+            print(f"    輕擊: {self.light_hits} 次")
+            print(f"    中擊: {self.medium_hits} 次")
+            print(f"    重擊: {self.heavy_hits} 次")
             print(f"  最大加速度: {self.max_acceleration:.2f}g")
-            print(f"  平均每分鐘: {self.hit_count / ((time.time() - self.last_hit_time) / 60):.1f} 次")
+            
+            if self.hit_count > 0 and elapsed_time > 0:
+                print(f"  平均每分鐘: {self.hit_count / (elapsed_time / 60):.1f} 次")
+            
             print("\n感謝使用！🎵\n")
         
         finally:
