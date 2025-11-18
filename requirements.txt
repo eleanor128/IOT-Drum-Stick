@@ -11,9 +11,14 @@ mpu6050-raspberrypi
 # - ffmpeg must be installed on the system PATH (not installed via pip).
 # - For Raspberry Pi I2C: sudo apt-get install python3-smbus i2c-tools
 # - Enable I2C: sudo raspi-config → Interface Options → I2C
-# 3D Visualization
+# Web-based 3D Visualization
+flask-socketio
+python-socketio
+eventlet
+
+# Desktop 3D Visualization (optional, only if you want to run on Raspberry Pi directly)
 pygame
 PyOpenGL
 PyOpenGL-accelerate
 
-# For 3D visualization on Raspberry Pi: sudo apt-get install python3-pygame python3-opengl
+# For desktop visualization on Raspberry Pi: sudo apt-get install python3-pygame python3-opengl
