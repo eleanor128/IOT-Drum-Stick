@@ -71,61 +71,99 @@ class DrumStickDetector:
     
     def load_sound(self):
         """載入音效檔案"""
-        # 支援多種音效格式
-        extensions = ['.wav', '.mp3', '.ogg']
-        sound_path = None
+        print("\n正在載入音效...")
         
         # 取得腳本所在目錄
         script_dir = os.path.dirname(os.path.abspath(__file__))
         
+        # 支援的音效格式
+        extensions = ['.wav', '.mp3', '.ogg']
+        
         # 嘗試的檔案路徑列表
         search_paths = [
-            self.sound_file,                                      # 直接使用提供的檔案名
-            os.path.join(script_dir, self.sound_file),           # 腳本目錄
-            os.path.join(script_dir, 'sounds', self.sound_file), # sounds 資料夾
+            self.sound_file,
+            os.path.join(script_dir, self.sound_file),
+            os.path.join(script_dir, 'sounds', self.sound_file),
         ]
         
-        # 如果沒有副檔名，嘗試加上各種副檔名
+        # 如果沒有副檔名，嘗試加上
         if not any(self.sound_file.endswith(ext) for ext in extensions):
-            base_paths = search_paths.copy()
-            search_paths = []
-            for base in base_paths:
+            extra_paths = []
+            for path in search_paths:
                 for ext in extensions:
-                    search_paths.append(base + ext)
-                    search_paths.append(os.path.join(os.path.dirname(base), 
-                                                    os.path.splitext(os.path.basename(base))[0] + ext))
+                    extra_paths.append(path + ext)
+            search_paths.extend(extra_paths)
         
-        # 嘗試尋找檔案
-        print(f"\n尋找音效檔案: {self.sound_file}")
+        # 尋找檔案
+        sound_path = None
+        print(f"尋找音效檔案: {self.sound_file}")
+        print(f"當前工作目錄: {os.getcwd()}")
+        print(f"腳本所在目錄: {script_dir}\n")
+        
         for path in search_paths:
             print(f"  檢查: {path}")
-            if os.path.exists(path):
+            if os.path.isfile(path):
                 sound_path = path
-                print(f"  ✓ 找到！")
+                print(f"  ✓ 找到檔案！")
                 break
         
-        if sound_path:
-            try:
-                self.sound = pygame.mixer.Sound(sound_path)
-                print(f"✓ 音效載入成功: {sound_path}")
-                
-                # 測試播放 (小聲)
-                self.sound.set_volume(0.3)
-                self.sound.play()
-                print("  (測試音效播放...)")
-                time.sleep(0.5)
-                self.sound.set_volume(1.0)  # 恢復正常音量
-            except Exception as e:
-                print(f"✗ 音效載入失敗: {e}")
-                self.sound = None
-        else:
+        if not sound_path:
             print(f"\n✗ 找不到音效檔案: {self.sound_file}")
-            print(f"  當前工作目錄: {os.getcwd()}")
-            print(f"  腳本所在目錄: {script_dir}")
-            print("  請確認檔案存在於以下任一位置:")
-            print(f"    - {os.path.join(script_dir, self.sound_file)}")
-            print(f"    - {os.path.join(script_dir, 'sounds', self.sound_file)}")
-            print("  程式將繼續運行，但不會播放音效\n")
+            print("\n請確認檔案存在於以下任一位置:")
+            print(f"  - {os.path.join(script_dir, self.sound_file)}")
+            print(f"  - {os.path.join(script_dir, 'sounds', self.sound_file)}")
+            print("\n程式將繼續運行，但不會播放音效")
+            self.sound = None
+            return False
+        
+        # 詳細檢查檔案
+        print(f"\n檢查檔案資訊:")
+        print(f"  完整路徑: {sound_path}")
+        print(f"  檔案大小: {os.path.getsize(sound_path) / 1024:.2f} KB")
+        print(f"  可讀取: {os.access(sound_path, os.R_OK)}")
+        
+        if not os.access(sound_path, os.R_OK):
+            print(f"  ✗ 沒有讀取權限")
+            print(f"  請執行: chmod 644 {sound_path}")
+            self.sound = None
+            return False
+        
+        # 嘗試載入音效
+        print(f"\n嘗試載入音效...")
+        try:
+            self.sound = pygame.mixer.Sound(sound_path)
+            print(f"✓ 音效載入成功！")
+            print(f"  音效長度: {self.sound.get_length():.2f} 秒")
+            
+            # 測試播放
+            print("  測試播放...")
+            self.sound.set_volume(0.3)
+            self.sound.play()
+            time.sleep(0.5)
+            self.sound.set_volume(1.0)
+            print("  ✓ 測試播放成功\n")
+            
+            return True
+            
+        except pygame.error as e:
+            print(f"✗ Pygame 音效載入失敗: {e}")
+            print(f"\n可能的原因:")
+            print(f"  1. 音效格式不相容 (pygame 需要標準 WAV 格式)")
+            print(f"  2. 檔案損壞")
+            print(f"\n建議解決方法:")
+            print(f"  用 ffmpeg 轉換為標準格式:")
+            print(f"  ffmpeg -i {sound_path} -acodec pcm_s16le -ar 44100 -ac 2 {os.path.splitext(sound_path)[0]}_fixed.wav")
+            print(f"\n或執行診斷工具:")
+            print(f"  python3 check_audio.py {sound_path}\n")
+            self.sound = None
+            return False
+            
+        except Exception as e:
+            print(f"✗ 未知錯誤: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            self.sound = None
+            return False
     
     def calibrate_gravity(self, samples=50):
         """校準重力基準值並偵測單位
