@@ -37,6 +37,7 @@ def read_sensor_continuously():
     背景執行緒持續讀取感測器數據
     """
     global latest_data
+    counter = 0
     
     while True:
         if sensor is None:
@@ -70,6 +71,11 @@ def read_sensor_continuously():
                     "timestamp": time.time()
                 }
             
+            # 每100次打印一次，確認數據持續更新
+            counter += 1
+            if counter % 100 == 0:
+                print(f"[背景執行緒] 已讀取 {counter} 次數據 | Accel X:{accel_data['x']:.2f}")
+            
             # 控制讀取頻率 (100Hz = 每秒100次)
             time.sleep(0.01)
             
@@ -84,7 +90,11 @@ def get_mpu6050_data():
     取得最新的 MPU6050 感測器數據
     返回 JSON 格式的加速度計、陀螺儀和溫度數據
     """
+    print("=" * 50)
+    print("收到 Unity 請求!")
+    
     if sensor is None:
+        print("❌ 感測器未初始化")
         return jsonify({
             "error": "MPU6050 sensor not initialized",
             "status": "error"
@@ -92,6 +102,9 @@ def get_mpu6050_data():
     
     with data_lock:
         data = latest_data.copy()
+    
+    print(f"✅ 傳送數據: {data}")
+    print("=" * 50)
     
     return jsonify({
         "status": "success",
