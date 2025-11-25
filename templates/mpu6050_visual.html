@@ -217,7 +217,7 @@
         function initThreeJS() {
             // 場景
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e);
+            scene.background = new THREE.Color(0x0a0a0a);
 
             // 相機
             const container = document.getElementById('canvas-container');
@@ -227,43 +227,230 @@
                 0.1,
                 1000
             );
-            camera.position.set(5, 5, 10);
-            camera.lookAt(0, 0, 0);
+            camera.position.set(0, 8, 12);
+            camera.lookAt(0, 2, 0);
 
             // 渲染器
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
             // 光源
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 5, 5);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
             scene.add(directionalLight);
 
-            // 建立立方體 (代表感測器)
-            const geometry = new THREE.BoxGeometry(2, 2, 2);
-            const materials = [
-                new THREE.MeshPhongMaterial({ color: 0xff0000 }), // 右 - 紅
-                new THREE.MeshPhongMaterial({ color: 0x00ff00 }), // 左 - 綠
-                new THREE.MeshPhongMaterial({ color: 0x0000ff }), // 上 - 藍
-                new THREE.MeshPhongMaterial({ color: 0xffff00 }), // 下 - 黃
-                new THREE.MeshPhongMaterial({ color: 0xff00ff }), // 前 - 洋紅
-                new THREE.MeshPhongMaterial({ color: 0x00ffff })  // 後 - 青
-            ];
-            cube = new THREE.Mesh(geometry, materials);
-            scene.add(cube);
+            // 聚光燈 (打在鼓上)
+            const spotLight = new THREE.SpotLight(0xffffff, 0.5);
+            spotLight.position.set(0, 15, 0);
+            spotLight.angle = Math.PI / 4;
+            spotLight.penumbra = 0.3;
+            spotLight.castShadow = true;
+            scene.add(spotLight);
 
-            // 座標軸
-            axes = new THREE.AxesHelper(3);
-            scene.add(axes);
+            // 建立鼓棒 (圓柱體)
+            const drumstick = new THREE.Group();
+            
+            // 鼓棒主體 (木質部分)
+            const stickGeometry = new THREE.CylinderGeometry(0.08, 0.08, 3, 16);
+            const stickMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8B4513,
+                shininess: 30
+            });
+            const stick = new THREE.Mesh(stickGeometry, stickMaterial);
+            stick.castShadow = true;
+            drumstick.add(stick);
+            
+            // 鼓棒頭 (打擊部分)
+            const tipGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const tipMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xD2691E,
+                shininess: 50
+            });
+            const tip = new THREE.Mesh(tipGeometry, tipMaterial);
+            tip.position.y = 1.5;
+            tip.castShadow = true;
+            drumstick.add(tip);
+            
+            // 鼓棒尾端 (握把)
+            const gripGeometry = new THREE.CylinderGeometry(0.1, 0.12, 0.6, 16);
+            const gripMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x654321,
+                shininess: 20
+            });
+            const grip = new THREE.Mesh(gripGeometry, gripMaterial);
+            grip.position.y = -1.5;
+            grip.castShadow = true;
+            drumstick.add(grip);
+            
+            // 調整鼓棒位置
+            drumstick.position.set(0, 3, 0);
+            drumstick.rotation.z = Math.PI / 6; // 稍微傾斜
+            scene.add(drumstick);
+            cube = drumstick; // 沿用原變數名稱
 
-            // 網格
-            const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
-            scene.add(gridHelper);
+            // 建立爵士鼓組
+            createDrumKit();
 
+            // 座標軸 (可選)
+            // axes = new THREE.AxesHelper(3);
+            // scene.add(axes);
+
+            // 地板
+            const floorGeometry = new THREE.PlaneGeometry(30, 30);
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a1a,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // 初始化滑鼠控制
+            initMouseControls();
+
+            // 響應式調整
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            animate();
+        }
+
+        function createDrumKit() {
+            // 左邊鼓 (Tom 1 - 紅色)
+            const leftDrum = createDrum(0xff3333, 1.0, 0.5);
+            leftDrum.position.set(-3, 0.5, 0);
+            scene.add(leftDrum);
+            
+            // 中間鼓 (Snare - 銀色)
+            const centerDrum = createDrum(0xcccccc, 1.2, 0.6);
+            centerDrum.position.set(0, 0.6, 0);
+            scene.add(centerDrum);
+            
+            // 右邊鼓 (Tom 2 - 藍色)
+            const rightDrum = createDrum(0x3333ff, 1.0, 0.5);
+            rightDrum.position.set(3, 0.5, 0);
+            scene.add(rightDrum);
+            
+            // 地鼓 (Kick - 黑色) - 背景
+            const kickDrum = createKickDrum();
+            kickDrum.position.set(0, 0.8, -3);
+            scene.add(kickDrum);
+        }
+
+        function createDrum(color, radius, height) {
+            const drum = new THREE.Group();
+            
+            // 鼓身
+            const bodyGeometry = new THREE.CylinderGeometry(radius, radius, height, 32);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: color,
+                shininess: 60
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            drum.add(body);
+            
+            // 鼓面 (白色)
+            const headGeometry = new THREE.CircleGeometry(radius, 32);
+            const headMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xf5f5f5,
+                shininess: 30,
+                side: THREE.DoubleSide
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.rotation.x = -Math.PI / 2;
+            head.position.y = height / 2 + 0.01;
+            head.receiveShadow = true;
+            drum.add(head);
+            
+            // 鼓邊 (金屬環)
+            const rimGeometry = new THREE.TorusGeometry(radius, 0.03, 16, 32);
+            const rimMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x888888,
+                metalness: 0.9,
+                roughness: 0.2
+            });
+            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+            rim.rotation.x = Math.PI / 2;
+            rim.position.y = height / 2;
+            rim.castShadow = true;
+            drum.add(rim);
+            
+            return drum;
+        }
+
+        function createKickDrum() {
+            const kick = new THREE.Group();
+            
+            // 大鼓身 (橫放)
+            const bodyGeometry = new THREE.CylinderGeometry(1.5, 1.5, 1.2, 32);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x000000,
+                shininess: 80
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.z = Math.PI / 2;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            kick.add(body);
+            
+            // 鼓面
+            const headGeometry = new THREE.CircleGeometry(1.5, 32);
+            const headMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffffff,
+                shininess: 30
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.z = 0.6;
+            head.receiveShadow = true;
+            kick.add(head);
+            
+            // Logo (黑色圓形)
+            const logoGeometry = new THREE.CircleGeometry(0.5, 32);
+            const logoMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const logo = new THREE.Mesh(logoGeometry, logoMaterial);
+            logo.position.z = 0.61;
+            kick.add(logo);
+            
+            return kick;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function updateOrientation(roll, pitch, yaw) {
+            // Three.js 使用弧度
+            const rollRad = roll * Math.PI / 180;
+            const pitchRad = pitch * Math.PI / 180;
+            const yawRad = yaw * Math.PI / 180;
+
+            // 設定鼓棒姿態 (從水平偏移開始)
+            // 基礎姿態：鼓棒稍微向右下方傾斜
+            const baseRotation = Math.PI / 6;
+            cube.rotation.set(-pitchRad, yawRad, baseRotation - rollRad, 'XYZ');
+        }
+
+        function initMouseControls() {
             // 滑鼠控制
             let isDragging = false;
             let previousMousePosition = { x: 0, y: 0 };
@@ -280,7 +467,7 @@
                     
                     camera.position.x += deltaX * 0.01;
                     camera.position.y -= deltaY * 0.01;
-                    camera.lookAt(0, 0, 0);
+                    camera.lookAt(0, 2, 0);
                     
                     previousMousePosition = { x: e.clientX, y: e.clientY };
                 }
@@ -296,30 +483,6 @@
                 const delta = e.deltaY > 0 ? 1.1 : 0.9;
                 camera.position.multiplyScalar(delta);
             });
-
-            // 響應式調整
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-
-            animate();
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        function updateOrientation(roll, pitch, yaw) {
-            // Three.js 使用弧度
-            const rollRad = roll * Math.PI / 180;
-            const pitchRad = pitch * Math.PI / 180;
-            const yawRad = yaw * Math.PI / 180;
-
-            // 設定立方體姿態 (注意軸向對應)
-            cube.rotation.set(-pitchRad, yawRad, -rollRad, 'XYZ');
         }
 
         function updateUI(data) {
