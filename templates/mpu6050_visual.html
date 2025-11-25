@@ -193,6 +193,28 @@
                 <span class="data-value temp" id="temperature">0.0°C</span>
             </div>
 
+            <h2>打擊偵測</h2>
+            <div class="data-row">
+                <span class="data-label">打擊次數:</span>
+                <span class="data-value" id="hit-count" style="color: #ffa726;">0</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">最後強度:</span>
+                <span class="data-value" id="hit-intensity" style="color: #ef5350;">0.00</span>
+            </div>
+            <div id="hit-indicator" style="
+                margin-top: 15px;
+                padding: 10px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                text-align: center;
+                font-size: 18px;
+                font-weight: bold;
+                transition: all 0.2s;
+            ">
+                待機中...
+            </div>
+
             <div class="controls">
                 <button id="reset-btn">🔄 重置姿態</button>
             </div>
@@ -504,8 +526,52 @@
             // 溫度
             document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
 
+            // 打擊偵測
+            if (data.hit_count !== undefined) {
+                document.getElementById('hit-count').textContent = data.hit_count;
+            }
+            
+            if (data.hit_intensity !== undefined) {
+                document.getElementById('hit-intensity').textContent = data.hit_intensity.toFixed(2);
+            }
+            
+            // 打擊視覺效果
+            const hitIndicator = document.getElementById('hit-indicator');
+            if (data.hit_detected) {
+                const intensity = data.hit_intensity;
+                let level = '輕擊';
+                let color = '#4fc3f7';
+                
+                if (intensity >= 0.7) {
+                    level = '重擊';
+                    color = '#ef5350';
+                } else if (intensity >= 0.4) {
+                    level = '中擊';
+                    color = '#ffa726';
+                }
+                
+                hitIndicator.textContent = '🥁 ' + level + '！';
+                hitIndicator.style.background = color;
+                hitIndicator.style.transform = 'scale(1.1)';
+                
+                // 鼓面閃光效果
+                flashDrums(intensity);
+                
+                // 恢復
+                setTimeout(() => {
+                    hitIndicator.style.background = 'rgba(255, 255, 255, 0.05)';
+                    hitIndicator.style.transform = 'scale(1)';
+                    hitIndicator.textContent = '待機中...';
+                }, 200);
+            }
+
             // 更新 3D 姿態
             updateOrientation(data.roll, data.pitch, data.yaw);
+        }
+
+        function flashDrums(intensity) {
+            // 讓鼓面產生閃光效果（可選）
+            // 這裡可以添加更多視覺效果
         }
 
         function initWebSocket() {
