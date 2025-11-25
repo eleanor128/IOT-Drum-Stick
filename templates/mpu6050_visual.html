@@ -221,10 +221,12 @@
 
             <div id="help">
                 <strong>操作說明:</strong><br>
+                • <strong>首次使用: 請點擊頁面啟用音效</strong><br>
                 • 滑鼠拖曳: 旋轉視角<br>
                 • 滾輪: 縮放<br>
                 • 重置按鈕: 歸零姿態<br>
-                • 即時顯示感測器狀態
+                • 即時顯示感測器狀態<br>
+                • 揮擊鼓棒時自動播放音效
             </div>
         </div>
     </div>
@@ -235,6 +237,82 @@
         // Three.js 場景設定
         let scene, camera, renderer, cube, axes;
         let socket;
+        
+        // Web Audio API 音效系統
+        let audioContext;
+        let drumSoundBuffer;
+        let audioInitialized = false;
+
+        // 初始化 Web Audio
+        function initAudio() {
+            if (audioInitialized) return;
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('✓ Web Audio Context 初始化成功');
+                
+                // 載入鼓聲音效
+                fetch('/static/big_drum.wav')
+                    .then(response => response.arrayBuffer())
+                    .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                    .then(audioBuffer => {
+                        drumSoundBuffer = audioBuffer;
+                        audioInitialized = true;
+                        console.log('✓ 鼓聲音效載入成功');
+                        
+                        // 顯示提示
+                        const indicator = document.getElementById('hit-indicator');
+                        indicator.textContent = '✓ 音效已就緒';
+                        indicator.style.color = '#4fc3f7';
+                        setTimeout(() => {
+                            indicator.textContent = '待機中...';
+                            indicator.style.color = 'white';
+                        }, 2000);
+                    })
+                    .catch(error => {
+                        console.error('⚠ 音效載入失敗:', error);
+                        const indicator = document.getElementById('hit-indicator');
+                        indicator.textContent = '⚠ 音效載入失敗';
+                        indicator.style.color = '#ef5350';
+                    });
+            } catch (error) {
+                console.error('⚠ Web Audio 初始化失敗:', error);
+            }
+        }
+
+        // 播放鼓聲
+        function playDrumSound(intensity = 1.0) {
+            if (!audioInitialized || !drumSoundBuffer) {
+                console.warn('音效尚未就緒');
+                return;
+            }
+
+            try {
+                // 建立音源
+                const source = audioContext.createBufferSource();
+                source.buffer = drumSoundBuffer;
+                
+                // 建立音量控制
+                const gainNode = audioContext.createGain();
+                const volume = Math.min(1.0, 0.5 + intensity * 0.5);
+                gainNode.gain.value = volume;
+                
+                // 連接節點
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // 播放
+                source.start(0);
+            } catch (error) {
+                console.error('播放音效錯誤:', error);
+            }
+        }
+
+        // 使用者互動後初始化音效（瀏覽器要求）
+        document.addEventListener('click', function initOnInteraction() {
+            initAudio();
+            document.removeEventListener('click', initOnInteraction);
+        }, { once: true });
 
         function initThreeJS() {
             // 場景
@@ -553,6 +631,9 @@
                 hitIndicator.textContent = '🥁 ' + level + '！';
                 hitIndicator.style.background = color;
                 hitIndicator.style.transform = 'scale(1.1)';
+                
+                // 播放音效
+                playDrumSound(intensity);
                 
                 // 鼓面閃光效果
                 flashDrums(intensity);
