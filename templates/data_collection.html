@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 鼓棒數據收集工具 - MPU6050</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 36px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            color: #64b5f6;
+            margin-bottom: 20px;
+            font-size: 24px;
+            border-bottom: 2px solid #64b5f6;
+            padding-bottom: 10px;
+        }
+
+        .status-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .status-label {
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .status-value {
+            color: #64b5f6;
+            font-weight: bold;
+        }
+
+        .status-value.recording {
+            color: #ef5350;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .position-selector {
+            margin-bottom: 20px;
+        }
+
+        .position-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #ddd;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #64b5f6;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #1a237e;
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #757575 0%, #424242 100%);
+            color: white;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #66bb6a 0%, #388e3c 100%);
+            color: white;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #ffa726 0%, #f57c00 100%);
+            color: white;
+        }
+
+        .data-display {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .data-entry {
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(100, 181, 246, 0.1);
+            border-left: 3px solid #64b5f6;
+            border-radius: 3px;
+        }
+
+        .data-entry.center { border-left-color: #66bb6a; }
+        .data-entry.left { border-left-color: #ffa726; }
+        .data-entry.right { border-left-color: #ab47bc; }
+
+        .instructions {
+            background: rgba(239, 83, 80, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ef5350;
+            margin-bottom: 20px;
+        }
+
+        .instructions h3 {
+            color: #ef5350;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin: 10px 0;
+        }
+
+        .realtime-data {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .data-card {
+            background: rgba(100, 181, 246, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #64b5f6;
+        }
+
+        .data-card h3 {
+            font-size: 14px;
+            color: #90caf9;
+            margin-bottom: 10px;
+        }
+
+        .data-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #64b5f6;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 181, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 181, 246, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 鼓棒揮動數據收集工具</h1>
+
+        <div class="instructions">
+            <h3>📋 使用說明</h3>
+            <ol>
+                <li><strong>步驟 1</strong>：選擇鼓棒位置（置中指向前 / 指向左 / 指向右）</li>
+                <li><strong>步驟 2</strong>：將鼓棒擺到對應位置（水平持握）</li>
+                <li><strong>步驟 3</strong>：點擊「⏺️ 開始收集」按鈕</li>
+                <li><strong>步驟 4</strong>：<span style="color: #ffeb3b;">上下揮動鼓棒 5-10 次</span>（模擬打鼓動作）</li>
+                <li><strong>步驟 5</strong>：點擊「⏹️ 停止收集」</li>
+                <li><strong>步驟 6</strong>：重複步驟 1-5 完成其他位置</li>
+                <li><strong>步驟 7</strong>：點擊「💾 匯出數據」下載 JSON 檔案</li>
+            </ol>
+        </div>
+
+        <div class="grid">
+            <!-- 左側：控制面板 -->
+            <div class="panel">
+                <h2>⚙️ 控制面板</h2>
+
+                <div class="position-selector">
+                    <label>🎯 選擇鼓棒位置：</label>
+                    <select id="position-select">
+                        <option value="center">位置 1: 置中指向前（Z+ 軸）</option>
+                        <option value="left">位置 2: 水平指向左（X- 軸）</option>
+                        <option value="right">位置 3: 水平指向右（X+ 軸）</option>
+                    </select>
+                </div>
+
+                <div class="status-box">
+                    <div class="status-item">
+                        <span class="status-label">連線狀態：</span>
+                        <span class="status-value" id="connection-status">未連接</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">收集狀態：</span>
+                        <span class="status-value" id="recording-status">準備就緒</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">當前位置：</span>
+                        <span class="status-value" id="current-position">置中指向前</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">已收集數據：</span>
+                        <span class="status-value" id="data-count">0 筆</span>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-record" id="start-btn">⏺️ 開始收集</button>
+                    <button class="btn-stop" id="stop-btn" disabled>⏹️ 停止收集</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-export" id="export-btn">💾 匯出數據</button>
+                    <button class="btn-clear" id="clear-btn">🗑️ 清除數據</button>
+                </div>
+
+                <div class="realtime-data">
+                    <div class="data-card">
+                        <h3>Roll (橫滾)</h3>
+                        <div class="value" id="roll-value">0.0°</div>
+                    </div>
+                    <div class="data-card">
+                        <h3>Pitch (俯仰)</h3>
+                        <div class="value" id="pitch-value">0.0°</div>
+                    </div>
+                    <div class="data-card">
+                        <h3>Yaw (偏航)</h3>
+                        <div class="value" id="yaw-value">0.0°</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：數據顯示 -->
+            <div class="panel">
+                <h2>📈 收集的數據</h2>
+                <div class="data-display" id="data-display">
+                    <div style="color: #888; text-align: center; padding: 50px 20px;">
+                        尚未收集任何數據<br>
+                        點擊「開始收集」並揮動鼓棒
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 統計摘要 -->
+        <div class="panel">
+            <h2>📊 數據統計</h2>
+            <div class="grid">
+                <div>
+                    <h3 style="color: #66bb6a; margin-bottom: 10px;">🟢 置中指向前</h3>
+                    <div class="status-item">
+                        <span class="status-label">數據筆數：</span>
+                        <span class="status-value" id="center-count">0</span>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="color: #ffa726; margin-bottom: 10px;">🟠 水平指向左</h3>
+                    <div class="status-item">
+                        <span class="status-label">數據筆數：</span>
+                        <span class="status-value" id="left-count">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid" style="margin-top: 15px;">
+                <div>
+                    <h3 style="color: #ab47bc; margin-bottom: 10px;">🟣 水平指向右</h3>
+                    <div class="status-item">
+                        <span class="status-label">數據筆數：</span>
+                        <span class="status-value" id="right-count">0</span>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="color: #64b5f6; margin-bottom: 10px;">🔵 總計</h3>
+                    <div class="status-item">
+                        <span class="status-label">總數據筆數：</span>
+                        <span class="status-value" id="total-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket 連接
+        const socket = io();
+
+        // 數據收集變數
+        let isRecording = false;
+        let collectedData = [];
+        let currentPosition = 'center';
+
+        // UI 元素
+        const positionSelect = document.getElementById('position-select');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const dataDisplay = document.getElementById('data-display');
+
+        // 初始化
+        positionSelect.addEventListener('change', (e) => {
+            currentPosition = e.target.value;
+            const positionNames = {
+                'center': '置中指向前',
+                'left': '水平指向左',
+                'right': '水平指向右'
+            };
+            document.getElementById('current-position').textContent = positionNames[currentPosition];
+        });
+
+        // 開始收集
+        startBtn.addEventListener('click', () => {
+            isRecording = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            positionSelect.disabled = true;
+            document.getElementById('recording-status').textContent = '⏺️ 收集中...';
+            document.getElementById('recording-status').classList.add('recording');
+            console.log('✅ 開始收集數據 - 位置:', currentPosition);
+        });
+
+        // 停止收集
+        stopBtn.addEventListener('click', () => {
+            isRecording = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            positionSelect.disabled = false;
+            document.getElementById('recording-status').textContent = '準備就緒';
+            document.getElementById('recording-status').classList.remove('recording');
+            console.log('⏹️ 停止收集數據');
+            updateStatistics();
+        });
+
+        // 匯出數據
+        exportBtn.addEventListener('click', () => {
+            if (collectedData.length === 0) {
+                alert('沒有可匯出的數據！');
+                return;
+            }
+
+            const exportData = {
+                metadata: {
+                    timestamp: new Date().toISOString(),
+                    totalSamples: collectedData.length,
+                    positions: {
+                        center: collectedData.filter(d => d.position === 'center').length,
+                        left: collectedData.filter(d => d.position === 'left').length,
+                        right: collectedData.filter(d => d.position === 'right').length
+                    }
+                },
+                data: collectedData
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `drumstick_calibration_${new Date().getTime()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            console.log('💾 數據已匯出:', exportData);
+            alert(`✅ 成功匯出 ${collectedData.length} 筆數據！`);
+        });
+
+        // 清除數據
+        clearBtn.addEventListener('click', () => {
+            if (confirm('確定要清除所有收集的數據嗎？')) {
+                collectedData = [];
+                dataDisplay.innerHTML = '<div style="color: #888; text-align: center; padding: 50px 20px;">數據已清除<br>點擊「開始收集」重新開始</div>';
+                updateStatistics();
+                console.log('🗑️ 數據已清除');
+            }
+        });
+
+        // Socket.IO 事件
+        socket.on('connect', () => {
+            console.log('✅ WebSocket 已連接');
+            document.getElementById('connection-status').textContent = '已連接';
+            document.getElementById('connection-status').style.color = '#66bb6a';
+        });
+
+        socket.on('disconnect', () => {
+            console.log('❌ WebSocket 已斷線');
+            document.getElementById('connection-status').textContent = '未連接';
+            document.getElementById('connection-status').style.color = '#ef5350';
+        });
+
+        socket.on('sensor_data', (data) => {
+            // 更新即時顯示
+            document.getElementById('roll-value').textContent = data.roll.toFixed(1) + '°';
+            document.getElementById('pitch-value').textContent = data.pitch.toFixed(1) + '°';
+            document.getElementById('yaw-value').textContent = data.yaw.toFixed(1) + '°';
+
+            // 如果正在收集，記錄數據
+            if (isRecording) {
+                const dataPoint = {
+                    timestamp: Date.now(),
+                    position: currentPosition,
+                    roll: data.roll,
+                    pitch: data.pitch,
+                    yaw: data.yaw,
+                    accel: {
+                        x: data.accel.x,
+                        y: data.accel.y,
+                        z: data.accel.z
+                    },
+                    temperature: data.temperature
+                };
+
+                collectedData.push(dataPoint);
+                displayData(dataPoint);
+                updateDataCount();
+            }
+        });
+
+        // 顯示數據
+        function displayData(dataPoint) {
+            const entry = document.createElement('div');
+            entry.className = `data-entry ${dataPoint.position}`;
+            entry.textContent = `[${dataPoint.position.toUpperCase()}] Roll:${dataPoint.roll.toFixed(1)}° Pitch:${dataPoint.pitch.toFixed(1)}° Yaw:${dataPoint.yaw.toFixed(1)}°`;
+            
+            if (dataDisplay.children.length === 1 && dataDisplay.children[0].textContent.includes('尚未收集')) {
+                dataDisplay.innerHTML = '';
+            }
+            
+            dataDisplay.insertBefore(entry, dataDisplay.firstChild);
+
+            // 限制顯示最新 100 筆
+            if (dataDisplay.children.length > 100) {
+                dataDisplay.removeChild(dataDisplay.lastChild);
+            }
+        }
+
+        // 更新數據計數
+        function updateDataCount() {
+            document.getElementById('data-count').textContent = `${collectedData.length} 筆`;
+        }
+
+        // 更新統計
+        function updateStatistics() {
+            const centerCount = collectedData.filter(d => d.position === 'center').length;
+            const leftCount = collectedData.filter(d => d.position === 'left').length;
+            const rightCount = collectedData.filter(d => d.position === 'right').length;
+
+            document.getElementById('center-count').textContent = centerCount;
+            document.getElementById('left-count').textContent = leftCount;
+            document.getElementById('right-count').textContent = rightCount;
+            document.getElementById('total-count').textContent = collectedData.length;
+        }
+    </script>
+</body>
+</html>

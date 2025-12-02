@@ -295,6 +295,12 @@ def calibration():
     """參數微調頁面"""
     return render_template('calibration.html')
 
+
+@app.route('/data-collection')
+def data_collection():
+    """數據收集工具頁面"""
+    return render_template('data_collection.html')
+
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """提供靜態檔案（音效等）"""
