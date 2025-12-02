@@ -311,6 +311,37 @@
                         console.log('✓ 鼓聲音效載入成功');
                     })
                     .catch(error => {
+                        console.error('❌ 音效載入失敗:', error);
+                    });
+            } catch (error) {
+                console.error('❌ 無法創建 AudioContext:', error);
+            }
+        }
+        
+        function playDrumSound(intensity) {
+            if (!audioInitialized || !drumSoundBuffer) {
+                console.warn('⚠️ 音效尚未初始化');
+                return;
+            }
+            
+            try {
+                const source = audioContext.createBufferSource();
+                source.buffer = drumSoundBuffer;
+                
+                const gainNode = audioContext.createGain();
+                const volume = 0.3 + intensity * 0.7;
+                gainNode.gain.value = volume;
+                
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start(0);
+                console.log(`🔊 播放鼓聲 (音量: ${(volume * 100).toFixed(0)}%)`);
+            } catch (error) {
+                console.error('❌ 播放音效錯誤:', error);
+            }
+        }
+        
         function updateDrumHit(acceleration) {
             const totalAccel = Math.sqrt(
                 acceleration.x ** 2 + 
@@ -349,15 +380,6 @@
                         drumStick.position.y = originalY;
                     }, 100);
                 }
-            }
-        }       
-                source.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                source.start(0);
-                console.log(`🔊 播放鼓聲 (音量: ${(volume * 100).toFixed(0)}%)`);
-            } catch (error) {
-                console.error('❌ 播放音效錯誤:', error);
             }
         }
         
@@ -450,36 +472,29 @@
             return group;
         }
 
-        function updateDrumHit(acceleration) {
-            const totalAccel = Math.sqrt(
-                acceleration.x ** 2 + 
-                acceleration.y ** 2 + 
-                acceleration.z ** 2
-            );
-            
-            const now = Date.now();
-            if (totalAccel > HIT_THRESHOLD && (now - lastHitTime) > HIT_COOLDOWN) {
-                lastHitTime = now;
-                hitCount++;
-                document.getElementById('hit-count').textContent = hitCount;
-                
-                const indicator = document.getElementById('hit-indicator');
-                indicator.classList.add('active');
-                setTimeout(() => {
-                    indicator.classList.remove('active');
-                }, 500);
-                
-                const randomDrum = drums[Math.floor(Math.random() * drums.length)];
-                flashDrum(randomDrum);
-            }
-        }
-
         function flashDrum(drum) {
             const mesh = drum.children[0] || drum.children[1];
             if (!mesh || !mesh.material) return;
             
             const originalIntensity = mesh.material.emissiveIntensity;
             mesh.material.emissiveIntensity = 1.0;
+            
+            setTimeout(() => {
+                mesh.material.emissiveIntensity = originalIntensity;
+            }, 200);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
         socket.on('sensor_data', function(data) {
             document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
             document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
@@ -496,6 +511,10 @@
             // 更新鼓棒姿態
             updateDrumStickOrientation(data.roll, data.pitch, data.yaw);
             
+            // 偵測擊打
+            updateDrumHit(data.accel);
+        });
+
         socket.on('connect', () => {
             console.log('✓ WebSocket 已連接');
             document.getElementById('status').textContent = '已連接';
@@ -510,27 +529,6 @@
                 }
                 document.removeEventListener('click', unlockAudio);
             }, { once: true });
-        });
-        socket.on('sensor_data', function(data) {
-            document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
-            document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
-            document.getElementById('yaw').textContent = data.yaw.toFixed(1) + '°';
-            
-            const totalAccel = Math.sqrt(
-                data.accel.x ** 2 + 
-                data.accel.y ** 2 + 
-                data.accel.z ** 2
-            );
-            document.getElementById('accel').textContent = totalAccel.toFixed(2) + ' m/s²';
-            document.getElementById('temp').textContent = data.temperature.toFixed(1) + '°C';
-            
-            updateDrumHit(data.accel);
-        });
-
-        socket.on('connect', () => {
-            console.log('✓ WebSocket 已連接');
-            document.getElementById('status').textContent = '已連接';
-            document.getElementById('status').className = 'connected';
         });
 
         socket.on('disconnect', () => {
