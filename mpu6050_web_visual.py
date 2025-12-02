@@ -195,6 +195,14 @@ def calculate_angles():
         sensor_data['pitch'] = alpha * gyro_pitch + (1 - alpha) * accel_pitch
         sensor_data['yaw'] = gyro_yaw
         
+        # 如果有校準 offset，計算相對角度
+        if calibration_config and 'calibration' in calibration_config:
+            if 'center' in calibration_config['calibration']:
+                center = calibration_config['calibration']['center']
+                sensor_data['roll'] = sensor_data['roll'] - center['roll']
+                sensor_data['pitch'] = sensor_data['pitch'] - center['pitch']
+                sensor_data['yaw'] = sensor_data['yaw'] - center['yaw']
+        
         # 更新其他數據
         sensor_data['accel'] = accel
         sensor_data['gyro'] = gyro
@@ -312,13 +320,29 @@ def handle_disconnect():
 
 @socketio.on('reset')
 def handle_reset():
-    """處理重置請求"""
-    global sensor_data
+    """處理重置請求 - 記錄當前姿態作為 offset"""
+    global sensor_data, calibration_config
+    
+    # 記錄當前姿態作為中心點 offset
+    if calibration_config is None:
+        calibration_config = {'calibration': {}}
+    
+    calibration_config['calibration']['center'] = {
+        'roll': sensor_data['roll'],
+        'pitch': sensor_data['pitch'],
+        'yaw': sensor_data['yaw']
+    }
+    
+    # 重置姿態角度（相對於 offset）
     sensor_data['roll'] = 0.0
     sensor_data['pitch'] = 0.0
     sensor_data['yaw'] = 0.0
+    
     emit('sensor_data', sensor_data, broadcast=True)
-    print('姿態已重置')
+    emit('calibration_updated', calibration_config['calibration'], broadcast=True)
+    print(f'🎯 已校準中心點: Roll={calibration_config["calibration"]["center"]["roll"]:.1f}°, '
+          f'Pitch={calibration_config["calibration"]["center"]["pitch"]:.1f}°, '
+          f'Yaw={calibration_config["calibration"]["center"]["yaw"]:.1f}°')
 
 if __name__ == '__main__':
     print("=" * 60)
@@ -334,8 +358,9 @@ if __name__ == '__main__':
         print("  3. 已安裝 i2c-tools 和 python3-smbus")
         exit(1)
     
-    # 載入校準數據
-    load_calibration()
+    # 註釋掉校準檔案載入
+    # load_calibration()
+    print("ℹ 校準檔案載入已停用，使用即時校準功能")
     
     # 校準重力
     calibrate_gravity()

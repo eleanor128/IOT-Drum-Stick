@@ -92,82 +92,21 @@
             bottom: 20px;
             left: 20px;
             padding: 15px 30px;
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            background: linear-gradient(135deg, #4CAF50, #66bb6a);
             border: none;
             border-radius: 10px;
-            color: #000;
+            color: #fff;
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
             transition: all 0.3s;
             z-index: 100;
         }
 
         #reset-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
-        }
-
-        .calibrate-panel {
-            position: absolute;
-            bottom: 20px;
-            right: 200px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #4CAF50;
-            z-index: 100;
-            min-width: 250px;
-        }
-
-        .calibrate-panel h3 {
-            color: #4CAF50;
-            font-size: 18px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .calibrate-btn {
-            width: 100%;
-            padding: 12px;
-            margin: 5px 0;
-            background: linear-gradient(135deg, #4CAF50, #66bb6a);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .calibrate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.6);
-        }
-
-        .calibrate-btn.calibrated {
-            background: linear-gradient(135deg, #2196F3, #42a5f5);
-        }
-
-        .calibrate-btn.active {
-            background: linear-gradient(135deg, #ff9800, #ffa726);
-            animation: blink 0.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .calibration-info {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
-            font-size: 11px;
-            color: #aaa;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
         }
 
         #hit-counter {
@@ -246,26 +185,11 @@
             <span class="data-label">溫度:</span>
             <span class="data-value" id="temp">0.0°C</span>
         </div>
-        <div class="calibration-status" id="calibration-status" style="display: none;">
-            ✓ 已校準
-        </div>
     </div>
 
     <div class="drum-hit-indicator" id="hit-indicator"></div>
     
-    <div class="calibrate-panel">
-        <h3>🎯 方向校準</h3>
-        <button class="calibrate-btn" data-direction="center" id="btn-center">📍 中心位置</button>
-        <button class="calibrate-btn" data-direction="left" id="btn-left">⬅️ 左側鼓</button>
-        <button class="calibrate-btn" data-direction="right" id="btn-right">➡️ 右側鼓</button>
-        <button class="calibrate-btn" data-direction="front" id="btn-front">⬆️ 前方鼓</button>
-        <button class="calibrate-btn" data-direction="back" id="btn-back">⬇️ 後方鼓</button>
-        <div class="calibration-info">
-            <div id="calibration-status-text">未開始校準</div>
-        </div>
-    </div>
-    
-    <button id="reset-btn">🔄 重置所有</button>
+    <button id="reset-btn">🎯 校準中心點</button>
     
     <div id="hit-counter">擊打次數: <span id="hit-count">0</span></div>
 
@@ -291,16 +215,11 @@
         let drumSoundBuffer;
         let audioInitialized = false;
         
-        // 校準系統
+        // 校準系統 - 簡化為只記錄中心點
         let calibrationData = {
-            center: null,
-            left: null,
-            right: null,
-            front: null,
-            back: null
+            center: null
         };
         let currentAngles = { roll: 0, pitch: 0, yaw: 0 };
-        let currentCalibrating = null; // 當前正在校準的方向
 
         function init() {
             console.log('🎬 開始初始化 Three.js...');
@@ -448,37 +367,6 @@
             }
         }
         
-        function detectHitDirection() {
-            if (!calibrationData.center) return 'unknown';
-            
-            // 計算相對於中心點的角度差異
-            const relativeRoll = currentAngles.roll - calibrationData.center.roll;
-            const relativePitch = currentAngles.pitch - calibrationData.center.pitch;
-            const relativeYaw = currentAngles.yaw - calibrationData.center.yaw;
-            
-            // 如果有校準數據，找出最接近的方向
-            let closestDirection = 'center';
-            let minDistance = Infinity;
-            
-            for (let direction in calibrationData) {
-                if (direction === 'center' || !calibrationData[direction]) continue;
-                
-                const data = calibrationData[direction];
-                const distance = Math.sqrt(
-                    Math.pow(currentAngles.roll - data.roll, 2) +
-                    Math.pow(currentAngles.pitch - data.pitch, 2) +
-                    Math.pow(currentAngles.yaw - data.yaw, 2)
-                );
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestDirection = direction;
-                }
-            }
-            
-            return closestDirection;
-        }
-        
         function updateDrumHit(acceleration) {
             const totalAccel = Math.sqrt(
                 acceleration.x ** 2 + 
@@ -491,10 +379,6 @@
                 lastHitTime = now;
                 hitCount++;
                 document.getElementById('hit-count').textContent = hitCount;
-                
-                // 判斷擊打方向
-                const direction = detectHitDirection();
-                console.log(`🥁 擊打方向: ${direction}`);
                 
                 // 計算擊打強度（0-1）
                 const intensity = Math.min(1.0, totalAccel / 30.0);
@@ -509,15 +393,9 @@
                     indicator.classList.remove('active');
                 }, 500);
                 
-                // 根據方向點亮對應的鼓
-                const drumIndex = getDrumIndexByDirection(direction);
-                if (drumIndex !== -1 && drums[drumIndex]) {
-                    flashDrum(drums[drumIndex]);
-                } else {
-                    // 如果沒有校準或找不到，隨機點亮
-                    const randomDrum = drums[Math.floor(Math.random() * drums.length)];
-                    flashDrum(randomDrum);
-                }
+                // 隨機點亮一個鼓
+                const randomDrum = drums[Math.floor(Math.random() * drums.length)];
+                flashDrum(randomDrum);
                 
                 // 鼓棒震動效果
                 if (drumStick) {
@@ -530,44 +408,29 @@
             }
         }
         
-        function getDrumIndexByDirection(direction) {
-            // 根據方向映射到鼓的索引
-            const directionMap = {
-                'center': 0,  // snare (中心)
-                'left': 1,    // tom1 (左前)
-                'right': 2,   // tom2 (右前)
-                'front': 3,   // tom3 (右側)
-                'back': 4     // tom4 (左後)
-            };
-            return directionMap[direction] !== undefined ? directionMap[direction] : -1;
-        }
-        
         function updateDrumStickOrientation(roll, pitch, yaw) {
             if (!drumStick) return;
             
             // 儲存當前角度
             currentAngles = { roll, pitch, yaw };
             
-            // 如果已校準中心點，計算相對角度
-            let effectiveRoll = roll;
-            let effectivePitch = pitch;
-            let effectiveYaw = yaw;
-            
-            if (calibrationData.center) {
-                effectiveRoll = roll - calibrationData.center.roll;
-                effectivePitch = pitch - calibrationData.center.pitch;
-                effectiveYaw = yaw - calibrationData.center.yaw;
-            }
-            
             // 將角度轉換為弧度
-            const rollRad = effectiveRoll * Math.PI / 180;
-            const pitchRad = effectivePitch * Math.PI / 180;
-            const yawRad = effectiveYaw * Math.PI / 180;
+            const rollRad = roll * Math.PI / 180;
+            const pitchRad = pitch * Math.PI / 180;
+            const yawRad = yaw * Math.PI / 180;
             
-            // 組合旋轉：基礎旋轉(90度) + MPU6050姿態
-            drumStick.rotation.x = Math.PI / 2 + pitchRad;  // Pitch 控制上下揮動
-            drumStick.rotation.y = yawRad;                   // Yaw 控制左右轉動
-            drumStick.rotation.z = rollRad;                  // Roll 控制旋轉
+            // 設定旋轉（保持基礎旋轉，讓尖端朝前）
+            drumStick.rotation.x = Math.PI / 2 + pitchRad;
+            drumStick.rotation.y = yawRad;
+            drumStick.rotation.z = rollRad;
+            
+            // 根據角度移動鼓棒位置（在水平面上移動）
+            // Yaw 控制左右 (X軸)，Pitch 控制前後 (Z軸)
+            const moveScale = 0.05; // 移動比例
+            drumStick.position.x = yaw * moveScale;
+            drumStick.position.z = -pitch * moveScale; // 負號是因為 Z 軸方向
+            // Y 軸保持固定高度
+            drumStick.position.y = 1.5;
         }
 
         function createDrumKit() {
@@ -705,37 +568,6 @@
                 document.removeEventListener('click', unlockAudio);
             }, { once: true });
         });
-        
-        // 接收伺服器端的校準數據
-        socket.on('calibration_loaded', function(data) {
-            console.log('📥 收到伺服器端的校準數據:', data);
-            
-            if (data.calibration) {
-                // 自動套用校準數據
-                calibrationData = data.calibration;
-                
-                // 更新UI
-                for (let direction in calibrationData) {
-                    const btn = document.querySelector(`[data-direction="${direction}"]`);
-                    if (btn) {
-                        btn.classList.add('calibrated');
-                        const currentText = btn.textContent;
-                        if (!currentText.includes('✓')) {
-                            btn.textContent = '✓' + currentText.substring(currentText.indexOf(' '));
-                        }
-                    }
-                }
-                
-                updateCalibrationStatus();
-                
-                // 顯示通知
-                const statusText = document.getElementById('calibration-status-text');
-                statusText.textContent = `✓ 已載入校準 (${data.timestamp || '未知時間'})`;
-                statusText.style.color = '#4CAF50';
-                
-                console.log('✓ 校準數據已自動套用');
-            }
-        });
 
         socket.on('disconnect', () => {
             console.log('✗ WebSocket 已斷線');
@@ -743,85 +575,21 @@
             document.getElementById('status').className = 'disconnected';
         });
 
-        // 校準按鈕事件處理
-        document.querySelectorAll('.calibrate-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const direction = this.dataset.direction;
-                
-                // 記錄當前姿態
-                calibrationData[direction] = {
-                    roll: currentAngles.roll,
-                    pitch: currentAngles.pitch,
-                    yaw: currentAngles.yaw
-                };
-                
-                // 更新UI
-                this.classList.add('calibrated');
-                this.textContent = this.textContent.replace('️', '✓');
-                
-                // 更新狀態顯示
-                updateCalibrationStatus();
-                
-                console.log(`🎯 ${direction} 校準完成:`, calibrationData[direction]);
-            });
-        });
-        
-        function updateCalibrationStatus() {
-            let calibratedCount = 0;
-            for (let dir in calibrationData) {
-                if (calibrationData[dir]) calibratedCount++;
-            }
-            
-            const statusText = document.getElementById('calibration-status-text');
-            if (calibratedCount === 0) {
-                statusText.textContent = '未開始校準';
-                statusText.style.color = '#aaa';
-            } else if (calibratedCount === 5) {
-                statusText.textContent = `✓ 全部完成 (${calibratedCount}/5)`;
-                statusText.style.color = '#4CAF50';
-            } else {
-                statusText.textContent = `進行中... (${calibratedCount}/5)`;
-                statusText.style.color = '#ff9800';
-            }
-        }
-        
         document.getElementById('reset-btn').addEventListener('click', function() {
+            // 發送重置請求到伺服器，伺服器會記錄當前姿態作為 offset
             socket.emit('reset');
+            
+            // 重置擊打次數
             hitCount = 0;
             document.getElementById('hit-count').textContent = '0';
             
-            // 重置所有校準
-            calibrationData = {
-                center: null,
-                left: null,
-                right: null,
-                front: null,
-                back: null
-            };
+            console.log('🎯 已傳送校準請求');
             
-            // 重置UI
-            document.querySelectorAll('.calibrate-btn').forEach(btn => {
-                btn.classList.remove('calibrated');
-                const direction = btn.dataset.direction;
-                const icons = {
-                    'center': '📍',
-                    'left': '⬅️',
-                    'right': '➡️',
-                    'front': '⬆️',
-                    'back': '⬇️'
-                };
-                const labels = {
-                    'center': '中心位置',
-                    'left': '左側鼓',
-                    'right': '右側鼓',
-                    'front': '前方鼓',
-                    'back': '後方鼓'
-                };
-                btn.textContent = `${icons[direction]} ${labels[direction]}`;
-            });
-            
-            updateCalibrationStatus();
-            console.log('🔄 所有校準已重置');
+            // 顯示回饋
+            this.textContent = '✓ 已校準';
+            setTimeout(() => {
+                this.textContent = '🎯 校準中心點';
+            }, 2000);
         });
 
         init();
