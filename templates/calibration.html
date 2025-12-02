@@ -728,13 +728,17 @@
             pitch = (pitch + rotationOffset.pitch) * Math.PI / 180;
             yaw = (yaw + rotationOffset.yaw) * Math.PI / 180;
 
-            // 基礎旋轉 (讓鼓棒水平)
-            const baseRotation = Math.PI / 2;
-
+            // Three.js 旋轉邏輯
+            // 當 pitch=-84.8° 且加上 offset=84.8° 後，pitch=0（水平）
+            // 鼓棒模型預設是垂直的（沿 Y 軸），需要旋轉到水平
+            
+            // 設定旋轉順序為 YXZ (Yaw -> Pitch -> Roll)
+            drumStick.rotation.order = 'YXZ';
+            
             drumStick.rotation.set(
-                baseRotation + pitch,
-                yaw,
-                roll
+                pitch,      // X 軸旋轉（俯仰）- 控制上下
+                yaw,        // Y 軸旋轉（偏航）- 控制左右轉向
+                roll        // Z 軸旋轉（橫滾）- 控制翻滾
             );
         }
 
@@ -930,11 +934,11 @@
 
         // 預設：水平指向前按鈕
         document.getElementById('preset-horizontal-btn').addEventListener('click', () => {
-            // 根據測量數據設定偏移（水平指向前作為零點）
-            // 測量值: roll=-4.2, pitch=-84.8, yaw=7.2
-            rotationOffset.roll = 4.2;   // 反向偏移
-            rotationOffset.pitch = 84.8; // 反向偏移
-            rotationOffset.yaw = -7.2;   // 反向偏移
+            // 根據最新測量數據設定偏移（水平指向前作為零點）
+            // 測量值: roll=-3.9, pitch=-84.8, yaw=12.2
+            rotationOffset.roll = 3.9;    // 反向偏移
+            rotationOffset.pitch = 84.8;  // 反向偏移
+            rotationOffset.yaw = -12.2;   // 反向偏移
 
             // 更新滑桿
             document.getElementById('rotation-roll').value = rotationOffset.roll;
