@@ -305,19 +305,19 @@
     <div id="adjustment-panel">
         <h4>🎛️ 鼓棒微調</h4>
         <div class="adjustment-control">
-            <label>左右靈敏度 (X): <span id="scale-x-value">0.03</span></label>
-            <input type="range" id="scale-x" min="-0.1" max="0.1" step="0.005" value="0.03">
+            <label>前後擺動靈敏度: <span id="scale-x-value">1.0</span></label>
+            <input type="range" id="scale-x" min="0.1" max="3.0" step="0.1" value="1.0">
         </div>
         <div class="adjustment-control">
-            <label>前後靈敏度 (Z): <span id="scale-z-value">0.03</span></label>
-            <input type="range" id="scale-z" min="-0.1" max="0.1" step="0.005" value="0.03">
+            <label>左右擺動靈敏度: <span id="scale-z-value">1.0</span></label>
+            <input type="range" id="scale-z" min="0.1" max="3.0" step="0.1" value="1.0">
         </div>
         <div class="adjustment-control">
             <label>高度 (Y): <span id="height-y-value">1.5</span></label>
             <input type="range" id="height-y" min="0.5" max="3.0" step="0.1" value="1.5">
         </div>
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; font-size: 10px; color: #888;">
-            座標軸: 🔴紅=X 🟢綠=Y 🔵藍=Z
+            鼓棒固定在中心，只旋轉不移動
         </div>
     </div>
 
@@ -382,14 +382,14 @@
                     
                     // 恢復調整參數
                     if (settings.adjustments) {
-                        adjustments.scaleX = settings.adjustments.scaleX || 0.03;
-                        adjustments.scaleZ = settings.adjustments.scaleZ || 0.03;
+                        adjustments.scaleX = settings.adjustments.scaleX || 1.0;
+                        adjustments.scaleZ = settings.adjustments.scaleZ || 1.0;
                         adjustments.heightY = settings.adjustments.heightY || 1.5;
                         
                         document.getElementById('scale-x').value = adjustments.scaleX;
-                        document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(3);
+                        document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(1);
                         document.getElementById('scale-z').value = adjustments.scaleZ;
-                        document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(3);
+                        document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(1);
                         document.getElementById('height-y').value = adjustments.heightY;
                         document.getElementById('height-y-value').textContent = adjustments.heightY.toFixed(1);
                     }
@@ -621,20 +621,20 @@
         
         // 即時調整參數
         let adjustments = {
-            scaleX: 0.03,  // 反轉 X 軸方向
-            scaleZ: 0.03,
-            heightY: 1.5
+            scaleX: 1.0,  // 前後擺動靈敏度
+            scaleZ: 1.0,  // 左右擺動靈敏度
+            heightY: 1.5  // 高度
         };
         
         document.getElementById('scale-x').addEventListener('input', function(e) {
             adjustments.scaleX = parseFloat(e.target.value);
-            document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(3);
+            document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(1);
             saveSettings();
         });
         
         document.getElementById('scale-z').addEventListener('input', function(e) {
             adjustments.scaleZ = parseFloat(e.target.value);
-            document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(3);
+            document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(1);
             saveSettings();
         });
         
@@ -655,30 +655,19 @@
             const pitchRad = pitch * Math.PI / 180;
             const yawRad = yaw * Math.PI / 180;
             
-            // 設定旋轉（保持基礎旋轉，讓尖端朝前）
-            drumStick.rotation.x = Math.PI / 2 + pitchRad;
-            drumStick.rotation.y = yawRad;
-            drumStick.rotation.z = rollRad;
+            // 鼓棒固定在中心位置，只旋轉不平移
+            // 感測器裝在鼓棒尖端，所以旋轉就是鼓棒尖端的方向變化
+            drumStick.position.set(0, adjustments.heightY, 0);
             
-            // 根據角度移動鼓棒位置（在水平面上移動）
-            // Yaw 控制左右 (X軸)，Pitch 控制前後 (Z軸)
-            
-            // 使用可調整的比例
-            let targetX = yaw * adjustments.scaleX;
-            let targetZ = pitch * adjustments.scaleZ;
-            
-            // 限制移動範圍，防止鼓棒飛出畫面
-            const maxRange = 4.0;
-            targetX = Math.max(-maxRange, Math.min(maxRange, targetX));
-            targetZ = Math.max(-maxRange, Math.min(maxRange, targetZ));
-            
-            drumStick.position.x = targetX;
-            drumStick.position.z = targetZ;
-            drumStick.position.y = adjustments.heightY; // 使用可調整的高度
+            // 設定旋轉（鼓棒的姿態）
+            // 基礎旋轉讓鼓棒尖端朝下
+            drumStick.rotation.x = Math.PI / 2 + pitchRad * adjustments.scaleX;  // 前後傾斜
+            drumStick.rotation.y = yawRad * adjustments.scaleZ;                    // 左右擺動
+            drumStick.rotation.z = rollRad;                                        // 滾轉
             
             // 調試輸出（每30幀輸出一次）
             if (Math.random() < 0.033) {
-                console.log(`🥁 Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}° | Pos: (${targetX.toFixed(2)}, ${targetZ.toFixed(2)})`);
+                console.log(`🥁 Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}°`);
             }
         }
 

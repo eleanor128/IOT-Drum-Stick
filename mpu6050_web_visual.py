@@ -321,7 +321,7 @@ def handle_disconnect():
 @socketio.on('reset')
 def handle_reset():
     """處理重置請求 - 記錄當前姿態作為 offset"""
-    global sensor_data, calibration_config
+    global calibration_config
     
     # 記錄當前姿態作為中心點 offset
     if calibration_config is None:
@@ -333,13 +333,10 @@ def handle_reset():
         'yaw': sensor_data['yaw']
     }
     
-    # 重置姿態角度（相對於 offset）
-    sensor_data['roll'] = 0.0
-    sensor_data['pitch'] = 0.0
-    sensor_data['yaw'] = 0.0
+    # 不要重置 sensor_data 的角度，讓它繼續累積
+    # 只在 calculate_angles() 中減去 offset 來計算相對角度
     
-    emit('sensor_data', sensor_data, broadcast=True)
-    emit('calibration_updated', calibration_config['calibration'], broadcast=True)
+    emit('calibration_updated', {'calibration': calibration_config['calibration']}, broadcast=True)
     print(f'🎯 已校準中心點: Roll={calibration_config["calibration"]["center"]["roll"]:.1f}°, '
           f'Pitch={calibration_config["calibration"]["center"]["pitch"]:.1f}°, '
           f'Yaw={calibration_config["calibration"]["center"]["yaw"]:.1f}°')
