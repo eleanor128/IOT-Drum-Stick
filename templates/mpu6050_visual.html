@@ -194,6 +194,76 @@
             font-size: 14px;
             color: #66bb6a;
         }
+
+        #offset-panel {
+            position: absolute;
+            top: 260px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #FF9800;
+            z-index: 100;
+            min-width: 220px;
+        }
+
+        #offset-panel h4 {
+            color: #FF9800;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+
+        .offset-input-group {
+            margin: 8px 0;
+            font-size: 11px;
+        }
+
+        .offset-input-group label {
+            color: #aaa;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .offset-input-group input[type="number"] {
+            width: 100%;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #666;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .offset-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .offset-buttons button {
+            flex: 1;
+            padding: 8px;
+            background: #FF9800;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .offset-buttons button:hover {
+            background: #FB8C00;
+            transform: translateY(-1px);
+        }
+
+        .offset-buttons button.clear {
+            background: #f44336;
+        }
+
+        .offset-buttons button.clear:hover {
+            background: #e53935;
+        }
     </style>
 </head>
 <body>
@@ -235,16 +305,42 @@
     <div id="adjustment-panel">
         <h4>🎛️ 鼓棒微調</h4>
         <div class="adjustment-control">
-            <label>左右靈敏度: <span id="scale-x-value">0.03</span></label>
+            <label>左右靈敏度 (X): <span id="scale-x-value">0.03</span></label>
             <input type="range" id="scale-x" min="-0.1" max="0.1" step="0.005" value="0.03">
         </div>
         <div class="adjustment-control">
-            <label>前後靈敏度: <span id="scale-z-value">0.03</span></label>
+            <label>前後靈敏度 (Z): <span id="scale-z-value">0.03</span></label>
             <input type="range" id="scale-z" min="-0.1" max="0.1" step="0.005" value="0.03">
         </div>
         <div class="adjustment-control">
-            <label>高度: <span id="height-y-value">1.5</span></label>
+            <label>高度 (Y): <span id="height-y-value">1.5</span></label>
             <input type="range" id="height-y" min="0.5" max="3.0" step="0.1" value="1.5">
+        </div>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; font-size: 10px; color: #888;">
+            座標軸: 🔴紅=X 🟢綠=Y 🔵藍=Z
+        </div>
+    </div>
+
+    <div id="offset-panel">
+        <h4>📐 Offset 校準</h4>
+        <div class="offset-input-group">
+            <label>Roll Offset (°):</label>
+            <input type="number" id="offset-roll" step="0.1" value="0.0">
+        </div>
+        <div class="offset-input-group">
+            <label>Pitch Offset (°):</label>
+            <input type="number" id="offset-pitch" step="0.1" value="0.0">
+        </div>
+        <div class="offset-input-group">
+            <label>Yaw Offset (°):</label>
+            <input type="number" id="offset-yaw" step="0.1" value="0.0">
+        </div>
+        <div class="offset-buttons">
+            <button id="apply-offset-btn" title="套用手動輸入的 offset">✓ 套用</button>
+            <button id="clear-offset-btn" class="clear" title="清除所有 offset">✕ 清除</button>
+        </div>
+        <div style="margin-top: 8px; font-size: 10px; color: #888; text-align: center;">
+            或點擊左下角「校準中心點」自動記錄
         </div>
     </div>
 
@@ -276,7 +372,62 @@
         };
         let currentAngles = { roll: 0, pitch: 0, yaw: 0 };
 
+        // 從 localStorage 載入設定
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('drumStickSettings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    console.log('📂 載入已儲存的設定:', settings);
+                    
+                    // 恢復調整參數
+                    if (settings.adjustments) {
+                        adjustments.scaleX = settings.adjustments.scaleX || 0.03;
+                        adjustments.scaleZ = settings.adjustments.scaleZ || 0.03;
+                        adjustments.heightY = settings.adjustments.heightY || 1.5;
+                        
+                        document.getElementById('scale-x').value = adjustments.scaleX;
+                        document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(3);
+                        document.getElementById('scale-z').value = adjustments.scaleZ;
+                        document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(3);
+                        document.getElementById('height-y').value = adjustments.heightY;
+                        document.getElementById('height-y-value').textContent = adjustments.heightY.toFixed(1);
+                    }
+                    
+                    // 恢復 offset
+                    if (settings.offset) {
+                        calibrationData.center = settings.offset;
+                        document.getElementById('offset-roll').value = settings.offset.roll.toFixed(1);
+                        document.getElementById('offset-pitch').value = settings.offset.pitch.toFixed(1);
+                        document.getElementById('offset-yaw').value = settings.offset.yaw.toFixed(1);
+                        console.log('✓ Offset 已恢復');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 載入設定失敗:', error);
+            }
+        }
+
+        // 儲存設定到 localStorage
+        function saveSettings() {
+            try {
+                const settings = {
+                    adjustments: {
+                        scaleX: adjustments.scaleX,
+                        scaleZ: adjustments.scaleZ,
+                        heightY: adjustments.heightY
+                    },
+                    offset: calibrationData.center
+                };
+                localStorage.setItem('drumStickSettings', JSON.stringify(settings));
+                console.log('💾 設定已儲存');
+            } catch (error) {
+                console.error('❌ 儲存設定失敗:', error);
+            }
+        }
+
         function init() {
+            loadSettings();
             console.log('🎬 開始初始化 Three.js...');
             
             scene = new THREE.Scene();
@@ -305,6 +456,11 @@
             
             createDrumKit();
             createDrumStick();
+            
+            // 添加座標軸輔助線
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            console.log('✓ 座標軸已添加 (紅=X, 綠=Y, 藍=Z)');
             
             // 初始化音效
             initAudio();
@@ -473,16 +629,19 @@
         document.getElementById('scale-x').addEventListener('input', function(e) {
             adjustments.scaleX = parseFloat(e.target.value);
             document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(3);
+            saveSettings();
         });
         
         document.getElementById('scale-z').addEventListener('input', function(e) {
             adjustments.scaleZ = parseFloat(e.target.value);
             document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(3);
+            saveSettings();
         });
         
         document.getElementById('height-y').addEventListener('input', function(e) {
             adjustments.heightY = parseFloat(e.target.value);
             document.getElementById('height-y-value').textContent = adjustments.heightY.toFixed(1);
+            saveSettings();
         });
         
         function updateDrumStickOrientation(roll, pitch, yaw) {
@@ -665,6 +824,24 @@
             document.getElementById('status').className = 'disconnected';
         });
 
+        // 接收伺服器傳來的校準更新
+        socket.on('calibration_updated', (data) => {
+            console.log('📐 收到校準更新:', data);
+            if (data.calibration && data.calibration.center) {
+                calibrationData.center = data.calibration.center;
+                
+                // 更新顯示
+                document.getElementById('offset-roll').value = data.calibration.center.roll.toFixed(1);
+                document.getElementById('offset-pitch').value = data.calibration.center.pitch.toFixed(1);
+                document.getElementById('offset-yaw').value = data.calibration.center.yaw.toFixed(1);
+                
+                // 儲存到 localStorage
+                saveSettings();
+                
+                console.log('✓ Offset 已更新並儲存');
+            }
+        });
+
         document.getElementById('reset-btn').addEventListener('click', function() {
             // 發送重置請求到伺服器，伺服器會記錄當前姿態作為 offset
             socket.emit('reset');
@@ -680,6 +857,41 @@
             setTimeout(() => {
                 this.textContent = '🎯 校準中心點';
             }, 2000);
+        });
+
+        // 手動套用 offset
+        document.getElementById('apply-offset-btn').addEventListener('click', function() {
+            const roll = parseFloat(document.getElementById('offset-roll').value) || 0;
+            const pitch = parseFloat(document.getElementById('offset-pitch').value) || 0;
+            const yaw = parseFloat(document.getElementById('offset-yaw').value) || 0;
+            
+            calibrationData.center = { roll, pitch, yaw };
+            saveSettings();
+            
+            console.log('✓ 已套用手動 offset:', calibrationData.center);
+            
+            // 顯示回饋
+            this.textContent = '✓ 已套用';
+            setTimeout(() => {
+                this.textContent = '✓ 套用';
+            }, 1000);
+        });
+
+        // 清除 offset
+        document.getElementById('clear-offset-btn').addEventListener('click', function() {
+            calibrationData.center = null;
+            document.getElementById('offset-roll').value = '0.0';
+            document.getElementById('offset-pitch').value = '0.0';
+            document.getElementById('offset-yaw').value = '0.0';
+            saveSettings();
+            
+            console.log('✓ 已清除 offset');
+            
+            // 顯示回饋
+            this.textContent = '✓ 已清除';
+            setTimeout(() => {
+                this.textContent = '✕ 清除';
+            }, 1000);
         });
 
         init();
