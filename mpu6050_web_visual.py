@@ -36,13 +36,13 @@ sensor_data = {
 
 # 互補濾波器參數
 alpha = 0.98
-dt = 0.01
+dt = 0.005  # 5ms = 200Hz (原本 10ms = 100Hz)
 
 # 打擊偵測參數
 gravity_baseline = 1.0
 unit_scale = 1.0
 threshold = 2.0  # 加速度閾值 (g)
-cooldown = 0.1   # 冷卻時間 (秒)
+cooldown = 0.05  # 冷卻時間 (秒) - 降低以提高響應速度
 last_hit_time = 0
 hit_count = 0
 max_acceleration = 0.0
