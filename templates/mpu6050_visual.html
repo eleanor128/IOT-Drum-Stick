@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MPU6050 爵士鼓視覺化</title>
+    <title>🥁 MPU6050 爵士鼓視覺化</title>
     <style>
         * {
             margin: 0;
@@ -184,48 +184,6 @@
         let scene, camera, renderer, cube, axes;
         let socket;
 
-        function initThreeJS() {
-            // 場景
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e);
-
-            // 相機
-            const container = document.getElementById('canvas-container');
-            camera = new THREE.PerspectiveCamera(
-                45,
-                container.clientWidth / container.clientHeight,
-                0.1,
-                1000
-            );
-            camera.position.set(5, 5, 10);
-            camera.lookAt(0, 0, 0);
-
-            // 渲染器
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            container.appendChild(renderer.domElement);
-
-            // 光源
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
-
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // WebSocket 連接
-        const socket = io();
-        
-        // Three.js 場景設置
-        let scene, camera, renderer;
-        let drums = [];
-        let hitCount = 0;
-        let lastHitTime = 0;
-        const HIT_THRESHOLD = 15.0; // 加速度閾值（m/s²）
-        const HIT_COOLDOWN = 300; // 防抖動時間（毫秒）
 
         function init() {
             // 創建場景
@@ -387,8 +345,64 @@
             setTimeout(() => {
                 mesh.material.emissiveIntensity = originalIntensity;
             }, 200);
+        }   window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            animate();
         }
 
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function updateOrientation(roll, pitch, yaw) {
+            // Three.js 使用弧度
+            const rollRad = roll * Math.PI / 180;
+            const pitchRad = pitch * Math.PI / 180;
+            const yawRad = yaw * Math.PI / 180;
+
+            // 設定立方體姿態 (注意軸向對應)
+            cube.rotation.set(-pitchRad, yawRad, -rollRad, 'XYZ');
+        }
+
+        function updateUI(data) {
+            // 姿態角度
+            document.getElementById('roll').textContent = data.roll.toFixed(2) + '°';
+            document.getElementById('pitch').textContent = data.pitch.toFixed(2) + '°';
+            document.getElementById('yaw').textContent = data.yaw.toFixed(2) + '°';
+
+            // 加速度計
+            document.getElementById('accel-x').textContent = data.accel.x.toFixed(2);
+            document.getElementById('accel-y').textContent = data.accel.y.toFixed(2);
+            document.getElementById('accel-z').textContent = data.accel.z.toFixed(2);
+
+            // 陀螺儀
+            document.getElementById('gyro-x').textContent = data.gyro.x.toFixed(1);
+            document.getElementById('gyro-y').textContent = data.gyro.y.toFixed(1);
+            document.getElementById('gyro-z').textContent = data.gyro.z.toFixed(1);
+
+            // 溫度
+            document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
+
+            // 更新 3D 姿態
+            updateOrientation(data.roll, data.pitch, data.yaw);
+        }
+
+        function initWebSocket() {
+            socket = io();
+
+        socket.on('connect', () => {
+            console.log('WebSocket 已連接');
+            document.getElementById('status').textContent = '已連接';
+            document.getElementById('status').className = 'connected';
+        });
+
+        socket.on('disconnect', () => {
+            console.log('WebSocket 已斷線');
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
