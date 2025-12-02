@@ -705,6 +705,37 @@
                 document.removeEventListener('click', unlockAudio);
             }, { once: true });
         });
+        
+        // 接收伺服器端的校準數據
+        socket.on('calibration_loaded', function(data) {
+            console.log('📥 收到伺服器端的校準數據:', data);
+            
+            if (data.calibration) {
+                // 自動套用校準數據
+                calibrationData = data.calibration;
+                
+                // 更新UI
+                for (let direction in calibrationData) {
+                    const btn = document.querySelector(`[data-direction="${direction}"]`);
+                    if (btn) {
+                        btn.classList.add('calibrated');
+                        const currentText = btn.textContent;
+                        if (!currentText.includes('✓')) {
+                            btn.textContent = '✓' + currentText.substring(currentText.indexOf(' '));
+                        }
+                    }
+                }
+                
+                updateCalibrationStatus();
+                
+                // 顯示通知
+                const statusText = document.getElementById('calibration-status-text');
+                statusText.textContent = `✓ 已載入校準 (${data.timestamp || '未知時間'})`;
+                statusText.style.color = '#4CAF50';
+                
+                console.log('✓ 校準數據已自動套用');
+            }
+        });
 
         socket.on('disconnect', () => {
             console.log('✗ WebSocket 已斷線');

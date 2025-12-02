@@ -2,6 +2,7 @@
 MPU6050 Web-based 3D Visualization with Hit Detection
 透過 Flask 和 Three.js 在瀏覽器即時顯示 MPU6050 感測器的 3D 姿態
 並偵測鼓棒打擊動作，在網頁端播放音效
+支援讀取校準數據
 """
 
 from flask import Flask, render_template, jsonify
@@ -10,6 +11,8 @@ import mpu6050
 import math
 import time
 import threading
+import json
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mpu6050-secret-key'
@@ -17,6 +20,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 全域變數
 sensor = None
+calibration_config = None  # 校準配置
 
 sensor_data = {
     'roll': 0.0,
@@ -52,6 +56,38 @@ def init_sensor():
         return True
     except Exception as e:
         print(f"✗ MPU6050 初始化失敗: {e}")
+        return False
+
+def load_calibration():
+    """載入校準數據"""
+    global calibration_config
+    
+    config_file = 'mpu6050_calibration.json'
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r') as f:
+                calibration_config = json.load(f)
+            print(f"✓ 已載入校準數據: {config_file}")
+            print(f"  時間戳記: {calibration_config.get('timestamp', 'Unknown')}")
+            
+            if 'calibration' in calibration_config:
+                cal_data = calibration_config['calibration']
+                print(f"  校準方向: {', '.join(cal_data.keys())}")
+                
+                # 發送到前端
+                socketio.emit('calibration_loaded', {
+                    'calibration': cal_data,
+                    'timestamp': calibration_config.get('timestamp')
+                }, broadcast=True)
+            
+            return True
+        except Exception as e:
+            print(f"⚠ 載入校準數據失敗: {e}")
+            calibration_config = None
+            return False
+    else:
+        print(f"ℹ 未找到校準檔案 ({config_file})")
+        print(f"  執行 python3 mpu6050_debug.py 進行校準")
         return False
 
 def calibrate_gravity(samples=50):
@@ -200,11 +236,33 @@ def reset_orientation():
     sensor_data['yaw'] = 0.0
     return jsonify({'status': 'ok', 'message': '姿態已重置'})
 
+@app.route('/api/calibration')
+def get_calibration():
+    """API: 取得校準數據"""
+    if calibration_config and 'calibration' in calibration_config:
+        return jsonify({
+            'status': 'ok',
+            'calibration': calibration_config['calibration'],
+            'timestamp': calibration_config.get('timestamp')
+        })
+    else:
+        return jsonify({
+            'status': 'no_calibration',
+            'message': '未找到校準數據'
+        })
+
 @socketio.on('connect')
 def handle_connect():
     """WebSocket 連接"""
     print('客戶端已連接')
     emit('sensor_data', sensor_data)
+    
+    # 自動發送校準數據給新連接的客戶端
+    if calibration_config and 'calibration' in calibration_config:
+        emit('calibration_loaded', {
+            'calibration': calibration_config['calibration'],
+            'timestamp': calibration_config.get('timestamp')
+        })
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -234,6 +292,9 @@ if __name__ == '__main__':
         print("  2. I2C 已啟用 (sudo raspi-config)")
         print("  3. 已安裝 i2c-tools 和 python3-smbus")
         exit(1)
+    
+    # 載入校準數據
+    load_calibration()
     
     # 校準重力
     calibrate_gravity()
