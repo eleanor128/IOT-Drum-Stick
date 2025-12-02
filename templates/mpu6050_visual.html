@@ -72,7 +72,6 @@
             background: radial-gradient(circle, #ff0000, #8b0000);
             border-radius: 50%;
             display: none;
-            animation: pulse 0.5s ease-out;
             z-index: 100;
             border: 3px solid #ffd700;
             box-shadow: 0 0 30px #ff0000;
@@ -80,6 +79,7 @@
 
         .drum-hit-indicator.active {
             display: block;
+            animation: pulse 0.5s ease-out;
         }
 
         @keyframes pulse {
@@ -180,6 +180,8 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        console.log('🎬 開始載入頁面...');
+        
         // WebSocket 連接
         const socket = io();
         
@@ -188,75 +190,59 @@
         let drums = [];
         let hitCount = 0;
         let lastHitTime = 0;
-        const HIT_THRESHOLD = 15.0; // 加速度閾值（m/s²）
-        const HIT_COOLDOWN = 300; // 防抖動時間（毫秒）
+        const HIT_THRESHOLD = 15.0;
+        const HIT_COOLDOWN = 300;
 
         function init() {
             console.log('🎬 開始初始化 Three.js...');
             
-            // 創建場景
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1a1a1a);
             console.log('✓ 場景創建完成');
             
-            // 創建相機（從上往下看）
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 8, 0);
             camera.lookAt(0, 0, 0);
             console.log('✓ 相機設置完成');
             
-            // 創建渲染器
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             document.getElementById('container').appendChild(renderer.domElement);
             console.log('✓ 渲染器創建完成');
             
-            // 添加環境光
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
-            console.log('✓ 環境光添加完成');
             
-            // 添加聚光燈
             const spotLight = new THREE.SpotLight(0xffffff, 1);
             spotLight.position.set(0, 15, 0);
             spotLight.castShadow = true;
             scene.add(spotLight);
-            console.log('✓ 聚光燈添加完成');
+            console.log('✓ 光源添加完成');
             
-            // 創建爵士鼓套組
             createDrumKit();
-            console.log('✓ 爵士鼓套組創建完成');
             
-            // 窗口大小調整
             window.addEventListener('resize', onWindowResize);
             
-            // 開始動畫循環
             animate();
             console.log('🎬 Three.js 初始化完成！');
         }
 
         function createDrumKit() {
             console.log('🥁 開始創建爵士鼓...');
-            // 鼓的配置：位置、大小、顏色
             const drumConfig = [
-                // 中央主鼓（橘色）
                 { x: 0, z: 0, radius: 1.2, color: 0xff8c00, name: 'snare' },
-                // 上方兩個鼓（綠色）
                 { x: -1.5, z: -2, radius: 0.8, color: 0x00ff00, name: 'tom1' },
                 { x: 1.5, z: -2, radius: 0.8, color: 0x00ff00, name: 'tom2' },
-                // 右下方鼓（綠色）
                 { x: 2, z: 1, radius: 0.9, color: 0x32cd32, name: 'tom3' },
-                // 左下方鼓（黃綠色）
                 { x: -2.5, z: 0.5, radius: 0.7, color: 0xadff2f, name: 'tom4' },
-                // 左右兩側的鈸（金黃色）
                 { x: -3.5, z: -1, radius: 1.0, color: 0xffd700, name: 'cymbal1', isCymbal: true },
                 { x: 3.5, z: -1, radius: 1.0, color: 0xffd700, name: 'cymbal2', isCymbal: true },
             ];
 
             drumConfig.forEach(config => {
                 const drum = createDrum(config.x, config.z, config.radius, config.color, config.isCymbal);
-                drum.userData = { name: config.name, config: config };
+                drum.userData = { name: config.name };
                 drums.push(drum);
                 scene.add(drum);
             });
@@ -267,7 +253,6 @@
             const group = new THREE.Group();
             
             if (isCymbal) {
-                // 鈸的形狀（扁平圓盤）
                 const geometry = new THREE.CylinderGeometry(radius, radius, 0.05, 32);
                 const material = new THREE.MeshStandardMaterial({
                     color: color,
@@ -281,7 +266,6 @@
                 cymbal.receiveShadow = true;
                 group.add(cymbal);
             } else {
-                // 鼓身
                 const drumHeight = 0.3;
                 const bodyGeometry = new THREE.CylinderGeometry(radius, radius, drumHeight, 32);
                 const bodyMaterial = new THREE.MeshStandardMaterial({
@@ -293,7 +277,6 @@
                 body.position.y = -drumHeight / 2;
                 group.add(body);
                 
-                // 鼓面
                 const headGeometry = new THREE.CircleGeometry(radius, 32);
                 const headMaterial = new THREE.MeshStandardMaterial({
                     color: color,
@@ -307,7 +290,6 @@
                 head.receiveShadow = true;
                 group.add(head);
                 
-                // 邊框
                 const rimGeometry = new THREE.TorusGeometry(radius, 0.05, 16, 32);
                 const rimMaterial = new THREE.MeshStandardMaterial({
                     color: 0xc0c0c0,
@@ -324,28 +306,24 @@
         }
 
         function updateDrumHit(acceleration) {
-            // 計算總加速度
             const totalAccel = Math.sqrt(
                 acceleration.x ** 2 + 
                 acceleration.y ** 2 + 
                 acceleration.z ** 2
             );
             
-            // 檢測擊打
             const now = Date.now();
             if (totalAccel > HIT_THRESHOLD && (now - lastHitTime) > HIT_COOLDOWN) {
                 lastHitTime = now;
                 hitCount++;
                 document.getElementById('hit-count').textContent = hitCount;
                 
-                // 顯示擊打指示器
                 const indicator = document.getElementById('hit-indicator');
                 indicator.classList.add('active');
                 setTimeout(() => {
                     indicator.classList.remove('active');
                 }, 500);
                 
-                // 隨機讓一個鼓發光
                 const randomDrum = drums[Math.floor(Math.random() * drums.length)];
                 flashDrum(randomDrum);
             }
@@ -356,70 +334,13 @@
             if (!mesh || !mesh.material) return;
             
             const originalIntensity = mesh.material.emissiveIntensity;
-            
             mesh.material.emissiveIntensity = 1.0;
             
             setTimeout(() => {
                 mesh.material.emissiveIntensity = originalIntensity;
             }, 200);
-        }   window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-
-            animate();
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        function updateOrientation(roll, pitch, yaw) {
-            // Three.js 使用弧度
-            const rollRad = roll * Math.PI / 180;
-            const pitchRad = pitch * Math.PI / 180;
-            const yawRad = yaw * Math.PI / 180;
-
-            // 設定立方體姿態 (注意軸向對應)
-            cube.rotation.set(-pitchRad, yawRad, -rollRad, 'XYZ');
-        }
-
-        function updateUI(data) {
-            // 姿態角度
-            document.getElementById('roll').textContent = data.roll.toFixed(2) + '°';
-            document.getElementById('pitch').textContent = data.pitch.toFixed(2) + '°';
-            document.getElementById('yaw').textContent = data.yaw.toFixed(2) + '°';
-
-            // 加速度計
-            document.getElementById('accel-x').textContent = data.accel.x.toFixed(2);
-            document.getElementById('accel-y').textContent = data.accel.y.toFixed(2);
-            document.getElementById('accel-z').textContent = data.accel.z.toFixed(2);
-
-            // 陀螺儀
-            document.getElementById('gyro-x').textContent = data.gyro.x.toFixed(1);
-            document.getElementById('gyro-y').textContent = data.gyro.y.toFixed(1);
-            document.getElementById('gyro-z').textContent = data.gyro.z.toFixed(1);
-
-            // 溫度
-            document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
-
-            // 更新 3D 姿態
-            updateOrientation(data.roll, data.pitch, data.yaw);
-        }
-
-        function initWebSocket() {
-            socket = io();
-
-        socket.on('connect', () => {
-            console.log('WebSocket 已連接');
-            document.getElementById('status').textContent = '已連接';
-            document.getElementById('status').className = 'connected';
-        });
-
-        socket.on('disconnect', () => {
-            console.log('WebSocket 已斷線');
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
@@ -431,7 +352,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // 接收感測器數據
         socket.on('sensor_data', function(data) {
             document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
             document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
@@ -445,29 +365,28 @@
             document.getElementById('accel').textContent = totalAccel.toFixed(2) + ' m/s²';
             document.getElementById('temp').textContent = data.temperature.toFixed(1) + '°C';
             
-            // 檢測擊打
             updateDrumHit(data.accel);
         });
 
         socket.on('connect', () => {
-            console.log('WebSocket 已連接');
+            console.log('✓ WebSocket 已連接');
             document.getElementById('status').textContent = '已連接';
             document.getElementById('status').className = 'connected';
         });
 
         socket.on('disconnect', () => {
-            console.log('WebSocket 已斷線');
+            console.log('✗ WebSocket 已斷線');
             document.getElementById('status').textContent = '未連接';
             document.getElementById('status').className = 'disconnected';
         });
 
-        // 重置按鈕
         document.getElementById('reset-btn').addEventListener('click', function() {
             socket.emit('reset');
             hitCount = 0;
             document.getElementById('hit-count').textContent = '0';
         });
 
-        // 初始化
         init();
     </script>
+</body>
+</html>
