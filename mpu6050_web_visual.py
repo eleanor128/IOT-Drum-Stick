@@ -62,25 +62,72 @@ def load_calibration():
     """載入校準數據"""
     global calibration_config
     
-    config_file = 'mpu6050_calibration.json'
+    # 嘗試讀取新的 drumstick_calibration.json
+    drumstick_file = 'drumstick_calibration.json'
+    legacy_file = 'mpu6050_calibration.json'
+    
+    config_file = drumstick_file if os.path.exists(drumstick_file) else legacy_file
+    
     if os.path.exists(config_file):
         try:
             with open(config_file, 'r') as f:
-                calibration_config = json.load(f)
-            print(f"✓ 已載入校準數據: {config_file}")
-            print(f"  時間戳記: {calibration_config.get('timestamp', 'Unknown')}")
+                raw_data = json.load(f)
             
-            if 'calibration' in calibration_config:
-                cal_data = calibration_config['calibration']
-                print(f"  校準方向: {', '.join(cal_data.keys())}")
+            # 處理新格式（drumstick_calibration.json）
+            if 'positions' in raw_data:
+                print(f"✓ 已載入鼓棒校準數據: {config_file}")
+                print(f"  校準時間: {raw_data.get('calibration_date', 'Unknown')}")
+                print(f"  鼓棒: {raw_data.get('drumstick', 'Unknown')}")
+                
+                # 從 statistics 提取平均值，計算姿態
+                calibration_config = {
+                    'calibration': {},
+                    'timestamp': raw_data.get('calibration_date'),
+                    'drumstick': raw_data.get('drumstick')
+                }
+                
+                for direction, data in raw_data['positions'].items():
+                    if 'statistics' in data:
+                        stats = data['statistics']
+                        accel_stats = stats['accelerometer']
+                        
+                        # 從加速度計計算 roll 和 pitch
+                        # Roll = atan2(y, z)
+                        # Pitch = atan2(-x, sqrt(y^2 + z^2))
+                        mean_x = accel_stats['x']['mean']
+                        mean_y = accel_stats['y']['mean']
+                        mean_z = accel_stats['z']['mean']
+                        
+                        roll = math.atan2(mean_y, mean_z) * 180 / math.pi
+                        pitch = math.atan2(-mean_x, math.sqrt(mean_y**2 + mean_z**2)) * 180 / math.pi
+                        yaw = 0  # Yaw 需要陀螺儀積分，這裡簡化處理
+                        
+                        calibration_config['calibration'][direction] = {
+                            'roll': round(roll, 2),
+                            'pitch': round(pitch, 2),
+                            'yaw': round(yaw, 2)
+                        }
+                        
+                        print(f"  {direction}: Roll={roll:.1f}°, Pitch={pitch:.1f}°")
+            
+            # 處理舊格式（mpu6050_calibration.json）
+            elif 'calibration' in raw_data:
+                calibration_config = raw_data
+                print(f"✓ 已載入校準數據: {config_file}")
+                print(f"  時間戳記: {calibration_config.get('timestamp', 'Unknown')}")
+                if 'calibration' in calibration_config:
+                    cal_data = calibration_config['calibration']
+                    print(f"  校準方向: {', '.join(cal_data.keys())}")
             
             return True
         except Exception as e:
             print(f"⚠ 載入校準數據失敗: {e}")
+            import traceback
+            traceback.print_exc()
             calibration_config = None
             return False
     else:
-        print(f"ℹ 未找到校準檔案 ({config_file})")
+        print(f"ℹ 未找到校準檔案 ({drumstick_file} 或 {legacy_file})")
         print(f"  執行 python3 mpu6050_debug.py 進行校準")
         return False
 
