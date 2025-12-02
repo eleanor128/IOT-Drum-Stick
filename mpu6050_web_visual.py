@@ -295,6 +295,10 @@ def calibration():
     """參數微調頁面"""
     return render_template('calibration.html')
 
+@app.route('/calibration-advanced')
+def calibration_advanced():
+    """智能校準頁面 - 根據數據分析結果自動校準"""
+    return render_template('calibration_advanced.html')
 
 @app.route('/data-collection')
 def data_collection():

@@ -934,11 +934,12 @@
 
         // 預設：水平指向前按鈕
         document.getElementById('preset-horizontal-btn').addEventListener('click', () => {
-            // 根據最新測量數據設定偏移（水平指向前作為零點）
-            // 測量值: roll=-3.9, pitch=-84.8, yaw=12.2
-            rotationOffset.roll = 3.9;    // 反向偏移
-            rotationOffset.pitch = 84.8;  // 反向偏移
-            rotationOffset.yaw = -12.2;   // 反向偏移
+            // 根據數據分析計算出的最佳校準值
+            // 基於 1730 個樣本點的中位數計算 (2025-12-02)
+            // 目標姿態: Roll=0°, Pitch=-90° (水平), Yaw=0° (指向前)
+            rotationOffset.roll = -8.68;    // 中位數: 8.68° → 校準到 0°
+            rotationOffset.pitch = -69.77;  // 中位數: -20.23° → 校準到 -90°
+            rotationOffset.yaw = -21.60;    // 中位數: 21.60° → 校準到 0°
 
             // 更新滑桿
             document.getElementById('rotation-roll').value = rotationOffset.roll;
@@ -949,7 +950,7 @@
             document.getElementById('rotation-yaw-value').textContent = rotationOffset.yaw.toFixed(1);
 
             updateDrumStick();
-            console.log('✓ 預設校準完成（水平指向前）:', rotationOffset);
+            console.log('✓ 預設校準完成（最佳化校準）:', rotationOffset);
             showFeedback('preset-horizontal-btn', '✓ 已套用');
         });
 
