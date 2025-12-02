@@ -426,7 +426,7 @@
             
             // 根據角度移動鼓棒位置（在水平面上移動）
             // Yaw 控制左右 (X軸)，Pitch 控制前後 (Z軸)
-            const moveScale = 0.05; // 移動比例
+            const moveScale = -0.05; // 移動比例
             drumStick.position.x = yaw * moveScale;
             drumStick.position.z = -pitch * moveScale; // 負號是因為 Z 軸方向
             // Y 軸保持固定高度
