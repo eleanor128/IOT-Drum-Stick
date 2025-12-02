@@ -73,12 +73,6 @@ def load_calibration():
             if 'calibration' in calibration_config:
                 cal_data = calibration_config['calibration']
                 print(f"  校準方向: {', '.join(cal_data.keys())}")
-                
-                # 發送到前端
-                socketio.emit('calibration_loaded', {
-                    'calibration': cal_data,
-                    'timestamp': calibration_config.get('timestamp')
-                }, broadcast=True)
             
             return True
         except Exception as e:
