@@ -105,12 +105,16 @@ public class MPU6050Controller : MonoBehaviour
     {
         isRequesting = true;
         
+        Debug.Log($"[MPU6050] 發送請求到: {apiUrl}");
+        
         using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
         {
             // 設置超時
-            request.timeout = 2;
+            request.timeout = 5;
             
             yield return request.SendWebRequest();
+            
+            Debug.Log($"[MPU6050] 請求完成 - 狀態: {request.result}");
             
             if (request.result == UnityWebRequest.Result.Success)
             {
@@ -118,6 +122,8 @@ public class MPU6050Controller : MonoBehaviour
                 {
                     // 解析 JSON 數據
                     string json = request.downloadHandler.text;
+                    Debug.Log($"[MPU6050] 收到 JSON: {json}");
+                    
                     MPU6050Response response = JsonUtility.FromJson<MPU6050Response>(json);
                     
                     if (response.status == "success")
@@ -137,6 +143,8 @@ public class MPU6050Controller : MonoBehaviour
                         
                         temperature = response.data.temperature;
                         
+                        Debug.Log($"[MPU6050] ✅ 數據更新成功 - Accel: {accelerometer}");
+                        
                         // 根據感測器數據更新旋轉
                         if (enableRotation)
                         {
@@ -144,26 +152,24 @@ public class MPU6050Controller : MonoBehaviour
                         }
                         
                         lastError = "";
-                        
-                        if (showDebugInfo)
-                        {
-                            Debug.Log($"Accel: {accelerometer}, Gyro: {gyroscope}, Temp: {temperature}°C");
-                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[MPU6050] API 回傳 status: {response.status}");
                     }
                 }
                 catch (System.Exception e)
                 {
                     lastError = $"JSON 解析錯誤: {e.Message}";
-                    Debug.LogError(lastError);
+                    Debug.LogError($"[MPU6050] ❌ {lastError}");
+                    Debug.LogError($"[MPU6050] JSON 內容: {request.downloadHandler.text}");
                 }
             }
             else
             {
                 lastError = $"請求失敗: {request.error}";
-                if (showDebugInfo)
-                {
-                    Debug.LogWarning(lastError);
-                }
+                Debug.LogError($"[MPU6050] ❌ {lastError}");
+                Debug.LogError($"[MPU6050] Response Code: {request.responseCode}");
             }
         }
         

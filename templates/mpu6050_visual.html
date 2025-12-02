@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MPU6050 3D Visualization - Drum Stick</title>
+    <title>MPU6050 爵士鼓視覺化</title>
     <style>
         * {
             margin: 0;
@@ -12,98 +12,124 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             overflow: hidden;
+            color: #fff;
         }
 
         #container {
-            display: flex;
+            width: 100vw;
             height: 100vh;
-        }
-
-        #canvas-container {
-            flex: 1;
             position: relative;
         }
 
         #info-panel {
-            width: 350px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 30px;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+            z-index: 100;
+            min-width: 250px;
         }
 
         h1 {
+            color: #ffd700;
             font-size: 24px;
-            margin-bottom: 10px;
-            color: #4fc3f7;
-        }
-
-        h2 {
-            font-size: 18px;
-            margin-top: 25px;
             margin-bottom: 15px;
-            color: #81c784;
-            border-bottom: 2px solid #81c784;
-            padding-bottom: 5px;
+            text-shadow: 0 0 10px #ffd700;
         }
 
         .data-row {
             display: flex;
             justify-content: space-between;
-            margin: 10px 0;
-            font-size: 16px;
+            margin: 8px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
         }
 
         .data-label {
-            color: #ccc;
+            color: #aaa;
+            font-weight: bold;
         }
 
         .data-value {
-            font-weight: bold;
+            color: #4CAF50;
             font-family: 'Courier New', monospace;
-        }
-
-        .roll { color: #ef5350; }
-        .pitch { color: #66bb6a; }
-        .yaw { color: #42a5f5; }
-        .accel { color: #ffa726; }
-        .gyro { color: #ab47bc; }
-        .temp { color: #26c6da; }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 20px;
-            font-size: 16px;
             font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        }
+
+        .drum-hit-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ff0000, #8b0000);
+            border-radius: 50%;
+            display: none;
+            animation: pulse 0.5s ease-out;
+            z-index: 100;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 30px #ff0000;
+        }
+
+        .drum-hit-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        #reset-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            transition: all 0.3s;
+            z-index: 100;
         }
 
-        button:hover {
+        #reset-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
         }
 
-        button:active {
-            transform: translateY(0);
+        #hit-counter {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 2px solid #4CAF50;
+            z-index: 100;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
         }
 
         .status {
             text-align: center;
-            margin-top: 20px;
-            padding: 10px;
+            margin-top: 10px;
+            padding: 5px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 5px;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .connected {
@@ -113,99 +139,43 @@
         .disconnected {
             color: #ef5350;
         }
-
-        .controls {
-            margin-top: 25px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-        }
-
-        .control-label {
-            font-size: 14px;
-            color: #aaa;
-            margin-bottom: 8px;
-        }
-
-        #help {
-            margin-top: 25px;
-            font-size: 13px;
-            color: #999;
-            line-height: 1.6;
-        }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="canvas-container"></div>
-        
-        <div id="info-panel">
-            <h1>🥁 MPU6050 3D 視覺化</h1>
-            <div class="status">
-                連線狀態: <span id="status" class="disconnected">未連接</span>
-            </div>
-
-            <h2>姿態角度</h2>
-            <div class="data-row">
-                <span class="data-label">Roll (橫滾):</span>
-                <span class="data-value roll" id="roll">0.00°</span>
-            </div>
-            <div class="data-row">
-                <span class="data-label">Pitch (俯仰):</span>
-                <span class="data-value pitch" id="pitch">0.00°</span>
-            </div>
-            <div class="data-row">
-                <span class="data-label">Yaw (偏航):</span>
-                <span class="data-value yaw" id="yaw">0.00°</span>
-            </div>
-
-            <h2>加速度計 (g)</h2>
-            <div class="data-row">
-                <span class="data-label">X:</span>
-                <span class="data-value accel" id="accel-x">0.00</span>
-            </div>
-            <div class="data-row">
-                <span class="data-label">Y:</span>
-                <span class="data-value accel" id="accel-y">0.00</span>
-            </div>
-            <div class="data-row">
-                <span class="data-label">Z:</span>
-                <span class="data-value accel" id="accel-z">0.00</span>
-            </div>
-
-            <h2>陀螺儀 (°/s)</h2>
-            <div class="data-row">
-                <span class="data-label">X:</span>
-                <span class="data-value gyro" id="gyro-x">0.0</span>
-            </div>
-            <div class="data-row">
-                <span class="data-label">Y:</span>
-                <span class="data-value gyro" id="gyro-y">0.0</span>
-            </div>
-            <div class="data-row">
-                <span class="data-label">Z:</span>
-                <span class="data-value gyro" id="gyro-z">0.0</span>
-            </div>
-
-            <h2>溫度</h2>
-            <div class="data-row">
-                <span class="data-label">Temperature:</span>
-                <span class="data-value temp" id="temperature">0.0°C</span>
-            </div>
-
-            <div class="controls">
-                <button id="reset-btn">🔄 重置姿態</button>
-            </div>
-
-            <div id="help">
-                <strong>操作說明:</strong><br>
-                • 滑鼠拖曳: 旋轉視角<br>
-                • 滾輪: 縮放<br>
-                • 重置按鈕: 歸零姿態<br>
-                • 即時顯示感測器狀態
-            </div>
+    <div id="container"></div>
+    
+    <div id="info-panel">
+        <h1>🥁 爵士鼓監控</h1>
+        <div class="status">
+            <span id="status" class="disconnected">未連接</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Roll:</span>
+            <span class="data-value" id="roll">0.0°</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Pitch:</span>
+            <span class="data-value" id="pitch">0.0°</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Yaw:</span>
+            <span class="data-value" id="yaw">0.0°</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">加速度:</span>
+            <span class="data-value" id="accel">0.0 m/s²</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">溫度:</span>
+            <span class="data-value" id="temp">0.0°C</span>
         </div>
     </div>
+
+    <div class="drum-hit-indicator" id="hit-indicator"></div>
+    
+    <button id="reset-btn">🔄 重置姿態</button>
+    
+    <div id="hit-counter">擊打次數: <span id="hit-count">0</span></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
@@ -243,68 +213,180 @@
             directionalLight.position.set(5, 5, 5);
             scene.add(directionalLight);
 
-            // 建立立方體 (代表感測器)
-            const geometry = new THREE.BoxGeometry(2, 2, 2);
-            const materials = [
-                new THREE.MeshPhongMaterial({ color: 0xff0000 }), // 右 - 紅
-                new THREE.MeshPhongMaterial({ color: 0x00ff00 }), // 左 - 綠
-                new THREE.MeshPhongMaterial({ color: 0x0000ff }), // 上 - 藍
-                new THREE.MeshPhongMaterial({ color: 0xffff00 }), // 下 - 黃
-                new THREE.MeshPhongMaterial({ color: 0xff00ff }), // 前 - 洋紅
-                new THREE.MeshPhongMaterial({ color: 0x00ffff })  // 後 - 青
-            ];
-            cube = new THREE.Mesh(geometry, materials);
-            scene.add(cube);
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // WebSocket 連接
+        const socket = io();
+        
+        // Three.js 場景設置
+        let scene, camera, renderer;
+        let drums = [];
+        let hitCount = 0;
+        let lastHitTime = 0;
+        const HIT_THRESHOLD = 15.0; // 加速度閾值（m/s²）
+        const HIT_COOLDOWN = 300; // 防抖動時間（毫秒）
 
-            // 座標軸
-            axes = new THREE.AxesHelper(3);
-            scene.add(axes);
-
-            // 網格
-            const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
-            scene.add(gridHelper);
-
-            // 滑鼠控制
-            let isDragging = false;
-            let previousMousePosition = { x: 0, y: 0 };
-
-            renderer.domElement.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            renderer.domElement.addEventListener('mousemove', (e) => {
-                if (isDragging) {
-                    const deltaX = e.clientX - previousMousePosition.x;
-                    const deltaY = e.clientY - previousMousePosition.y;
-                    
-                    camera.position.x += deltaX * 0.01;
-                    camera.position.y -= deltaY * 0.01;
-                    camera.lookAt(0, 0, 0);
-                    
-                    previousMousePosition = { x: e.clientX, y: e.clientY };
-                }
-            });
-
-            renderer.domElement.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
-            // 滾輪縮放
-            renderer.domElement.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? 1.1 : 0.9;
-                camera.position.multiplyScalar(delta);
-            });
-
-            // 響應式調整
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-
+        function init() {
+            // 創建場景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            
+            // 創建相機（從上往下看）
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 8, 0);
+            camera.lookAt(0, 0, 0);
+            
+            // 創建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // 添加環境光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            // 添加聚光燈
+            const spotLight = new THREE.SpotLight(0xffffff, 1);
+            spotLight.position.set(0, 15, 0);
+            spotLight.castShadow = true;
+            scene.add(spotLight);
+            
+            // 創建爵士鼓套組
+            createDrumKit();
+            
+            // 窗口大小調整
+            window.addEventListener('resize', onWindowResize);
+            
+            // 開始動畫循環
             animate();
+        }
+
+        function createDrumKit() {
+            // 鼓的配置：位置、大小、顏色
+            const drumConfig = [
+                // 中央主鼓（橘色）
+                { x: 0, z: 0, radius: 1.2, color: 0xff8c00, name: 'snare' },
+                // 上方兩個鼓（綠色）
+                { x: -1.5, z: -2, radius: 0.8, color: 0x00ff00, name: 'tom1' },
+                { x: 1.5, z: -2, radius: 0.8, color: 0x00ff00, name: 'tom2' },
+                // 右下方鼓（綠色）
+                { x: 2, z: 1, radius: 0.9, color: 0x32cd32, name: 'tom3' },
+                // 左下方鼓（黃綠色）
+                { x: -2.5, z: 0.5, radius: 0.7, color: 0xadff2f, name: 'tom4' },
+                // 左右兩側的鈸（金黃色）
+                { x: -3.5, z: -1, radius: 1.0, color: 0xffd700, name: 'cymbal1', isCymbal: true },
+                { x: 3.5, z: -1, radius: 1.0, color: 0xffd700, name: 'cymbal2', isCymbal: true },
+            ];
+
+            drumConfig.forEach(config => {
+                const drum = createDrum(config.x, config.z, config.radius, config.color, config.isCymbal);
+                drum.userData = { name: config.name, config: config };
+                drums.push(drum);
+                scene.add(drum);
+            });
+        }
+
+        function createDrum(x, z, radius, color, isCymbal = false) {
+            const group = new THREE.Group();
+            
+            if (isCymbal) {
+                // 鈸的形狀（扁平圓盤）
+                const geometry = new THREE.CylinderGeometry(radius, radius, 0.05, 32);
+                const material = new THREE.MeshStandardMaterial({
+                    color: color,
+                    metalness: 0.9,
+                    roughness: 0.1,
+                    emissive: color,
+                    emissiveIntensity: 0.3
+                });
+                const cymbal = new THREE.Mesh(geometry, material);
+                cymbal.castShadow = true;
+                cymbal.receiveShadow = true;
+                group.add(cymbal);
+            } else {
+                // 鼓身
+                const drumHeight = 0.3;
+                const bodyGeometry = new THREE.CylinderGeometry(radius, radius, drumHeight, 32);
+                const bodyMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x8b4513,
+                    metalness: 0.3,
+                    roughness: 0.7
+                });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                body.position.y = -drumHeight / 2;
+                group.add(body);
+                
+                // 鼓面
+                const headGeometry = new THREE.CircleGeometry(radius, 32);
+                const headMaterial = new THREE.MeshStandardMaterial({
+                    color: color,
+                    side: THREE.DoubleSide,
+                    emissive: color,
+                    emissiveIntensity: 0.2
+                });
+                const head = new THREE.Mesh(headGeometry, headMaterial);
+                head.rotation.x = -Math.PI / 2;
+                head.castShadow = true;
+                head.receiveShadow = true;
+                group.add(head);
+                
+                // 邊框
+                const rimGeometry = new THREE.TorusGeometry(radius, 0.05, 16, 32);
+                const rimMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xc0c0c0,
+                    metalness: 0.8,
+                    roughness: 0.2
+                });
+                const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+                rim.rotation.x = Math.PI / 2;
+                group.add(rim);
+            }
+            
+            group.position.set(x, 0, z);
+            return group;
+        }
+
+        function updateDrumHit(acceleration) {
+            // 計算總加速度
+            const totalAccel = Math.sqrt(
+                acceleration.x ** 2 + 
+                acceleration.y ** 2 + 
+                acceleration.z ** 2
+            );
+            
+            // 檢測擊打
+            const now = Date.now();
+            if (totalAccel > HIT_THRESHOLD && (now - lastHitTime) > HIT_COOLDOWN) {
+                lastHitTime = now;
+                hitCount++;
+                document.getElementById('hit-count').textContent = hitCount;
+                
+                // 顯示擊打指示器
+                const indicator = document.getElementById('hit-indicator');
+                indicator.classList.add('active');
+                setTimeout(() => {
+                    indicator.classList.remove('active');
+                }, 500);
+                
+                // 隨機讓一個鼓發光
+                const randomDrum = drums[Math.floor(Math.random() * drums.length)];
+                flashDrum(randomDrum);
+            }
+        }
+
+        function flashDrum(drum) {
+            const mesh = drum.children[0] || drum.children[1];
+            if (!mesh || !mesh.material) return;
+            
+            const originalIntensity = mesh.material.emissiveIntensity;
+            
+            mesh.material.emissiveIntensity = 1.0;
+            
+            setTimeout(() => {
+                mesh.material.emissiveIntensity = originalIntensity;
+            }, 200);
         }
 
         function animate() {
@@ -312,68 +394,49 @@
             renderer.render(scene, camera);
         }
 
-        function updateOrientation(roll, pitch, yaw) {
-            // Three.js 使用弧度
-            const rollRad = roll * Math.PI / 180;
-            const pitchRad = pitch * Math.PI / 180;
-            const yawRad = yaw * Math.PI / 180;
-
-            // 設定立方體姿態 (注意軸向對應)
-            cube.rotation.set(-pitchRad, yawRad, -rollRad, 'XYZ');
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function updateUI(data) {
-            // 姿態角度
-            document.getElementById('roll').textContent = data.roll.toFixed(2) + '°';
-            document.getElementById('pitch').textContent = data.pitch.toFixed(2) + '°';
-            document.getElementById('yaw').textContent = data.yaw.toFixed(2) + '°';
+        // 接收感測器數據
+        socket.on('sensor_data', function(data) {
+            document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
+            document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
+            document.getElementById('yaw').textContent = data.yaw.toFixed(1) + '°';
+            
+            const totalAccel = Math.sqrt(
+                data.accel.x ** 2 + 
+                data.accel.y ** 2 + 
+                data.accel.z ** 2
+            );
+            document.getElementById('accel').textContent = totalAccel.toFixed(2) + ' m/s²';
+            document.getElementById('temp').textContent = data.temperature.toFixed(1) + '°C';
+            
+            // 檢測擊打
+            updateDrumHit(data.accel);
+        });
 
-            // 加速度計
-            document.getElementById('accel-x').textContent = data.accel.x.toFixed(2);
-            document.getElementById('accel-y').textContent = data.accel.y.toFixed(2);
-            document.getElementById('accel-z').textContent = data.accel.z.toFixed(2);
+        socket.on('connect', () => {
+            console.log('WebSocket 已連接');
+            document.getElementById('status').textContent = '已連接';
+            document.getElementById('status').className = 'connected';
+        });
 
-            // 陀螺儀
-            document.getElementById('gyro-x').textContent = data.gyro.x.toFixed(1);
-            document.getElementById('gyro-y').textContent = data.gyro.y.toFixed(1);
-            document.getElementById('gyro-z').textContent = data.gyro.z.toFixed(1);
-
-            // 溫度
-            document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
-
-            // 更新 3D 姿態
-            updateOrientation(data.roll, data.pitch, data.yaw);
-        }
-
-        function initWebSocket() {
-            socket = io();
-
-            socket.on('connect', () => {
-                console.log('WebSocket 已連接');
-                document.getElementById('status').textContent = '已連接';
-                document.getElementById('status').className = 'connected';
-            });
-
-            socket.on('disconnect', () => {
-                console.log('WebSocket 已斷線');
-                document.getElementById('status').textContent = '未連接';
-                document.getElementById('status').className = 'disconnected';
-            });
-
-            socket.on('sensor_data', (data) => {
-                updateUI(data);
-            });
-        }
+        socket.on('disconnect', () => {
+            console.log('WebSocket 已斷線');
+            document.getElementById('status').textContent = '未連接';
+            document.getElementById('status').className = 'disconnected';
+        });
 
         // 重置按鈕
-        document.getElementById('reset-btn').addEventListener('click', () => {
+        document.getElementById('reset-btn').addEventListener('click', function() {
             socket.emit('reset');
-            console.log('已發送重置指令');
+            hitCount = 0;
+            document.getElementById('hit-count').textContent = '0';
         });
 
         // 初始化
-        initThreeJS();
-        initWebSocket();
+        init();
     </script>
-</body>
-</html>
