@@ -762,14 +762,14 @@
             const yawRad = adjustedYaw * Math.PI / 180;
             
             // 鼓棒固定在中心位置，只旋轉不平移
-            // 感測器裝在鼓棒尖端，所以旋轉就是鼓棒尖端的方向變化
             drumStick.position.set(0, adjustments.heightY, 0);
             
             // 設定旋轉（鼓棒的姿態）
-            // 基礎旋轉讓鼓棒尖端朝下
-            drumStick.rotation.x = Math.PI / 2 + pitchRad * adjustments.scaleX;  // 前後傾斜
-            drumStick.rotation.y = yawRad * adjustments.scaleZ;                    // 左右擺動
-            drumStick.rotation.z = rollRad;                                        // 滾轉
+            // 感測器在尖端，所以要反向旋轉
+            // 基礎旋轉：-Math.PI / 2 讓鼓棒尖端朝下（而非尾端朝下）
+            drumStick.rotation.x = -Math.PI / 2 - pitchRad * adjustments.scaleX;  // 前後傾斜（反向）
+            drumStick.rotation.y = yawRad * adjustments.scaleZ;                     // 左右擺動
+            drumStick.rotation.z = rollRad;                                         // 滾轉
             
             // 調試輸出（每30幀輸出一次）
             if (Math.random() < 0.033) {
