@@ -269,18 +269,45 @@
             position: absolute;
             bottom: 80px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             padding: 15px;
             border-radius: 10px;
             border: 2px solid #9C27B0;
             z-index: 100;
-            min-width: 240px;
+            min-width: 260px;
         }
 
         #visual-calibration-panel h4 {
             color: #9C27B0;
             margin: 0 0 10px 0;
             font-size: 14px;
+        }
+
+        .calibration-mode {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .calibration-mode button {
+            flex: 1;
+            padding: 8px;
+            background: rgba(156, 39, 176, 0.3);
+            border: 1px solid #9C27B0;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calibration-mode button.active {
+            background: #9C27B0;
+            font-weight: bold;
+        }
+
+        .calibration-mode button:hover {
+            background: rgba(156, 39, 176, 0.5);
         }
 
         .visual-control {
@@ -326,6 +353,17 @@
             background: #8E24AA;
             transform: translateY(-1px);
         }
+
+        #calibration-info {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(156, 39, 176, 0.2);
+            border-radius: 5px;
+            font-size: 10px;
+            color: #BA68C8;
+            text-align: center;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -363,25 +401,31 @@
     <button id="reset-btn">🎯 校準中心點</button>
     
     <div id="visual-calibration-panel">
-        <h4>🎨 視覺校準</h4>
-        <div class="visual-control">
-            <label>上下角度: <span id="visual-pitch-value">0</span>°</label>
-            <input type="range" id="visual-pitch" min="-90" max="90" step="1" value="0">
+        <h4>🎨 快速對齊</h4>
+        <div class="calibration-mode">
+            <button id="mode-realtime" class="active">🔄 實時對齊</button>
+            <button id="mode-manual">🎛️ 手動微調</button>
         </div>
-        <div class="visual-control">
-            <label>左右角度: <span id="visual-yaw-value">0</span>°</label>
-            <input type="range" id="visual-yaw" min="-90" max="90" step="1" value="0">
-        </div>
-        <div class="visual-control">
-            <label>旋轉角度: <span id="visual-roll-value">0</span>°</label>
-            <input type="range" id="visual-roll" min="-180" max="180" step="1" value="0">
+        <div id="manual-controls" style="display: none;">
+            <div class="visual-control">
+                <label>上下角度: <span id="visual-pitch-value">0</span>°</label>
+                <input type="range" id="visual-pitch" min="-90" max="90" step="1" value="0">
+            </div>
+            <div class="visual-control">
+                <label>左右角度: <span id="visual-yaw-value">0</span>°</label>
+                <input type="range" id="visual-yaw" min="-90" max="90" step="1" value="0">
+            </div>
+            <div class="visual-control">
+                <label>旋轉角度: <span id="visual-roll-value">0</span>°</label>
+                <input type="range" id="visual-roll" min="-180" max="180" step="1" value="0">
+            </div>
         </div>
         <div class="visual-buttons">
-            <button id="apply-visual-btn" title="套用視覺校準到實際鼓棒">✓ 套用</button>
-            <button id="reset-visual-btn" title="重置視覺校準">↺ 重置</button>
+            <button id="apply-visual-btn" title="記錄當前偏移">✓ 鎖定</button>
+            <button id="reset-visual-btn" title="重置校準">↺ 重置</button>
         </div>
-        <div style="margin-top: 8px; font-size: 10px; color: #888; text-align: center;">
-            先調整到你想要的姿態，再按「套用」
+        <div id="calibration-info">
+            <span id="calibration-status">實時對齊模式：移動鼓棒，畫面會即時同步</span>
         </div>
     </div>
     
@@ -459,6 +503,8 @@
         
         // 視覺校準偏移
         let visualOffset = { roll: 0, pitch: 0, yaw: 0 };
+        let calibrationMode = 'realtime'; // 'realtime' 或 'manual'
+        let realtimeCalibrating = false;
 
         // 從 localStorage 載入設定
         function loadSettings() {
@@ -751,29 +797,45 @@
             // 儲存當前角度
             currentAngles = { roll, pitch, yaw };
             
-            // 套用視覺校準偏移
-            const adjustedRoll = roll + visualOffset.roll;
-            const adjustedPitch = pitch + visualOffset.pitch;
-            const adjustedYaw = yaw + visualOffset.yaw;
-            
-            // 將角度轉換為弧度
-            const rollRad = adjustedRoll * Math.PI / 180;
-            const pitchRad = adjustedPitch * Math.PI / 180;
-            const yawRad = adjustedYaw * Math.PI / 180;
-            
-            // 鼓棒固定在中心位置，只旋轉不平移
-            drumStick.position.set(0, adjustments.heightY, 0);
-            
-            // 設定旋轉（鼓棒的姿態）
-            // 感測器在尖端，所以要反向旋轉
-            // 基礎旋轉：-Math.PI / 2 讓鼓棒尖端朝下（而非尾端朝下）
-            drumStick.rotation.x = -Math.PI / 2 - pitchRad * adjustments.scaleX;  // 前後傾斜（反向）
-            drumStick.rotation.y = yawRad * adjustments.scaleZ;                     // 左右擺動
-            drumStick.rotation.z = rollRad;                                         // 滾轉
+            // 實時對齊模式：直接使用感測器數據
+            if (calibrationMode === 'realtime') {
+                const rollRad = roll * Math.PI / 180;
+                const pitchRad = pitch * Math.PI / 180;
+                const yawRad = yaw * Math.PI / 180;
+                
+                drumStick.position.set(0, adjustments.heightY, 0);
+                
+                // 使用 Three.js 的 Euler 角度，順序 ZYX (Roll, Pitch, Yaw)
+                // 感測器在尖端，需要反向 180 度
+                drumStick.rotation.set(
+                    -pitchRad * adjustments.scaleX,  // X 軸（俯仰）
+                    yawRad * adjustments.scaleZ,      // Y 軸（偏航）
+                    rollRad - Math.PI,                 // Z 軸（滾轉）+ 180度反向
+                    'ZYX'
+                );
+            } else {
+                // 手動微調模式：套用視覺校準偏移
+                const adjustedRoll = roll + visualOffset.roll;
+                const adjustedPitch = pitch + visualOffset.pitch;
+                const adjustedYaw = yaw + visualOffset.yaw;
+                
+                const rollRad = adjustedRoll * Math.PI / 180;
+                const pitchRad = adjustedPitch * Math.PI / 180;
+                const yawRad = adjustedYaw * Math.PI / 180;
+                
+                drumStick.position.set(0, adjustments.heightY, 0);
+                
+                drumStick.rotation.set(
+                    -pitchRad * adjustments.scaleX,
+                    yawRad * adjustments.scaleZ,
+                    rollRad - Math.PI,
+                    'ZYX'
+                );
+            }
             
             // 調試輸出（每30幀輸出一次）
             if (Math.random() < 0.033) {
-                console.log(`🥁 Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}° | Visual: (+${visualOffset.roll.toFixed(0)}°, +${visualOffset.pitch.toFixed(0)}°, +${visualOffset.yaw.toFixed(0)}°)`);
+                console.log(`🥁 [${calibrationMode}] Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}°`);
             }
         }
 
@@ -989,6 +1051,25 @@
             }, 1000);
         });
 
+        // 模式切換
+        document.getElementById('mode-realtime').addEventListener('click', function() {
+            calibrationMode = 'realtime';
+            document.getElementById('mode-realtime').classList.add('active');
+            document.getElementById('mode-manual').classList.remove('active');
+            document.getElementById('manual-controls').style.display = 'none';
+            document.getElementById('calibration-status').textContent = '實時對齊模式：移動鼓棒，畫面會即時同步';
+            console.log('✓ 切換到實時對齊模式');
+        });
+
+        document.getElementById('mode-manual').addEventListener('click', function() {
+            calibrationMode = 'manual';
+            document.getElementById('mode-manual').classList.add('active');
+            document.getElementById('mode-realtime').classList.remove('active');
+            document.getElementById('manual-controls').style.display = 'block';
+            document.getElementById('calibration-status').textContent = '手動微調模式：用滑桿調整偏移量';
+            console.log('✓ 切換到手動微調模式');
+        });
+
         // 視覺校準滑桿事件
         document.getElementById('visual-pitch').addEventListener('input', function(e) {
             const value = parseInt(e.target.value);
@@ -1007,17 +1088,41 @@
 
         // 套用視覺校準
         document.getElementById('apply-visual-btn').addEventListener('click', function() {
-            visualOffset.pitch = parseInt(document.getElementById('visual-pitch').value);
-            visualOffset.yaw = parseInt(document.getElementById('visual-yaw').value);
-            visualOffset.roll = parseInt(document.getElementById('visual-roll').value);
+            if (calibrationMode === 'realtime') {
+                // 實時模式：記錄當前感測器數據作為偏移
+                visualOffset.roll = -currentAngles.roll;
+                visualOffset.pitch = -currentAngles.pitch;
+                visualOffset.yaw = -currentAngles.yaw;
+                
+                // 切換到手動模式並顯示偏移值
+                calibrationMode = 'manual';
+                document.getElementById('mode-manual').classList.add('active');
+                document.getElementById('mode-realtime').classList.remove('active');
+                document.getElementById('manual-controls').style.display = 'block';
+                
+                document.getElementById('visual-roll').value = visualOffset.roll;
+                document.getElementById('visual-roll-value').textContent = visualOffset.roll.toFixed(0);
+                document.getElementById('visual-pitch').value = visualOffset.pitch;
+                document.getElementById('visual-pitch-value').textContent = visualOffset.pitch.toFixed(0);
+                document.getElementById('visual-yaw').value = visualOffset.yaw;
+                document.getElementById('visual-yaw-value').textContent = visualOffset.yaw.toFixed(0);
+                
+                document.getElementById('calibration-status').textContent = '✓ 已鎖定！現在可以手動微調';
+                console.log('✓ 已鎖定當前姿態，偏移:', visualOffset);
+            } else {
+                // 手動模式：套用滑桿的值
+                visualOffset.pitch = parseInt(document.getElementById('visual-pitch').value);
+                visualOffset.yaw = parseInt(document.getElementById('visual-yaw').value);
+                visualOffset.roll = parseInt(document.getElementById('visual-roll').value);
+                console.log('✓ 視覺校準已套用:', visualOffset);
+            }
             
             saveSettings();
-            console.log('✓ 視覺校準已套用:', visualOffset);
             
             // 顯示回饋
-            this.textContent = '✓ 已套用';
+            this.textContent = '✓ 已鎖定';
             setTimeout(() => {
-                this.textContent = '✓ 套用';
+                this.textContent = '✓ 鎖定';
             }, 1000);
         });
 
