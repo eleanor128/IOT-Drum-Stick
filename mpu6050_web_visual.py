@@ -185,23 +185,37 @@ def calculate_angles():
         accel_roll = math.atan2(accel['y'], accel['z']) * 180 / math.pi
         accel_pitch = math.atan2(-accel['x'], math.sqrt(accel['y']**2 + accel['z']**2)) * 180 / math.pi
         
-        # 從陀螺儀積分角度
-        gyro_roll = sensor_data['roll'] + gyro['x'] * dt
-        gyro_pitch = sensor_data['pitch'] + gyro['y'] * dt
-        gyro_yaw = sensor_data['yaw'] + gyro['z'] * dt
-        
-        # 互補濾波器融合
-        sensor_data['roll'] = alpha * gyro_roll + (1 - alpha) * accel_roll
-        sensor_data['pitch'] = alpha * gyro_pitch + (1 - alpha) * accel_pitch
-        sensor_data['yaw'] = gyro_yaw
-        
-        # 如果有校準 offset，計算相對角度
+        # 如果有校準 offset，先計算相對角度
         if calibration_config and 'calibration' in calibration_config:
             if 'center' in calibration_config['calibration']:
                 center = calibration_config['calibration']['center']
-                sensor_data['roll'] = sensor_data['roll'] - center['roll']
-                sensor_data['pitch'] = sensor_data['pitch'] - center['pitch']
-                sensor_data['yaw'] = sensor_data['yaw'] - center['yaw']
+                # 直接使用加速度計計算的角度，減去 offset
+                sensor_data['roll'] = accel_roll - center['roll']
+                sensor_data['pitch'] = accel_pitch - center['pitch']
+                # Yaw 用陀螺儀相對變化
+                sensor_data['yaw'] = sensor_data['yaw'] + gyro['z'] * dt
+                if sensor_data['yaw'] > 180:
+                    sensor_data['yaw'] -= 360
+                elif sensor_data['yaw'] < -180:
+                    sensor_data['yaw'] += 360
+            else:
+                # 沒有校準時，使用互補濾波器
+                gyro_roll = sensor_data['roll'] + gyro['x'] * dt
+                gyro_pitch = sensor_data['pitch'] + gyro['y'] * dt
+                gyro_yaw = sensor_data['yaw'] + gyro['z'] * dt
+                
+                sensor_data['roll'] = alpha * gyro_roll + (1 - alpha) * accel_roll
+                sensor_data['pitch'] = alpha * gyro_pitch + (1 - alpha) * accel_pitch
+                sensor_data['yaw'] = gyro_yaw
+        else:
+            # 沒有校準時，使用互補濾波器
+            gyro_roll = sensor_data['roll'] + gyro['x'] * dt
+            gyro_pitch = sensor_data['pitch'] + gyro['y'] * dt
+            gyro_yaw = sensor_data['yaw'] + gyro['z'] * dt
+            
+            sensor_data['roll'] = alpha * gyro_roll + (1 - alpha) * accel_roll
+            sensor_data['pitch'] = alpha * gyro_pitch + (1 - alpha) * accel_pitch
+            sensor_data['yaw'] = gyro_yaw
         
         # 更新其他數據
         sensor_data['accel'] = accel
@@ -321,25 +335,32 @@ def handle_disconnect():
 @socketio.on('reset')
 def handle_reset():
     """處理重置請求 - 記錄當前姿態作為 offset"""
-    global calibration_config
+    global calibration_config, sensor_data
+    
+    # 讀取當前加速度計數據來計算穩定的角度
+    try:
+        accel = sensor.get_accel_data()
+        current_roll = math.atan2(accel['y'], accel['z']) * 180 / math.pi
+        current_pitch = math.atan2(-accel['x'], math.sqrt(accel['y']**2 + accel['z']**2)) * 180 / math.pi
+    except:
+        current_roll = sensor_data['roll']
+        current_pitch = sensor_data['pitch']
     
     # 記錄當前姿態作為中心點 offset
     if calibration_config is None:
         calibration_config = {'calibration': {}}
     
     calibration_config['calibration']['center'] = {
-        'roll': sensor_data['roll'],
-        'pitch': sensor_data['pitch'],
-        'yaw': sensor_data['yaw']
+        'roll': current_roll,
+        'pitch': current_pitch,
+        'yaw': 0  # Yaw 重置為 0
     }
     
-    # 不要重置 sensor_data 的角度，讓它繼續累積
-    # 只在 calculate_angles() 中減去 offset 來計算相對角度
+    # 重置 Yaw 累積值
+    sensor_data['yaw'] = 0.0
     
     emit('calibration_updated', {'calibration': calibration_config['calibration']}, broadcast=True)
-    print(f'🎯 已校準中心點: Roll={calibration_config["calibration"]["center"]["roll"]:.1f}°, '
-          f'Pitch={calibration_config["calibration"]["center"]["pitch"]:.1f}°, '
-          f'Yaw={calibration_config["calibration"]["center"]["yaw"]:.1f}°')
+    print(f'🎯 已校準中心點: Roll={current_roll:.1f}°, Pitch={current_pitch:.1f}°')
 
 if __name__ == '__main__':
     print("=" * 60)

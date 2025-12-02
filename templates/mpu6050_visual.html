@@ -264,6 +264,68 @@
         .offset-buttons button.clear:hover {
             background: #e53935;
         }
+
+        #visual-calibration-panel {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #9C27B0;
+            z-index: 100;
+            min-width: 240px;
+        }
+
+        #visual-calibration-panel h4 {
+            color: #9C27B0;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+
+        .visual-control {
+            margin: 8px 0;
+            font-size: 11px;
+        }
+
+        .visual-control label {
+            color: #aaa;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .visual-control input[type="range"] {
+            width: 100%;
+        }
+
+        .visual-control span {
+            color: #BA68C8;
+            font-weight: bold;
+            float: right;
+        }
+
+        .visual-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .visual-buttons button {
+            flex: 1;
+            padding: 8px;
+            background: #9C27B0;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .visual-buttons button:hover {
+            background: #8E24AA;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -299,6 +361,29 @@
     <div class="drum-hit-indicator" id="hit-indicator"></div>
     
     <button id="reset-btn">🎯 校準中心點</button>
+    
+    <div id="visual-calibration-panel">
+        <h4>🎨 視覺校準</h4>
+        <div class="visual-control">
+            <label>上下角度: <span id="visual-pitch-value">0</span>°</label>
+            <input type="range" id="visual-pitch" min="-90" max="90" step="1" value="0">
+        </div>
+        <div class="visual-control">
+            <label>左右角度: <span id="visual-yaw-value">0</span>°</label>
+            <input type="range" id="visual-yaw" min="-90" max="90" step="1" value="0">
+        </div>
+        <div class="visual-control">
+            <label>旋轉角度: <span id="visual-roll-value">0</span>°</label>
+            <input type="range" id="visual-roll" min="-180" max="180" step="1" value="0">
+        </div>
+        <div class="visual-buttons">
+            <button id="apply-visual-btn" title="套用視覺校準到實際鼓棒">✓ 套用</button>
+            <button id="reset-visual-btn" title="重置視覺校準">↺ 重置</button>
+        </div>
+        <div style="margin-top: 8px; font-size: 10px; color: #888; text-align: center;">
+            先調整到你想要的姿態，再按「套用」
+        </div>
+    </div>
     
     <div id="hit-counter">擊打次數: <span id="hit-count">0</span></div>
     
@@ -371,6 +456,9 @@
             center: null
         };
         let currentAngles = { roll: 0, pitch: 0, yaw: 0 };
+        
+        // 視覺校準偏移
+        let visualOffset = { roll: 0, pitch: 0, yaw: 0 };
 
         // 從 localStorage 載入設定
         function loadSettings() {
@@ -402,6 +490,18 @@
                         document.getElementById('offset-yaw').value = settings.offset.yaw.toFixed(1);
                         console.log('✓ Offset 已恢復');
                     }
+                    
+                    // 恢復視覺校準
+                    if (settings.visualOffset) {
+                        visualOffset = settings.visualOffset;
+                        document.getElementById('visual-roll').value = visualOffset.roll;
+                        document.getElementById('visual-roll-value').textContent = visualOffset.roll;
+                        document.getElementById('visual-pitch').value = visualOffset.pitch;
+                        document.getElementById('visual-pitch-value').textContent = visualOffset.pitch;
+                        document.getElementById('visual-yaw').value = visualOffset.yaw;
+                        document.getElementById('visual-yaw-value').textContent = visualOffset.yaw;
+                        console.log('✓ 視覺校準已恢復');
+                    }
                 }
             } catch (error) {
                 console.error('❌ 載入設定失敗:', error);
@@ -417,7 +517,8 @@
                         scaleZ: adjustments.scaleZ,
                         heightY: adjustments.heightY
                     },
-                    offset: calibrationData.center
+                    offset: calibrationData.center,
+                    visualOffset: visualOffset
                 };
                 localStorage.setItem('drumStickSettings', JSON.stringify(settings));
                 console.log('💾 設定已儲存');
@@ -650,10 +751,15 @@
             // 儲存當前角度
             currentAngles = { roll, pitch, yaw };
             
+            // 套用視覺校準偏移
+            const adjustedRoll = roll + visualOffset.roll;
+            const adjustedPitch = pitch + visualOffset.pitch;
+            const adjustedYaw = yaw + visualOffset.yaw;
+            
             // 將角度轉換為弧度
-            const rollRad = roll * Math.PI / 180;
-            const pitchRad = pitch * Math.PI / 180;
-            const yawRad = yaw * Math.PI / 180;
+            const rollRad = adjustedRoll * Math.PI / 180;
+            const pitchRad = adjustedPitch * Math.PI / 180;
+            const yawRad = adjustedYaw * Math.PI / 180;
             
             // 鼓棒固定在中心位置，只旋轉不平移
             // 感測器裝在鼓棒尖端，所以旋轉就是鼓棒尖端的方向變化
@@ -667,7 +773,7 @@
             
             // 調試輸出（每30幀輸出一次）
             if (Math.random() < 0.033) {
-                console.log(`🥁 Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}°`);
+                console.log(`🥁 Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}° | Visual: (+${visualOffset.roll.toFixed(0)}°, +${visualOffset.pitch.toFixed(0)}°, +${visualOffset.yaw.toFixed(0)}°)`);
             }
         }
 
@@ -879,7 +985,59 @@
             // 顯示回饋
             this.textContent = '✓ 已清除';
             setTimeout(() => {
-                this.textContent = '✕ 清除';
+                this.textContent = '✗ 清除';
+            }, 1000);
+        });
+
+        // 視覺校準滑桿事件
+        document.getElementById('visual-pitch').addEventListener('input', function(e) {
+            const value = parseInt(e.target.value);
+            document.getElementById('visual-pitch-value').textContent = value;
+        });
+
+        document.getElementById('visual-yaw').addEventListener('input', function(e) {
+            const value = parseInt(e.target.value);
+            document.getElementById('visual-yaw-value').textContent = value;
+        });
+
+        document.getElementById('visual-roll').addEventListener('input', function(e) {
+            const value = parseInt(e.target.value);
+            document.getElementById('visual-roll-value').textContent = value;
+        });
+
+        // 套用視覺校準
+        document.getElementById('apply-visual-btn').addEventListener('click', function() {
+            visualOffset.pitch = parseInt(document.getElementById('visual-pitch').value);
+            visualOffset.yaw = parseInt(document.getElementById('visual-yaw').value);
+            visualOffset.roll = parseInt(document.getElementById('visual-roll').value);
+            
+            saveSettings();
+            console.log('✓ 視覺校準已套用:', visualOffset);
+            
+            // 顯示回饋
+            this.textContent = '✓ 已套用';
+            setTimeout(() => {
+                this.textContent = '✓ 套用';
+            }, 1000);
+        });
+
+        // 重置視覺校準
+        document.getElementById('reset-visual-btn').addEventListener('click', function() {
+            visualOffset = { roll: 0, pitch: 0, yaw: 0 };
+            document.getElementById('visual-roll').value = 0;
+            document.getElementById('visual-roll-value').textContent = 0;
+            document.getElementById('visual-pitch').value = 0;
+            document.getElementById('visual-pitch-value').textContent = 0;
+            document.getElementById('visual-yaw').value = 0;
+            document.getElementById('visual-yaw-value').textContent = 0;
+            
+            saveSettings();
+            console.log('✓ 視覺校準已重置');
+            
+            // 顯示回饋
+            this.textContent = '✓ 已重置';
+            setTimeout(() => {
+                this.textContent = '↺ 重置';
             }, 1000);
         });
 
