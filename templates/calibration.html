@@ -479,8 +479,13 @@
                 <button class="btn-warning" id="load-settings-btn">📂 載入設定</button>
             </div>
 
+            <div class="btn-group" style="margin-top: 10px;">
+                <button class="btn-primary" id="preset-horizontal-btn" style="font-size: 12px;">📏 預設：水平指向前</button>
+            </div>
+
             <p class="info-text">
-                💡 提示：調整參數後記得套用才會生效。「自動校準」會將當前姿態設為零點。
+                💡 提示：「自動校準」將當前姿態設為零點。<br>
+                「水平指向前」套用測量的標準姿態偏移。
             </p>
         </div>
     </div>
@@ -922,6 +927,28 @@
             console.log('✓ 全部重置完成');
             showFeedback('reset-all-btn', '✓ 已重置');
         });
+
+        // 預設：水平指向前按鈕
+        document.getElementById('preset-horizontal-btn').addEventListener('click', () => {
+            // 根據測量數據設定偏移（水平指向前作為零點）
+            // 測量值: roll=-4.2, pitch=-84.8, yaw=7.2
+            rotationOffset.roll = 4.2;   // 反向偏移
+            rotationOffset.pitch = 84.8; // 反向偏移
+            rotationOffset.yaw = -7.2;   // 反向偏移
+
+            // 更新滑桿
+            document.getElementById('rotation-roll').value = rotationOffset.roll;
+            document.getElementById('rotation-roll-value').textContent = rotationOffset.roll.toFixed(1);
+            document.getElementById('rotation-pitch').value = rotationOffset.pitch;
+            document.getElementById('rotation-pitch-value').textContent = rotationOffset.pitch.toFixed(1);
+            document.getElementById('rotation-yaw').value = rotationOffset.yaw;
+            document.getElementById('rotation-yaw-value').textContent = rotationOffset.yaw.toFixed(1);
+
+            updateDrumStick();
+            console.log('✓ 預設校準完成（水平指向前）:', rotationOffset);
+            showFeedback('preset-horizontal-btn', '✓ 已套用');
+        });
+
 
         // 儲存設定按鈕
         document.getElementById('save-settings-btn').addEventListener('click', () => {
