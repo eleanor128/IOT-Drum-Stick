@@ -188,10 +188,16 @@
         // Three.js 場景設置
         let scene, camera, renderer;
         let drums = [];
+        let drumStick; // 鼓棒物件
         let hitCount = 0;
         let lastHitTime = 0;
         const HIT_THRESHOLD = 15.0;
         const HIT_COOLDOWN = 300;
+        
+        // 音效系統
+        let audioContext;
+        let drumSoundBuffer;
+        let audioInitialized = false;
 
         function init() {
             console.log('🎬 開始初始化 Three.js...');
@@ -221,11 +227,150 @@
             console.log('✓ 光源添加完成');
             
             createDrumKit();
+            createDrumStick();
+            
+            // 初始化音效
+            initAudio();
             
             window.addEventListener('resize', onWindowResize);
             
             animate();
             console.log('🎬 Three.js 初始化完成！');
+        }
+        
+        function createDrumStick() {
+            console.log('🥢 開始創建鼓棒...');
+            
+            drumStick = new THREE.Group();
+            
+            // 鼓棒主體（木質部分）
+            const stickLength = 3;
+            const stickRadius = 0.08;
+            const stickGeometry = new THREE.CylinderGeometry(stickRadius, stickRadius * 0.7, stickLength, 16);
+            const stickMaterial = new THREE.MeshStandardMaterial({
+                color: 0x8B4513, // 棕色木頭
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const stick = new THREE.Mesh(stickGeometry, stickMaterial);
+            stick.castShadow = true;
+            drumStick.add(stick);
+            
+            // 鼓棒頭（敲擊端）
+            const tipGeometry = new THREE.SphereGeometry(stickRadius * 1.5, 16, 16);
+            const tipMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFE4B5, // 淺木色
+                roughness: 0.6,
+                metalness: 0.2
+            });
+            const tip = new THREE.Mesh(tipGeometry, tipMaterial);
+            tip.position.y = stickLength / 2 + stickRadius * 0.5;
+            tip.castShadow = true;
+            drumStick.add(tip);
+            
+            // 鼓棒尾端（握柄）
+            const gripGeometry = new THREE.CylinderGeometry(stickRadius * 1.2, stickRadius * 1.2, 0.5, 16);
+            const gripMaterial = new THREE.MeshStandardMaterial({
+                color: 0x654321, // 深棕色
+                roughness: 0.9,
+                metalness: 0
+            });
+            const grip = new THREE.Mesh(gripGeometry, gripMaterial);
+            grip.position.y = -stickLength / 2 - 0.25;
+            grip.castShadow = true;
+            drumStick.add(grip);
+            
+            // 初始位置（在場景中心上方）
+            drumStick.position.set(0, 3, 0);
+            
+            scene.add(drumStick);
+            console.log('✓ 鼓棒創建完成');
+        }
+        
+        function initAudio() {
+            console.log('🎵 初始化音效系統...');
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('✓ Web Audio Context 創建成功');
+                
+                // 載入鼓聲音效
+                fetch('/static/big_drum.wav')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`找不到音效檔案: ${response.status}`);
+                        }
+                        return response.arrayBuffer();
+                    })
+                    .then(arrayBuffer => {
+                        return audioContext.decodeAudioData(arrayBuffer);
+                    })
+                    .then(audioBuffer => {
+                        drumSoundBuffer = audioBuffer;
+                        audioInitialized = true;
+                        console.log('✓ 鼓聲音效載入成功');
+                    })
+                    .catch(error => {
+        function updateDrumHit(acceleration) {
+            const totalAccel = Math.sqrt(
+                acceleration.x ** 2 + 
+                acceleration.y ** 2 + 
+                acceleration.z ** 2
+            );
+            
+            const now = Date.now();
+            if (totalAccel > HIT_THRESHOLD && (now - lastHitTime) > HIT_COOLDOWN) {
+                lastHitTime = now;
+                hitCount++;
+                document.getElementById('hit-count').textContent = hitCount;
+                
+                // 計算擊打強度（0-1）
+                const intensity = Math.min(1.0, totalAccel / 30.0);
+                
+                // 播放鼓聲
+                playDrumSound(intensity);
+                
+                // 顯示擊打指示器
+                const indicator = document.getElementById('hit-indicator');
+                indicator.classList.add('active');
+                setTimeout(() => {
+                    indicator.classList.remove('active');
+                }, 500);
+                
+                // 隨機讓一個鼓發光
+                const randomDrum = drums[Math.floor(Math.random() * drums.length)];
+                flashDrum(randomDrum);
+                
+                // 鼓棒震動效果
+                if (drumStick) {
+                    const originalY = drumStick.position.y;
+                    drumStick.position.y -= 0.2;
+                    setTimeout(() => {
+                        drumStick.position.y = originalY;
+                    }, 100);
+                }
+            }
+        }       
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                source.start(0);
+                console.log(`🔊 播放鼓聲 (音量: ${(volume * 100).toFixed(0)}%)`);
+            } catch (error) {
+                console.error('❌ 播放音效錯誤:', error);
+            }
+        }
+        
+        function updateDrumStickOrientation(roll, pitch, yaw) {
+            if (!drumStick) return;
+            
+            // 將角度轉換為弧度
+            const rollRad = roll * Math.PI / 180;
+            const pitchRad = pitch * Math.PI / 180;
+            const yawRad = yaw * Math.PI / 180;
+            
+            // 設定鼓棒的旋轉（對應 MPU6050 的姿態）
+            drumStick.rotation.set(pitchRad, yawRad, rollRad);
         }
 
         function createDrumKit() {
@@ -335,23 +480,37 @@
             
             const originalIntensity = mesh.material.emissiveIntensity;
             mesh.material.emissiveIntensity = 1.0;
+        socket.on('sensor_data', function(data) {
+            document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
+            document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
+            document.getElementById('yaw').textContent = data.yaw.toFixed(1) + '°';
             
-            setTimeout(() => {
-                mesh.material.emissiveIntensity = originalIntensity;
-            }, 200);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
+            const totalAccel = Math.sqrt(
+                data.accel.x ** 2 + 
+                data.accel.y ** 2 + 
+                data.accel.z ** 2
+            );
+            document.getElementById('accel').textContent = totalAccel.toFixed(2) + ' m/s²';
+            document.getElementById('temp').textContent = data.temperature.toFixed(1) + '°C';
+            
+            // 更新鼓棒姿態
+            updateDrumStickOrientation(data.roll, data.pitch, data.yaw);
+            
+        socket.on('connect', () => {
+            console.log('✓ WebSocket 已連接');
+            document.getElementById('status').textContent = '已連接';
+            document.getElementById('status').className = 'connected';
+            
+            // 用戶互動後解鎖音效（瀏覽器要求）
+            document.addEventListener('click', function unlockAudio() {
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log('✓ 音效已解鎖');
+                    });
+                }
+                document.removeEventListener('click', unlockAudio);
+            }, { once: true });
+        });
         socket.on('sensor_data', function(data) {
             document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
             document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
