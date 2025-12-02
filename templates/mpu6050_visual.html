@@ -278,7 +278,7 @@
             stick.castShadow = true;
             drumStick.add(stick);
             
-            // 鼓棒頭（敲擊端）- 在Y軸正方向
+            // 鼓棒頭（敲擊端）- 在Y軸負方向（反轉）
             const tipGeometry = new THREE.SphereGeometry(stickRadius * 1.5, 16, 16);
             const tipMaterial = new THREE.MeshStandardMaterial({
                 color: 0xFFE4B5, // 淺木色
@@ -286,11 +286,11 @@
                 metalness: 0.2
             });
             const tip = new THREE.Mesh(tipGeometry, tipMaterial);
-            tip.position.y = stickLength / 2 + stickRadius * 0.5;
+            tip.position.y = -stickLength / 2 - stickRadius * 0.5; // 改為負方向
             tip.castShadow = true;
             drumStick.add(tip);
             
-            // 鼓棒尾端（握柄）- 在Y軸負方向
+            // 鼓棒尾端（握柄）- 在Y軸正方向（反轉）
             const gripGeometry = new THREE.CylinderGeometry(stickRadius * 1.2, stickRadius * 1.2, 0.5, 16);
             const gripMaterial = new THREE.MeshStandardMaterial({
                 color: 0x654321, // 深棕色
@@ -298,7 +298,7 @@
                 metalness: 0
             });
             const grip = new THREE.Mesh(gripGeometry, gripMaterial);
-            grip.position.y = -stickLength / 2 - 0.25;
+            grip.position.y = stickLength / 2 + 0.25; // 改為正方向
             grip.castShadow = true;
             drumStick.add(grip);
             
