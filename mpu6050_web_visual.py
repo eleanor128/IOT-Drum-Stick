@@ -277,6 +277,11 @@ def index():
     """主頁面"""
     return render_template('mpu6050_visual.html')
 
+@app.route('/calibration')
+def calibration():
+    """參數微調頁面"""
+    return render_template('calibration.html')
+
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """提供靜態檔案（音效等）"""
