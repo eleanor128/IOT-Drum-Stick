@@ -123,6 +123,45 @@
             color: #4CAF50;
         }
 
+        #adjustment-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #2196F3;
+            z-index: 100;
+            min-width: 220px;
+        }
+
+        #adjustment-panel h4 {
+            color: #2196F3;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+
+        .adjustment-control {
+            margin: 8px 0;
+            font-size: 11px;
+        }
+
+        .adjustment-control label {
+            color: #aaa;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .adjustment-control input[type="range"] {
+            width: 100%;
+        }
+
+        .adjustment-control span {
+            color: #4CAF50;
+            font-weight: bold;
+            float: right;
+        }
+
         .status {
             text-align: center;
             margin-top: 10px;
@@ -192,6 +231,22 @@
     <button id="reset-btn">🎯 校準中心點</button>
     
     <div id="hit-counter">擊打次數: <span id="hit-count">0</span></div>
+    
+    <div id="adjustment-panel">
+        <h4>🎛️ 鼓棒微調</h4>
+        <div class="adjustment-control">
+            <label>左右靈敏度: <span id="scale-x-value">-0.03</span></label>
+            <input type="range" id="scale-x" min="-0.1" max="0.1" step="0.005" value="-0.03">
+        </div>
+        <div class="adjustment-control">
+            <label>前後靈敏度: <span id="scale-z-value">0.03</span></label>
+            <input type="range" id="scale-z" min="-0.1" max="0.1" step="0.005" value="0.03">
+        </div>
+        <div class="adjustment-control">
+            <label>高度: <span id="height-y-value">1.5</span></label>
+            <input type="range" id="height-y" min="0.5" max="3.0" step="0.1" value="1.5">
+        </div>
+    </div>
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -408,6 +463,28 @@
             }
         }
         
+        // 即時調整參數
+        let adjustments = {
+            scaleX: -0.03,
+            scaleZ: 0.03,
+            heightY: 1.5
+        };
+        
+        document.getElementById('scale-x').addEventListener('input', function(e) {
+            adjustments.scaleX = parseFloat(e.target.value);
+            document.getElementById('scale-x-value').textContent = adjustments.scaleX.toFixed(3);
+        });
+        
+        document.getElementById('scale-z').addEventListener('input', function(e) {
+            adjustments.scaleZ = parseFloat(e.target.value);
+            document.getElementById('scale-z-value').textContent = adjustments.scaleZ.toFixed(3);
+        });
+        
+        document.getElementById('height-y').addEventListener('input', function(e) {
+            adjustments.heightY = parseFloat(e.target.value);
+            document.getElementById('height-y-value').textContent = adjustments.heightY.toFixed(1);
+        });
+        
         function updateDrumStickOrientation(roll, pitch, yaw) {
             if (!drumStick) return;
             
@@ -426,11 +503,24 @@
             
             // 根據角度移動鼓棒位置（在水平面上移動）
             // Yaw 控制左右 (X軸)，Pitch 控制前後 (Z軸)
-            const moveScale = -0.05; // 移動比例
-            drumStick.position.x = yaw * moveScale;
-            drumStick.position.z = -pitch * moveScale; // 負號是因為 Z 軸方向
-            // Y 軸保持固定高度
-            drumStick.position.y = 1.5;
+            
+            // 使用可調整的比例
+            let targetX = yaw * adjustments.scaleX;
+            let targetZ = pitch * adjustments.scaleZ;
+            
+            // 限制移動範圍，防止鼓棒飛出畫面
+            const maxRange = 4.0;
+            targetX = Math.max(-maxRange, Math.min(maxRange, targetX));
+            targetZ = Math.max(-maxRange, Math.min(maxRange, targetZ));
+            
+            drumStick.position.x = targetX;
+            drumStick.position.z = targetZ;
+            drumStick.position.y = adjustments.heightY; // 使用可調整的高度
+            
+            // 調試輸出（每30幀輸出一次）
+            if (Math.random() < 0.033) {
+                console.log(`🥁 Roll: ${roll.toFixed(1)}°, Pitch: ${pitch.toFixed(1)}°, Yaw: ${yaw.toFixed(1)}° | Pos: (${targetX.toFixed(2)}, ${targetZ.toFixed(2)})`);
+            }
         }
 
         function createDrumKit() {
