@@ -435,6 +435,36 @@
             </div>
         </div>
 
+        <!-- 軸方向反轉 -->
+        <div class="control-section">
+            <h3>🔀 軸方向反轉 (Axis Inversion)</h3>
+            
+            <div class="slider-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="invert-roll" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #ddd;">反轉 Roll 軸 (橫滾)</span>
+                </label>
+            </div>
+
+            <div class="slider-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="invert-pitch" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #ddd;">反轉 Pitch 軸 (俯仰)</span>
+                </label>
+            </div>
+
+            <div class="slider-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="invert-yaw" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #ddd;">反轉 Yaw 軸 (偏航)</span>
+                </label>
+            </div>
+
+            <p class="info-text">
+                💡 勾選後，該軸的移動方向會反轉。例如：原本向左變成向右。
+            </p>
+        </div>
+
         <!-- 快速動作 -->
         <div class="control-section">
             <h3>⚡ 快速動作</h3>
@@ -486,6 +516,9 @@
         // 偏移量
         let positionOffset = { x: 0, y: 0, z: 0 };
         let rotationOffset = { roll: 0, pitch: 0, yaw: 0 };
+
+        // 軸反轉設定
+        let axisInversion = { roll: false, pitch: false, yaw: false };
 
         // 當前感測器數據
         let currentSensorData = { roll: 0, pitch: 0, yaw: 0 };
@@ -675,9 +708,20 @@
             );
 
             // 套用旋轉（感測器數據 + 偏移）
-            const roll = (currentSensorData.roll + rotationOffset.roll) * Math.PI / 180;
-            const pitch = (currentSensorData.pitch + rotationOffset.pitch) * Math.PI / 180;
-            const yaw = (currentSensorData.yaw + rotationOffset.yaw) * Math.PI / 180;
+            // 應用軸反轉
+            let roll = currentSensorData.roll;
+            let pitch = currentSensorData.pitch;
+            let yaw = currentSensorData.yaw;
+
+            // 如果勾選反轉，則取負值
+            if (axisInversion.roll) roll = -roll;
+            if (axisInversion.pitch) pitch = -pitch;
+            if (axisInversion.yaw) yaw = -yaw;
+
+            // 加上偏移量並轉換為弧度
+            roll = (roll + rotationOffset.roll) * Math.PI / 180;
+            pitch = (pitch + rotationOffset.pitch) * Math.PI / 180;
+            yaw = (yaw + rotationOffset.yaw) * Math.PI / 180;
 
             // 基礎旋轉 (讓鼓棒水平)
             const baseRotation = Math.PI / 2;
@@ -787,6 +831,16 @@
             });
         });
 
+        // 軸反轉複選框
+        ['roll', 'pitch', 'yaw'].forEach(axis => {
+            const checkbox = document.getElementById(`invert-${axis}`);
+            checkbox.addEventListener('change', (e) => {
+                axisInversion[axis] = e.target.checked;
+                updateDrumStick();
+                console.log(`${axis} 軸反轉: ${e.target.checked ? '已啟用' : '已停用'}`);
+            });
+        });
+
         // 套用位置按鈕
         document.getElementById('apply-position-btn').addEventListener('click', () => {
             console.log('✓ 位置偏移已套用:', positionOffset);
@@ -849,6 +903,7 @@
             // 重置所有偏移
             positionOffset = { x: 0, y: 0, z: 0 };
             rotationOffset = { roll: 0, pitch: 0, yaw: 0 };
+            axisInversion = { roll: false, pitch: false, yaw: false };
 
             // 重置所有滑桿
             ['x', 'y', 'z'].forEach(axis => {
@@ -860,6 +915,7 @@
             ['roll', 'pitch', 'yaw'].forEach(axis => {
                 document.getElementById(`rotation-${axis}`).value = 0;
                 document.getElementById(`rotation-${axis}-value`).textContent = '0';
+                document.getElementById(`invert-${axis}`).checked = false;
             });
 
             updateDrumStick();
@@ -871,7 +927,8 @@
         document.getElementById('save-settings-btn').addEventListener('click', () => {
             const settings = {
                 position: positionOffset,
-                rotation: rotationOffset
+                rotation: rotationOffset,
+                inversion: axisInversion
             };
             localStorage.setItem('drumstick-calibration', JSON.stringify(settings));
             console.log('💾 設定已儲存:', settings);
@@ -885,6 +942,11 @@
                 const settings = JSON.parse(saved);
                 positionOffset = settings.position;
                 rotationOffset = settings.rotation;
+                
+                // 載入軸反轉設定（向後兼容）
+                if (settings.inversion) {
+                    axisInversion = settings.inversion;
+                }
 
                 // 更新 UI
                 ['x', 'y', 'z'].forEach(axis => {
@@ -896,6 +958,7 @@
                 ['roll', 'pitch', 'yaw'].forEach(axis => {
                     document.getElementById(`rotation-${axis}`).value = rotationOffset[axis];
                     document.getElementById(`rotation-${axis}-value`).textContent = rotationOffset[axis];
+                    document.getElementById(`invert-${axis}`).checked = axisInversion[axis] || false;
                 });
 
                 updateDrumStick();
@@ -926,6 +989,17 @@
                 const settings = JSON.parse(saved);
                 positionOffset = settings.position;
                 rotationOffset = settings.rotation;
+                
+                // 載入軸反轉設定（向後兼容）
+                if (settings.inversion) {
+                    axisInversion = settings.inversion;
+                    
+                    // 更新複選框狀態
+                    ['roll', 'pitch', 'yaw'].forEach(axis => {
+                        document.getElementById(`invert-${axis}`).checked = axisInversion[axis] || false;
+                    });
+                }
+                
                 console.log('📂 自動載入設定:', settings);
             }
         });
