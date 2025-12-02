@@ -461,15 +461,15 @@
         <div class="axis-legend">
             <div class="axis-item">
                 <div class="axis-color x-axis"></div>
-                <span>X 軸 (紅色) - 左右方向（右為正）</span>
+                <span>X 軸 (紅色) - 左右方向</span>
             </div>
             <div class="axis-item">
                 <div class="axis-color y-axis"></div>
-                <span>Y 軸 (綠色) - 前後方向（前為正）</span>
+                <span>Y 軸 (綠色) - 上下方向</span>
             </div>
             <div class="axis-item">
                 <div class="axis-color z-axis"></div>
-                <span>Z 軸 (藍色) - 上下方向（上為正）</span>
+                <span>Z 軸 (藍色) - 前後方向</span>
             </div>
         </div>
     </div>
@@ -533,16 +533,13 @@
             dirLight.position.set(-5, 10, -5);
             scene.add(dirLight);
 
-            // 創建地面網格（旋轉90度，因為我們要Z軸向上）
+            // 創建地面網格
             const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
-            gridHelper.rotation.x = Math.PI / 2; // 旋轉使網格在XY平面上
             scene.add(gridHelper);
 
-            // 創建自訂座標軸
-            // X軸正向 = 畫面右手邊（紅色）
-            // Y軸正向 = 前面（綠色）
-            // Z軸正向 = 畫面上方（藍色）
-            createCustomAxes();
+            // 創建座標軸（更大更明顯）
+            const axesHelper = new THREE.AxesHelper(8);
+            scene.add(axesHelper);
 
             // 添加座標軸標籤
             createAxisLabels();
@@ -569,85 +566,33 @@
             console.log('✓ Three.js 場景初始化完成');
         }
 
-        // 創建自訂座標軸
-        function createCustomAxes() {
-            const axisLength = 8;
-            const axisRadius = 0.05;
-
-            // X軸（紅色）- 指向右邊
-            const xAxisGeometry = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 8);
-            const xAxisMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            const xAxis = new THREE.Mesh(xAxisGeometry, xAxisMaterial);
-            xAxis.rotation.z = -Math.PI / 2; // 旋轉使其沿X軸
-            xAxis.position.x = axisLength / 2;
-            scene.add(xAxis);
-
-            // X軸箭頭
-            const xArrowGeometry = new THREE.ConeGeometry(axisRadius * 3, axisRadius * 8, 8);
-            const xArrow = new THREE.Mesh(xArrowGeometry, xAxisMaterial);
-            xArrow.rotation.z = -Math.PI / 2;
-            xArrow.position.x = axisLength + axisRadius * 4;
-            scene.add(xArrow);
-
-            // Y軸（綠色）- 指向前面
-            const yAxisGeometry = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 8);
-            const yAxisMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const yAxis = new THREE.Mesh(yAxisGeometry, yAxisMaterial);
-            yAxis.rotation.x = Math.PI / 2; // 旋轉使其沿Y軸（實際是Z軸方向）
-            yAxis.position.z = -axisLength / 2; // 注意：Three.js的Z軸，我們當作Y軸用
-            scene.add(yAxis);
-
-            // Y軸箭頭
-            const yArrowGeometry = new THREE.ConeGeometry(axisRadius * 3, axisRadius * 8, 8);
-            const yArrow = new THREE.Mesh(yArrowGeometry, yAxisMaterial);
-            yArrow.rotation.x = Math.PI / 2;
-            yArrow.position.z = -axisLength - axisRadius * 4;
-            scene.add(yArrow);
-
-            // Z軸（藍色）- 指向上方
-            const zAxisGeometry = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 8);
-            const zAxisMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-            const zAxis = new THREE.Mesh(zAxisGeometry, zAxisMaterial);
-            // 不需要旋轉，因為圓柱體預設就是沿Y軸（我們的Z軸）
-            zAxis.position.y = axisLength / 2; // Three.js的Y軸，我們當作Z軸用
-            scene.add(zAxis);
-
-            // Z軸箭頭
-            const zArrowGeometry = new THREE.ConeGeometry(axisRadius * 3, axisRadius * 8, 8);
-            const zArrow = new THREE.Mesh(zArrowGeometry, zAxisMaterial);
-            zArrow.position.y = axisLength + axisRadius * 4;
-            scene.add(zArrow);
-
-            console.log('✓ 自訂座標軸已創建');
-        }
-
         // 創建座標軸標籤
         function createAxisLabels() {
             // 使用小球體作為軸端標記
-            const markerGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const markerGeometry = new THREE.SphereGeometry(0.15, 16, 16);
             
-            // X軸標記 (紅色) - 右邊
+            // X軸標記 (紅色)
             const xMarker = new THREE.Mesh(
                 markerGeometry,
                 new THREE.MeshBasicMaterial({ color: 0xff0000 })
             );
-            xMarker.position.set(8.5, 0, 0);
+            xMarker.position.set(8, 0, 0);
             scene.add(xMarker);
 
-            // Y軸標記 (綠色) - 前面（Three.js的-Z方向）
+            // Y軸標記 (綠色)
             const yMarker = new THREE.Mesh(
                 markerGeometry,
                 new THREE.MeshBasicMaterial({ color: 0x00ff00 })
             );
-            yMarker.position.set(0, 0, -8.5);
+            yMarker.position.set(0, 8, 0);
             scene.add(yMarker);
 
-            // Z軸標記 (藍色) - 上方（Three.js的+Y方向）
+            // Z軸標記 (藍色)
             const zMarker = new THREE.Mesh(
                 markerGeometry,
                 new THREE.MeshBasicMaterial({ color: 0x0000ff })
             );
-            zMarker.position.set(0, 8.5, 0);
+            zMarker.position.set(0, 0, 8);
             scene.add(zMarker);
         }
 
@@ -723,14 +668,10 @@
             if (!drumStick) return;
 
             // 套用位置偏移
-            // 轉換到我們的座標系統：
-            // 我們的 X -> Three.js 的 X
-            // 我們的 Y -> Three.js 的 -Z
-            // 我們的 Z -> Three.js 的 Y
             drumStick.position.set(
-                positionOffset.x,                    // X: 右邊
-                2 + positionOffset.z,                // Z: 上方 (Three.js的Y)
-                -positionOffset.y                    // Y: 前面 (Three.js的-Z)
+                positionOffset.x,
+                2 + positionOffset.y,
+                positionOffset.z
             );
 
             // 套用旋轉（感測器數據 + 偏移）
@@ -738,12 +679,13 @@
             const pitch = (currentSensorData.pitch + rotationOffset.pitch) * Math.PI / 180;
             const yaw = (currentSensorData.yaw + rotationOffset.yaw) * Math.PI / 180;
 
-            // 基礎旋轉 (讓鼓棒水平指向前方)
-            // 注意：需要調整旋轉順序以符合新座標系統
+            // 基礎旋轉 (讓鼓棒水平)
+            const baseRotation = Math.PI / 2;
+
             drumStick.rotation.set(
-                pitch,      // X軸旋轉（俯仰）
-                yaw,        // Y軸旋轉（偏航）- Three.js的Y軸是我們的Z軸
-                roll        // Z軸旋轉（橫滾）
+                baseRotation + pitch,
+                yaw,
+                roll
             );
         }
 
@@ -751,10 +693,10 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // 固定相機位置，從右前上方觀察
-            // 相機位置：X正向(右), Y負向(後), Z正向(上)
-            camera.position.set(6, 4, 8);  // 在右邊、後方、上方
-            camera.lookAt(0, 2, 0);         // 看向鼓棒位置
+            // 固定相機位置，不旋轉
+            // 從右前上方觀察場景
+            camera.position.set(8, 6, 10);
+            camera.lookAt(0, 2, 0);
 
             renderer.render(scene, camera);
         }
