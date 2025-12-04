@@ -3,52 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 爵士鼓組背景</title>
-    <!-- 引入 Tailwind CSS 以進行基礎佈局和響應式設計 -->
+    <title>3D 智能鼓棒即時視覺化</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Three.js 函式庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- 引入 Three.js 的 OrbitControls，用於讓使用者可以旋轉視角 -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body {
             margin: 0;
-            overflow: hidden; /* 隱藏滾動條 */
-            background-color: #0d0d0d; /* 深色背景模擬爵士俱樂部 */
+            overflow: hidden;
+            background-color: #0d0d0d;
         }
         #scene-container {
             width: 100vw;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: relative;
         }
         canvas {
             display: block;
         }
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            max-width: 350px;
+            backdrop-filter: blur(10px);
+        }
+        .info-row {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-label {
+            color: #888;
+            margin-right: 10px;
+        }
+        .info-value {
+            color: #0ea5e9;
+            font-weight: bold;
+        }
+        .position-indicator {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .pos-left { background: #f59e0b; color: white; }
+        .pos-center { background: #10b981; color: white; }
+        .pos-right { background: #3b82f6; color: white; }
+        .pos-none { background: #6b7280; color: white; }
+        #status-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <div id="scene-container">
-        <!-- 3D 渲染器將會將 canvas 元素放置在此處 -->
+    <div id="scene-container"></div>
+
+    <!-- 資訊面板 -->
+    <div id="info-panel">
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #fff;">
+            🥁 即時鼓棒追蹤
+        </div>
+
+        <div style="margin-bottom: 10px; color: #fbbf24;">👈 左手鼓棒</div>
+        <div class="info-row">
+            <span class="info-label">位置:</span>
+            <span id="left-position" class="position-indicator pos-none">---</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">俯仰角:</span>
+            <span class="info-value" id="left-pitch">0°</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">翻滾角:</span>
+            <span class="info-value" id="left-roll">0°</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度:</span>
+            <span class="info-value" id="left-accel">0.00 g</span>
+        </div>
+
+        <div style="margin: 15px 0 10px 0; color: #60a5fa;">👉 右手鼓棒</div>
+        <div class="info-row">
+            <span class="info-label">位置:</span>
+            <span id="right-position" class="position-indicator pos-none">---</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">俯仰角:</span>
+            <span class="info-value" id="right-pitch">0°</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">翻滾角:</span>
+            <span class="info-value" id="right-roll">0°</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度:</span>
+            <span class="info-value" id="right-accel">0.00 g</span>
+        </div>
     </div>
-    <div id="loading-overlay" class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center text-white z-10 transition-opacity duration-1000">
-        <div class="text-3xl font-bold mb-4">正在載入 3D 爵士鼓組...</div>
-        <div class="text-lg text-gray-400">請拖曳滑鼠來旋轉視角</div>
-    </div>
+
+    <div id="status-bar">🟢 系統運行中</div>
 
     <script>
-        // 設定 Firebase 相關變數（此應用程式不需要 Firestore 或 Auth，故保留為空或預設值）
-        const __app_id = '3d-jazz-drum-kit';
-        const __firebase_config = '{}';
-        const __initial_auth_token = undefined;
-
-
         let scene, camera, renderer, controls;
-        const container = document.getElementById('scene-container');
-        const loadingOverlay = document.getElementById('loading-overlay');
+        let leftDrumstick, rightDrumstick;
+        let leftStickTip, rightStickTip; // 鼓棒尖端（用於打擊檢測）
 
-        // --- 輔助函數：創建鼓 (Drum) ---
+        // 打擊視覺效果
+        let hitParticles = [];
+
+        const container = document.getElementById('scene-container');
+
+        // --- 創建鼓棒 ---
+        function createDrumstick(color) {
+            const group = new THREE.Group();
+
+            // 鼓棒主體（圓柱體）
+            const stickLength = 1.2;
+            const stickRadius = 0.02;
+            const stickGeometry = new THREE.CylinderGeometry(stickRadius, stickRadius * 0.7, stickLength, 8);
+            const stickMaterial = new THREE.MeshPhongMaterial({
+                color: 0xD2691E, // 木頭色
+                shininess: 20
+            });
+            const stick = new THREE.Mesh(stickGeometry, stickMaterial);
+            stick.rotation.z = Math.PI / 2; // 水平放置
+            group.add(stick);
+
+            // 鼓棒尖端（球體）
+            const tipGeometry = new THREE.SphereGeometry(0.035, 16, 16);
+            const tipMaterial = new THREE.MeshPhongMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.3
+            });
+            const tip = new THREE.Mesh(tipGeometry, tipMaterial);
+            tip.position.x = stickLength / 2;
+            group.add(tip);
+
+            // 鼓棒握柄標記（彩色環）
+            const gripGeometry = new THREE.CylinderGeometry(stickRadius * 1.2, stickRadius * 1.2, 0.15, 8);
+            const gripMaterial = new THREE.MeshPhongMaterial({ color: color });
+            const grip = new THREE.Mesh(gripGeometry, gripMaterial);
+            grip.rotation.z = Math.PI / 2;
+            grip.position.x = -stickLength / 3;
+            group.add(grip);
+
+            group.castShadow = true;
+
+            return { group, tip };
+        }
+
+        // --- 創建打擊粒子效果 ---
+        function createHitEffect(position, color) {
+            const particleCount = 20;
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const velocities = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions.push(position.x, position.y, position.z);
+
+                // 隨機速度
+                velocities.push(
+                    (Math.random() - 0.5) * 0.3,
+                    Math.random() * 0.3,
+                    (Math.random() - 0.5) * 0.3
+                );
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+            const material = new THREE.PointsMaterial({
+                color: color,
+                size: 0.08,
+                transparent: true,
+                opacity: 1.0,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            hitParticles.push({
+                particles: particles,
+                velocities: velocities,
+                lifetime: 1.0
+            });
+        }
+
+        // --- 更新打擊粒子 ---
+        function updateHitEffects() {
+            for (let i = hitParticles.length - 1; i >= 0; i--) {
+                const effect = hitParticles[i];
+                effect.lifetime -= 0.016; // 約 60 FPS
+
+                if (effect.lifetime <= 0) {
+                    scene.remove(effect.particles);
+                    hitParticles.splice(i, 1);
+                    continue;
+                }
+
+                // 更新粒子位置
+                const positions = effect.particles.geometry.attributes.position.array;
+                for (let j = 0; j < positions.length; j += 3) {
+                    positions[j] += effect.velocities[j];
+                    positions[j + 1] += effect.velocities[j + 1];
+                    positions[j + 2] += effect.velocities[j + 2];
+
+                    // 重力
+                    effect.velocities[j + 1] -= 0.01;
+                }
+                effect.particles.geometry.attributes.position.needsUpdate = true;
+
+                // 淡出
+                effect.particles.material.opacity = effect.lifetime;
+            }
+        }
+
+        // --- 輔助函數：創建鼓 ---
         function createDrum(radius, height, color, position, rotation) {
             const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
             const material = new THREE.MeshPhongMaterial({
@@ -61,15 +249,17 @@
             if (rotation) {
                 drum.rotation.set(rotation.x, rotation.y, rotation.z);
             }
+            drum.castShadow = true;
+            drum.receiveShadow = true;
             scene.add(drum);
             return drum;
         }
 
-        // --- 輔助函數：創建鈸 (Cymbal) ---
+        // --- 輔助函數：創建鈸 ---
         function createCymbal(radius, thickness, position, rotation) {
             const geometry = new THREE.CylinderGeometry(radius, radius * 0.9, thickness, 64);
             const material = new THREE.MeshStandardMaterial({
-                color: 0xAAAA00, // 黃銅色
+                color: 0xAAAA00,
                 metalness: 0.9,
                 roughness: 0.2,
                 side: THREE.DoubleSide
@@ -79,151 +269,253 @@
             if (rotation) {
                 cymbal.rotation.set(rotation.x, rotation.y, rotation.z);
             }
+            cymbal.castShadow = true;
+            cymbal.receiveShadow = true;
             scene.add(cymbal);
             return cymbal;
         }
 
-        // --- 輔助函數：創建支架 (Stand Pole) ---
+        // --- 輔助函數：創建支架 ---
         function createStand(x, y, z, height) {
             const geometry = new THREE.CylinderGeometry(0.05, 0.05, height, 8);
             const material = new THREE.MeshLambertMaterial({ color: 0x333333 });
             const stand = new THREE.Mesh(geometry, material);
             stand.position.set(x, y + height / 2, z);
+            stand.castShadow = true;
+            stand.receiveShadow = true;
             scene.add(stand);
             return stand;
         }
 
         // --- 初始化 3D 場景 ---
         function init() {
-            // 1. 場景 (Scene)
+            // 場景
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505); // 幾乎全黑的背景
+            scene.background = new THREE.Color(0x050505);
 
-            // 2. 相機 (Camera)
+            // 相機
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(3, 4, 5); // 初始視角
+            camera.position.set(3, 3, 4);
 
-            // 3. 渲染器 (Renderer)
+            // 渲染器
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true; // 開啟陰影
+            renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
-            // 4. 燈光 (Lighting)
-            // 基礎環境光 (Ambient Light) - 提供微弱的整體照明
+            // 燈光
             const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
             scene.add(ambientLight);
 
-            // 聚光燈 (Spotlight) - 模擬舞台燈光，聚焦在鼓組上
-            const spotlightColor = 0xFFFFFF;
-            const intensity = 3.5;
-            const distance = 10;
-            const angle = Math.PI / 8;
-            const penumbra = 0.5;
-
-            // 聚光燈 1 (左上方)
-            const spotLight1 = new THREE.SpotLight(spotlightColor, intensity, distance, angle, penumbra, 0.5);
+            const spotLight1 = new THREE.SpotLight(0xFFFFFF, 3.5, 10, Math.PI / 8, 0.5, 0.5);
             spotLight1.position.set(-3, 6, 2);
-            spotLight1.target.position.set(0, 0.5, 0); // 指向鼓組中心
+            spotLight1.target.position.set(0, 0.5, 0);
             spotLight1.castShadow = true;
             spotLight1.shadow.mapSize.width = 1024;
             spotLight1.shadow.mapSize.height = 1024;
             scene.add(spotLight1);
             scene.add(spotLight1.target);
 
-            // 聚光燈 2 (右上方)
-            const spotLight2 = new THREE.SpotLight(spotlightColor, intensity, distance, angle, penumbra, 0.5);
+            const spotLight2 = new THREE.SpotLight(0xFFFFFF, 3.5, 10, Math.PI / 8, 0.5, 0.5);
             spotLight2.position.set(3, 6, 2);
-            spotLight2.target.position.set(0, 0.5, 0); // 指向鼓組中心
+            spotLight2.target.position.set(0, 0.5, 0);
             spotLight2.castShadow = true;
             scene.add(spotLight2);
             scene.add(spotLight2.target);
 
-            // 5. 地板 (Floor/Stage)
+            // 地板
             const floorGeometry = new THREE.PlaneGeometry(15, 15);
-            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x1A1A1A }); // 深灰色舞台
+            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x1A1A1A });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             scene.add(floor);
 
+            // 創建爵士鼓組
+            const DRUM_COLOR = 0x8B0000;
+            const BASE_Y = 0;
 
-            // 6. 創建爵士鼓組 (Create the Jazz Drum Kit)
-            const DRUM_COLOR = 0x8B0000; // 深紅色/酒紅色，經典爵士鼓色
-            const BASE_Y = 0; // 地板高度
+            // 大鼓
+            createDrum(0.8, 0.7, DRUM_COLOR, { x: 0, y: BASE_Y, z: 0 }, { x: 0, y: 0, z: 0 });
 
-            // --- 大鼓 (Bass Drum) ---
-            const bassDrum = createDrum(0.8, 0.7, DRUM_COLOR, { x: 0, y: BASE_Y, z: 0 }, { x: 0, y: 0, z: 0 });
-            bassDrum.castShadow = true;
-
-            // --- 小鼓 (Snare Drum) ---
+            // 小鼓
             const snareStandHeight = 0.5;
-            createStand(-1.0, BASE_Y, 0.5, snareStandHeight); // 小鼓支架
-            const snareDrum = createDrum(0.35, 0.2, 0xFFFFFF, { x: -1.0, y: BASE_Y + snareStandHeight, z: 0.5 }, { x: -Math.PI / 16, y: 0, z: 0 }); // 輕微傾斜
-            snareDrum.castShadow = true;
+            createStand(-1.0, BASE_Y, 0.5, snareStandHeight);
+            createDrum(0.35, 0.2, 0xFFFFFF, { x: -1.0, y: BASE_Y + snareStandHeight, z: 0.5 }, { x: -Math.PI / 16, y: 0, z: 0 });
 
-            // --- 中鼓 (Rack Tom) ---
+            // 中鼓
             const tomStandHeight = 0.9;
-            createStand(0.6, BASE_Y, -0.6, tomStandHeight); // 中鼓支架
-            const rackTom = createDrum(0.3, 0.3, DRUM_COLOR, { x: 0.6, y: BASE_Y + tomStandHeight, z: -0.6 }, { x: Math.PI / 16, y: 0, z: 0 }); // 輕微傾斜
-            rackTom.castShadow = true;
+            createStand(0.6, BASE_Y, -0.6, tomStandHeight);
+            createDrum(0.3, 0.3, DRUM_COLOR, { x: 0.6, y: BASE_Y + tomStandHeight, z: -0.6 }, { x: Math.PI / 16, y: 0, z: 0 });
 
-
-            // --- 鈸架 (Cymbal Stands) ---
+            // 鈸架
             const standHeightTall = 1.2;
-            const standHeightMedium = 0.9;
 
-            // Hi-Hat 踏鈸 (左側)
-            const hiHatStand = createStand(-1.5, BASE_Y, -0.2, standHeightTall);
-            const hiHatBottom = createCymbal(0.4, 0.02, { x: -1.5, y: BASE_Y + standHeightTall, z: -0.2 }, { x: 0, y: 0, z: 0 });
-            const hiHatTop = createCymbal(0.38, 0.01, { x: -1.5, y: BASE_Y + standHeightTall + 0.02, z: -0.2 }, { x: 0, y: 0, z: 0 });
-            hiHatBottom.castShadow = true;
-            hiHatTop.castShadow = true;
+            // Hi-Hat
+            createStand(-1.5, BASE_Y, -0.2, standHeightTall);
+            createCymbal(0.4, 0.02, { x: -1.5, y: BASE_Y + standHeightTall, z: -0.2 }, { x: 0, y: 0, z: 0 });
+            createCymbal(0.38, 0.01, { x: -1.5, y: BASE_Y + standHeightTall + 0.02, z: -0.2 }, { x: 0, y: 0, z: 0 });
 
-            // Ride Cymbal 大鈸 (右側)
-            const rideStand = createStand(1.8, BASE_Y, 0.5, standHeightTall);
-            const rideCymbal = createCymbal(0.6, 0.02, { x: 1.8, y: BASE_Y + standHeightTall + 0.05, z: 0.5 }, { x: Math.PI / 8, y: 0, z: 0 }); // 輕微傾斜
-            rideCymbal.castShadow = true;
+            // Ride Cymbal
+            createStand(1.8, BASE_Y, 0.5, standHeightTall);
+            createCymbal(0.6, 0.02, { x: 1.8, y: BASE_Y + standHeightTall + 0.05, z: 0.5 }, { x: Math.PI / 8, y: 0, z: 0 });
 
-            // Crash Cymbal 碎鈸 (後側)
-            const crashStand = createStand(0.5, BASE_Y, -1.5, standHeightTall + 0.5);
-            const crashCymbal = createCymbal(0.5, 0.02, { x: 0.5, y: BASE_Y + standHeightTall + 0.5 + 0.05, z: -1.5 }, { x: Math.PI / 12, y: 0, z: 0 }); // 輕微傾斜
-            crashCymbal.castShadow = true;
+            // Crash Cymbal
+            createStand(0.5, BASE_Y, -1.5, standHeightTall + 0.5);
+            createCymbal(0.5, 0.02, { x: 0.5, y: BASE_Y + standHeightTall + 0.5 + 0.05, z: -1.5 }, { x: Math.PI / 12, y: 0, z: 0 });
 
+            // 創建兩支鼓棒
+            const leftStick = createDrumstick(0xFBBF24); // 黃色
+            leftDrumstick = leftStick.group;
+            leftStickTip = leftStick.tip;
+            leftDrumstick.position.set(-1.5, 1.5, 0.5);
+            scene.add(leftDrumstick);
 
-            // 7. 操控 (Controls)
+            const rightStick = createDrumstick(0x60A5FA); // 藍色
+            rightDrumstick = rightStick.group;
+            rightStickTip = rightStick.tip;
+            rightDrumstick.position.set(1.5, 1.5, 0.5);
+            scene.add(rightDrumstick);
+
+            // 操控
             controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 1, 0); // 讓相機圍繞鼓組中心旋轉
-            controls.enableDamping = true; // 啟用阻尼效果（平滑運動）
+            controls.target.set(0, 1, 0);
+            controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.minDistance = 2;
             controls.maxDistance = 10;
-            controls.maxPolarAngle = Math.PI / 2.1; // 限制視角不能穿過地板
+            controls.maxPolarAngle = Math.PI / 2.1;
 
-            // 8. 響應式設計 (Resize handling)
+            // 響應式設計
             window.addEventListener('resize', onWindowResize, false);
-
-            // 隱藏載入畫面
-            setTimeout(() => {
-                loadingOverlay.style.opacity = '0';
-                setTimeout(() => loadingOverlay.style.display = 'none', 1000);
-            }, 500);
-
         }
 
-        // --- 視窗大小改變處理 ---
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- 動畫循環 (Animation Loop) ---
+        // --- 更新鼓棒位置和姿態 ---
+        let prevLeftHitting = false;
+        let prevRightHitting = false;
+
+        function updateDrumsticks(data) {
+            if (!data || !leftDrumstick || !rightDrumstick) return;
+
+            // 更新左手鼓棒
+            if (data.left) {
+                // 根據俯仰角和翻滾角計算鼓棒姿態
+                const leftPitch = data.left.angle.pitch * Math.PI / 180;
+                const leftRoll = data.left.angle.roll * Math.PI / 180;
+
+                // 設定鼓棒旋轉（根據感測器數據）
+                leftDrumstick.rotation.x = leftPitch;
+                leftDrumstick.rotation.z = leftRoll;
+
+                // 根據打擊位置調整 X 座標
+                if (data.left.hit_position === 'left') {
+                    leftDrumstick.position.x = -1.5;
+                } else if (data.left.hit_position === 'center') {
+                    leftDrumstick.position.x = -0.5;
+                } else if (data.left.hit_position === 'right') {
+                    leftDrumstick.position.x = 0.5;
+                }
+
+                // 根據加速度調整高度（模擬打擊動作）
+                const leftAccel = data.left.magnitude;
+                if (leftAccel > 2.0) {
+                    leftDrumstick.position.y = 1.0 + (leftAccel - 2.0) * 0.1;
+                } else {
+                    leftDrumstick.position.y = 1.5;
+                }
+
+                // 打擊效果
+                if (data.left.is_hitting && !prevLeftHitting) {
+                    const tipWorldPos = new THREE.Vector3();
+                    leftStickTip.getWorldPosition(tipWorldPos);
+                    createHitEffect(tipWorldPos, 0xFBBF24);
+                }
+                prevLeftHitting = data.left.is_hitting;
+
+                // 更新資訊面板
+                updateInfoPanel('left', data.left);
+            }
+
+            // 更新右手鼓棒
+            if (data.right) {
+                const rightPitch = data.right.angle.pitch * Math.PI / 180;
+                const rightRoll = data.right.angle.roll * Math.PI / 180;
+
+                rightDrumstick.rotation.x = rightPitch;
+                rightDrumstick.rotation.z = rightRoll;
+
+                if (data.right.hit_position === 'left') {
+                    rightDrumstick.position.x = -0.5;
+                } else if (data.right.hit_position === 'center') {
+                    rightDrumstick.position.x = 0.5;
+                } else if (data.right.hit_position === 'right') {
+                    rightDrumstick.position.x = 1.5;
+                }
+
+                const rightAccel = data.right.magnitude;
+                if (rightAccel > 2.0) {
+                    rightDrumstick.position.y = 1.0 + (rightAccel - 2.0) * 0.1;
+                } else {
+                    rightDrumstick.position.y = 1.5;
+                }
+
+                if (data.right.is_hitting && !prevRightHitting) {
+                    const tipWorldPos = new THREE.Vector3();
+                    rightStickTip.getWorldPosition(tipWorldPos);
+                    createHitEffect(tipWorldPos, 0x60A5FA);
+                }
+                prevRightHitting = data.right.is_hitting;
+
+                updateInfoPanel('right', data.right);
+            }
+        }
+
+        // --- 更新資訊面板 ---
+        function updateInfoPanel(side, stickData) {
+            document.getElementById(`${side}-pitch`).textContent = stickData.angle.pitch.toFixed(1) + '°';
+            document.getElementById(`${side}-roll`).textContent = stickData.angle.roll.toFixed(1) + '°';
+            document.getElementById(`${side}-accel`).textContent = stickData.magnitude.toFixed(2) + ' g';
+
+            const posEl = document.getElementById(`${side}-position`);
+            if (stickData.hit_position) {
+                const posText = {
+                    'left': '左側',
+                    'center': '中間',
+                    'right': '右側'
+                };
+                posEl.textContent = posText[stickData.hit_position];
+                posEl.className = `position-indicator pos-${stickData.hit_position}`;
+            } else {
+                posEl.textContent = '---';
+                posEl.className = 'position-indicator pos-none';
+            }
+        }
+
+        // --- 從後端獲取數據 ---
+        function fetchSensorData() {
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    updateDrumsticks(data);
+                })
+                .catch(error => {
+                    console.error('獲取數據錯誤:', error);
+                });
+        }
+
+        // --- 動畫循環 ---
         function animate() {
             requestAnimationFrame(animate);
-            controls.update(); // 只有在 controls.enableDamping 設為 true 時才需要
+            controls.update();
+            updateHitEffects();
             renderer.render(scene, camera);
         }
 
@@ -231,8 +523,10 @@
         window.onload = function () {
             init();
             animate();
-        };
 
+            // 每 50ms 更新一次數據
+            setInterval(fetchSensorData, 50);
+        };
     </script>
 </body>
 </html>
