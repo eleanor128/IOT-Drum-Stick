@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -40,7 +40,7 @@
 
         .drum-sticks {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
             gap: 30px;
             margin-bottom: 20px;
         }
@@ -50,14 +50,26 @@
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+
+        .stick-card.hitting {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(255,0,0,0.5);
         }
 
         .stick-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 3px solid #667eea;
+        }
+
+        .stick-info {
+            display: flex;
+            align-items: center;
         }
 
         .stick-icon {
@@ -75,6 +87,30 @@
             font-size: 0.9em;
             color: #666;
             margin-left: 10px;
+        }
+
+        .hit-indicator {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .hit-indicator.inactive {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .hit-indicator.active {
+            background: #ef4444;
+            color: white;
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         .data-section {
@@ -98,7 +134,13 @@
         .data-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            gap: 12px;
+        }
+
+        .data-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
 
         .data-item {
@@ -106,6 +148,10 @@
             padding: 15px;
             border-radius: 10px;
             text-align: center;
+        }
+
+        .data-item.highlight {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         }
 
         .data-label {
@@ -121,6 +167,10 @@
             font-family: 'Courier New', monospace;
         }
 
+        .data-value.large {
+            font-size: 2.2em;
+        }
+
         .data-unit {
             font-size: 0.8em;
             color: #888;
@@ -130,9 +180,10 @@
         .status {
             text-align: center;
             color: white;
-            padding: 10px;
+            padding: 15px;
             border-radius: 10px;
             margin-top: 20px;
+            font-size: 1.1em;
         }
 
         .status.connected {
@@ -143,12 +194,37 @@
             background: #ef4444;
         }
 
+        .status.calibrating {
+            background: #f59e0b;
+        }
+
         .right-stick {
             border-top: 5px solid #3b82f6;
         }
 
         .left-stick {
             border-top: 5px solid #ec4899;
+        }
+
+        .calibrate-btn {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 10px auto;
+            display: block;
+            transition: background 0.3s;
+        }
+
+        .calibrate-btn:hover {
+            background: #7c3aed;
+        }
+
+        .calibrate-btn:active {
+            transform: scale(0.95);
         }
 
         @media (max-width: 768px) {
@@ -159,13 +235,10 @@
             h1 {
                 font-size: 1.8em;
             }
-        }
 
-        .loading {
-            text-align: center;
-            color: white;
-            font-size: 1.5em;
-            margin-top: 50px;
+            .data-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -174,18 +247,38 @@
         <h1>🥁 雙鼓棒即時監控系統</h1>
         <div class="timestamp">⏰ 時間：<span id="timestamp">載入中...</span></div>
 
-        <div class="drum-sticks">
+        <button class="calibrate-btn" onclick="recalibrate()">🎯 重新校正</button>
 
+        <div class="drum-sticks">
             <!-- 左手鼓棒 -->
-            <div class="stick-card left-stick">
+            <div class="stick-card left-stick" id="left-card">
                 <div class="stick-header">
-                    <div class="stick-icon">👈</div>
-                    <div>
-                        <div class="stick-title">左手鼓棒</div>
-                        <div class="stick-address">0x69</div>
+                    <div class="stick-info">
+                        <div class="stick-icon">👈</div>
+                        <div>
+                            <div class="stick-title">左手鼓棒</div>
+                            <div class="stick-address">0x69</div>
+                        </div>
+                    </div>
+                    <div class="hit-indicator inactive" id="left-hit">待機中</div>
+                </div>
+
+                <!-- 姿態角度 -->
+                <div class="data-section">
+                    <div class="section-title">📐 鼓棒姿態</div>
+                    <div class="data-grid-2">
+                        <div class="data-item highlight">
+                            <div class="data-label">俯仰角 (Pitch)</div>
+                            <div class="data-value large" id="left-pitch">0°</div>
+                        </div>
+                        <div class="data-item highlight">
+                            <div class="data-label">翻滾角 (Roll)</div>
+                            <div class="data-value large" id="left-roll">0°</div>
+                        </div>
                     </div>
                 </div>
 
+                <!-- 加速度 -->
                 <div class="data-section">
                     <div class="section-title">加速度 (g)</div>
                     <div class="data-grid">
@@ -202,8 +295,15 @@
                             <div class="data-value" id="left-acc-z">0.000</div>
                         </div>
                     </div>
+                    <div style="margin-top: 10px; text-align: center;">
+                        <div class="data-item" style="display: inline-block; min-width: 150px;">
+                            <div class="data-label">總加速度</div>
+                            <div class="data-value" id="left-magnitude">0.00</div>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- 陀螺儀 -->
                 <div class="data-section">
                     <div class="section-title">陀螺儀 (°/s)</div>
                     <div class="data-grid">
@@ -224,15 +324,34 @@
             </div>
 
             <!-- 右手鼓棒 -->
-            <div class="stick-card right-stick">
+            <div class="stick-card right-stick" id="right-card">
                 <div class="stick-header">
-                    <div class="stick-icon">👉</div>
-                    <div>
-                        <div class="stick-title">右手鼓棒</div>
-                        <div class="stick-address">0x68</div>
+                    <div class="stick-info">
+                        <div class="stick-icon">👉</div>
+                        <div>
+                            <div class="stick-title">右手鼓棒</div>
+                            <div class="stick-address">0x68</div>
+                        </div>
+                    </div>
+                    <div class="hit-indicator inactive" id="right-hit">待機中</div>
+                </div>
+
+                <!-- 姿態角度 -->
+                <div class="data-section">
+                    <div class="section-title">📐 鼓棒姿態</div>
+                    <div class="data-grid-2">
+                        <div class="data-item highlight">
+                            <div class="data-label">俯仰角 (Pitch)</div>
+                            <div class="data-value large" id="right-pitch">0°</div>
+                        </div>
+                        <div class="data-item highlight">
+                            <div class="data-label">翻滾角 (Roll)</div>
+                            <div class="data-value large" id="right-roll">0°</div>
+                        </div>
                     </div>
                 </div>
 
+                <!-- 加速度 -->
                 <div class="data-section">
                     <div class="section-title">加速度 (g)</div>
                     <div class="data-grid">
@@ -249,8 +368,15 @@
                             <div class="data-value" id="right-acc-z">0.000</div>
                         </div>
                     </div>
+                    <div style="margin-top: 10px; text-align: center;">
+                        <div class="data-item" style="display: inline-block; min-width: 150px;">
+                            <div class="data-label">總加速度</div>
+                            <div class="data-value" id="right-magnitude">0.00</div>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- 陀螺儀 -->
                 <div class="data-section">
                     <div class="section-title">陀螺儀 (°/s)</div>
                     <div class="data-grid">
@@ -271,7 +397,6 @@
             </div>
         </div>
 
-
         <div class="status connected" id="status">🟢 連線中</div>
     </div>
 
@@ -282,25 +407,51 @@
             document.getElementById('timestamp').textContent = data.timestamp;
 
             // 更新右手鼓棒數據
-            document.getElementById('right-acc-x').textContent = data.right.accel.x.toFixed(3);
-            document.getElementById('right-acc-y').textContent = data.right.accel.y.toFixed(3);
-            document.getElementById('right-acc-z').textContent = data.right.accel.z.toFixed(3);
-            document.getElementById('right-gyro-x').textContent = data.right.gyro.x.toFixed(2);
-            document.getElementById('right-gyro-y').textContent = data.right.gyro.y.toFixed(2);
-            document.getElementById('right-gyro-z').textContent = data.right.gyro.z.toFixed(2);
+            updateStickData('right', data.right);
 
             // 更新左手鼓棒數據
-            document.getElementById('left-acc-x').textContent = data.left.accel.x.toFixed(3);
-            document.getElementById('left-acc-y').textContent = data.left.accel.y.toFixed(3);
-            document.getElementById('left-acc-z').textContent = data.left.accel.z.toFixed(3);
-            document.getElementById('left-gyro-x').textContent = data.left.gyro.x.toFixed(2);
-            document.getElementById('left-gyro-y').textContent = data.left.gyro.y.toFixed(2);
-            document.getElementById('left-gyro-z').textContent = data.left.gyro.z.toFixed(2);
+            updateStickData('left', data.left);
 
-            // 更新狀態為連線中
+            // 更新狀態
             const statusEl = document.getElementById('status');
-            statusEl.textContent = '🟢 連線中';
-            statusEl.className = 'status connected';
+            if (data.is_calibrated) {
+                statusEl.textContent = '🟢 已校正 - 系統運行中';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = '🟡 校正中...';
+                statusEl.className = 'status calibrating';
+            }
+        }
+
+        function updateStickData(side, data) {
+            // 更新姿態角度
+            document.getElementById(`${side}-pitch`).textContent = data.angle.pitch.toFixed(1) + '°';
+            document.getElementById(`${side}-roll`).textContent = data.angle.roll.toFixed(1) + '°';
+
+            // 更新加速度
+            document.getElementById(`${side}-acc-x`).textContent = data.accel.x.toFixed(3);
+            document.getElementById(`${side}-acc-y`).textContent = data.accel.y.toFixed(3);
+            document.getElementById(`${side}-acc-z`).textContent = data.accel.z.toFixed(3);
+            document.getElementById(`${side}-magnitude`).textContent = data.magnitude.toFixed(2);
+
+            // 更新陀螺儀
+            document.getElementById(`${side}-gyro-x`).textContent = data.gyro.x.toFixed(2);
+            document.getElementById(`${side}-gyro-y`).textContent = data.gyro.y.toFixed(2);
+            document.getElementById(`${side}-gyro-z`).textContent = data.gyro.z.toFixed(2);
+
+            // 更新打擊指示器
+            const hitIndicator = document.getElementById(`${side}-hit`);
+            const card = document.getElementById(`${side}-card`);
+
+            if (data.is_hitting) {
+                hitIndicator.textContent = '💥 打擊！';
+                hitIndicator.className = 'hit-indicator active';
+                card.classList.add('hitting');
+            } else {
+                hitIndicator.textContent = '待機中';
+                hitIndicator.className = 'hit-indicator inactive';
+                card.classList.remove('hitting');
+            }
         }
 
         // 顯示錯誤狀態
@@ -308,6 +459,28 @@
             const statusEl = document.getElementById('status');
             statusEl.textContent = '🔴 連線錯誤';
             statusEl.className = 'status disconnected';
+        }
+
+        // 重新校正
+        function recalibrate() {
+            if (confirm('請將兩支鼓棒放在平穩的表面上，然後按確定開始校正。')) {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = '🟡 校正中... 請保持鼓棒靜止';
+                statusEl.className = 'status calibrating';
+
+                fetch('/api/calibrate', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            alert('✓ 校正完成！');
+                        } else {
+                            alert('✗ 校正失敗: ' + result.message);
+                        }
+                    })
+                    .catch(error => {
+                        alert('✗ 校正請求失敗: ' + error);
+                    });
+            }
         }
 
         // 定時取得數據
@@ -321,8 +494,8 @@
                 });
         }
 
-        // 每 100ms 更新一次數據
-        setInterval(fetchData, 100);
+        // 每 50ms 更新一次數據（與後端同步）
+        setInterval(fetchData, 50);
 
         // 頁面載入時立即取得數據
         fetchData();
