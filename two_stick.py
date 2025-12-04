@@ -123,6 +123,20 @@ def read_mpu6050_data(address, stick_name=None):
     # 應用校準 (如果有指定stick_name)
     if stick_name:
         cal_accel, cal_gyro = calibration.apply_calibration(stick_name, raw_accel, raw_gyro)
+
+        # 對調 X 和 Y 軸以符合現實空間定義
+        cal_accel_swapped = {
+            'x': cal_accel['y'],  # 現實 Y → 虛擬 X
+            'y': cal_accel['x'],  # 現實 X → 虛擬 Y
+            'z': cal_accel['z']
+        }
+        cal_gyro_swapped = {
+            'x': cal_gyro['y'],
+            'y': cal_gyro['x'],
+            'z': cal_gyro['z']
+        }
+        cal_accel = cal_accel_swapped
+        cal_gyro = cal_gyro_swapped
     else:
         cal_accel, cal_gyro = raw_accel, raw_gyro
 
