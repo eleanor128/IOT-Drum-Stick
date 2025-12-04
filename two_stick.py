@@ -280,6 +280,11 @@ def get_data():
         })
 
 
+@app.route('/gemini')
+def index():
+    """主頁面"""
+    return render_template('gemini_drum.html')
+
 @app.route('/api/calibrate_ready_position', methods=['POST'])
 def calibrate_ready_position():
     """API：校正預備位置"""
