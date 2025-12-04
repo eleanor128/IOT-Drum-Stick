@@ -24,8 +24,8 @@ app = Flask(__name__)
 # 資料鎖
 data_lock = Lock()
 
-# 校正數據
-calibration = {
+# 校正數據（訓練用）
+training_calibration = {
     'ready_position': {
         'right': {'accel': {'x': 0, 'y': 0, 'z': 0}, 'gyro': {'x': 0, 'y': 0, 'z': 0}},
         'left': {'accel': {'x': 0, 'y': 0, 'z': 0}, 'gyro': {'x': 0, 'y': 0, 'z': 0}}
@@ -149,7 +149,7 @@ def detect_hit_position(stick_name, accel_data):
     params = hit_detection_params[stick_name]
 
     # 取得預備位置的參考值
-    ready_accel = calibration['ready_position'][stick_name]['accel']
+    ready_accel = training_calibration['ready_position'][stick_name]['accel']
 
     # 計算相對於預備位置的加速度變化
     delta = {
@@ -188,7 +188,7 @@ def analyze_training_data():
                 continue
 
             # 計算相對於預備位置的平均加速度變化
-            ready_accel = calibration['ready_position'][hand]['accel']
+            ready_accel = training_calibration['ready_position'][hand]['accel']
 
             avg_delta = {'x': 0, 'y': 0, 'z': 0}
             for data in data_list:
@@ -242,8 +242,8 @@ def update_sensor_data():
             left_data = read_mpu6050_data(LEFT_DRUM_STICK, 'left')
 
             # 判斷是否在打擊
-            right_hitting = right_data['magnitude'] > calibration['hit_threshold']
-            left_hitting = left_data['magnitude'] > calibration['hit_threshold']
+            right_hitting = right_data['magnitude'] > training_calibration['hit_threshold']
+            left_hitting = left_data['magnitude'] > training_calibration['hit_threshold']
 
             # 判斷打擊位置
             right_position = None
@@ -286,7 +286,7 @@ def get_data():
     with data_lock:
         return jsonify({
             **latest_data,
-            'calibration_status': calibration['is_calibrated'],
+            'calibration_status': training_calibration['is_calibrated'],
             'training_status': training_data['is_trained']
         })
 
@@ -390,16 +390,16 @@ def calibrate_ready_position():
 
         # 計算平均值
         for axis in ['x', 'y', 'z']:
-            calibration['ready_position']['right']['accel'][axis] = right_sum['accel'][axis] / samples
-            calibration['ready_position']['right']['gyro'][axis] = right_sum['gyro'][axis] / samples
-            calibration['ready_position']['left']['accel'][axis] = left_sum['accel'][axis] / samples
-            calibration['ready_position']['left']['gyro'][axis] = left_sum['gyro'][axis] / samples
+            training_calibration['ready_position']['right']['accel'][axis] = right_sum['accel'][axis] / samples
+            training_calibration['ready_position']['right']['gyro'][axis] = right_sum['gyro'][axis] / samples
+            training_calibration['ready_position']['left']['accel'][axis] = left_sum['accel'][axis] / samples
+            training_calibration['ready_position']['left']['gyro'][axis] = left_sum['gyro'][axis] / samples
 
-        calibration['is_calibrated'] = True
+        training_calibration['is_calibrated'] = True
 
         print("✓ 預備位置校正完成！")
-        print(f"右手: {calibration['ready_position']['right']}")
-        print(f"左手: {calibration['ready_position']['left']}")
+        print(f"右手: {training_calibration['ready_position']['right']}")
+        print(f"左手: {training_calibration['ready_position']['left']}")
 
         return jsonify({'status': 'success', 'message': '預備位置校正完成'})
     except Exception as e:
