@@ -4,6 +4,7 @@ import math
 import json
 from flask import Flask, render_template, jsonify, request
 from threading import Thread, Lock
+import calibration
 
 # MPU6050 暫存器
 PWR_MGMT_1 = 0x6B
@@ -94,7 +95,7 @@ def read_raw_data(address, register):
     return value
 
 
-def read_mpu6050_data(address):
+def read_mpu6050_data(address, stick_name=None):
     """讀取 MPU6050 的加速度和陀螺儀數據"""
     # 讀取加速度數據
     acc_x = read_raw_data(address, ACCEL_XOUT_H)
@@ -115,16 +116,26 @@ def read_mpu6050_data(address):
     gyro_y_dps = gyro_y / 131.0
     gyro_z_dps = gyro_z / 131.0
 
-    # 計算加速度總量
-    magnitude = math.sqrt(acc_x_g**2 + acc_y_g**2 + acc_z_g**2)
+    # 原始數據
+    raw_accel = {'x': acc_x_g, 'y': acc_y_g, 'z': acc_z_g}
+    raw_gyro = {'x': gyro_x_dps, 'y': gyro_y_dps, 'z': gyro_z_dps}
 
-    # 計算傾斜角度
-    pitch = math.atan2(acc_y_g, math.sqrt(acc_x_g**2 + acc_z_g**2)) * 180 / math.pi
-    roll = math.atan2(-acc_x_g, acc_z_g) * 180 / math.pi
+    # 應用校準 (如果有指定stick_name)
+    if stick_name:
+        cal_accel, cal_gyro = calibration.apply_calibration(stick_name, raw_accel, raw_gyro)
+    else:
+        cal_accel, cal_gyro = raw_accel, raw_gyro
+
+    # 計算加速度總量 (使用校準後的數據)
+    magnitude = math.sqrt(cal_accel['x']**2 + cal_accel['y']**2 + cal_accel['z']**2)
+
+    # 計算傾斜角度 (使用校準後的數據)
+    pitch = math.atan2(cal_accel['y'], math.sqrt(cal_accel['x']**2 + cal_accel['z']**2)) * 180 / math.pi
+    roll = math.atan2(-cal_accel['x'], cal_accel['z']) * 180 / math.pi
 
     return {
-        'accel': {'x': acc_x_g, 'y': acc_y_g, 'z': acc_z_g},
-        'gyro': {'x': gyro_x_dps, 'y': gyro_y_dps, 'z': gyro_z_dps},
+        'accel': cal_accel,
+        'gyro': cal_gyro,
         'angle': {'pitch': pitch, 'roll': roll},
         'magnitude': magnitude
     }
@@ -227,8 +238,8 @@ def update_sensor_data():
 
     while True:
         try:
-            right_data = read_mpu6050_data(RIGHT_DRUM_STICK)
-            left_data = read_mpu6050_data(LEFT_DRUM_STICK)
+            right_data = read_mpu6050_data(RIGHT_DRUM_STICK, 'right')
+            left_data = read_mpu6050_data(LEFT_DRUM_STICK, 'left')
 
             # 判斷是否在打擊
             right_hitting = right_data['magnitude'] > calibration['hit_threshold']
@@ -283,6 +294,75 @@ def get_data():
 @app.route('/gemini')
 def gemini():
     return render_template('gemini_drum.html')
+
+
+@app.route('/calibration')
+def calibration_page():
+    """校準頁面"""
+    return render_template('calibration.html')
+
+
+@app.route('/api/calibration/get')
+def get_calibration():
+    """API：取得校準參數"""
+    import calibration as cal_module
+    params = cal_module.get_params()
+    return jsonify({
+        'status': 'success',
+        'params': params
+    })
+
+
+@app.route('/api/calibration/update', methods=['POST'])
+def update_calibration():
+    """API：更新校準參數"""
+    try:
+        import calibration as cal_module
+        data = request.get_json()
+        stick = data.get('stick')  # 'left' or 'right'
+        category = data.get('category')  # 'accel_offset', 'gyro_offset', etc.
+        key = data.get('key')  # 'x', 'y', 'z'
+        value = data.get('value')
+
+        success = cal_module.update_params(stick, category, key, value)
+
+        if success:
+            return jsonify({'status': 'success', 'message': 'Parameter updated'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Failed to update parameter'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+@app.route('/api/calibration/save', methods=['POST'])
+def save_calibration():
+    """API：儲存校準參數"""
+    try:
+        import calibration as cal_module
+        success = cal_module.save_calibration()
+
+        if success:
+            return jsonify({'status': 'success', 'message': 'Calibration saved'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Failed to save calibration'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+@app.route('/api/calibration/reset', methods=['POST'])
+def reset_calibration():
+    """API：重置校準參數"""
+    try:
+        import calibration as cal_module
+        data = request.get_json()
+        stick = data.get('stick')  # None for all, 'left' or 'right' for specific
+
+        cal_module.reset_calibration(stick)
+
+        return jsonify({'status': 'success', 'message': f'Calibration reset for {stick if stick else "all"}'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
 
 @app.route('/api/calibrate_ready_position', methods=['POST'])
 def calibrate_ready_position():

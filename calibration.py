@@ -1,311 +1,272 @@
 """
-MPU6050 鼓棒校準工具
-記錄右邊鼓棒揮向左、中、右三個位置的感測器數值
-用於建立打擊位置辨識模型
+Calibration parameters management module
+For storing and managing MPU6050 sensor calibration parameters
+Including XYZ axis offset, scaling, rotation, etc.
 """
 
-import mpu6050
-import time
 import json
 import os
-from datetime import datetime
-import math
 
-class DrumStickCalibrator:
-    """鼓棒校準器"""
-    
-    def __init__(self, mpu_address=0x68):
-        """初始化校準器"""
-        print("=" * 70)
-        print("🥁 MPU6050 鼓棒校準工具")
-        print("=" * 70)
-        
-        # 初始化 MPU6050
-        print("\n正在初始化 MPU6050 感測器...")
-        try:
-            self.sensor = mpu6050.mpu6050(mpu_address)
-            # 測試讀取
-            test_data = self.sensor.get_accel_data()
-            print(f"✓ MPU6050 初始化成功")
-            print(f"  測試數據: X={test_data['x']:.2f}, Y={test_data['y']:.2f}, Z={test_data['z']:.2f}")
-        except Exception as e:
-            print(f"✗ MPU6050 初始化失敗: {e}")
-            raise
-        
-        # 校準數據結構
-        self.calibration_data = {
-            "calibration_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "drumstick": "right",  # 右邊鼓棒
-            "positions": {
-                "left": {
-                    "samples": [],
-                    "statistics": {}
-                },
-                "center": {
-                    "samples": [],
-                    "statistics": {}
-                },
-                "right": {
-                    "samples": [],
-                    "statistics": {}
-                }
-            }
+# Calibration file path
+CALIBRATION_FILE = 'calibration_params.json'
+
+# Default calibration parameters
+DEFAULT_PARAMS = {
+    'left': {
+        'accel_offset': {'x': 0.0, 'y': 0.0, 'z': 0.0},
+        'gyro_offset': {'x': 0.0, 'y': 0.0, 'z': 0.0},
+        'accel_scale': {'x': 1.0, 'y': 1.0, 'z': 1.0},
+        'gyro_scale': {'x': 1.0, 'y': 1.0, 'z': 1.0},
+        'axis_mapping': {
+            'x': 'x',
+            'y': 'y',
+            'z': 'z'
+        },
+        'axis_invert': {
+            'x': False,
+            'y': False,
+            'z': False
+        },
+        'rotation': {
+            'pitch': 0.0,
+            'roll': 0.0,
+            'yaw': 0.0
         }
-    
-    def capture_sample(self):
-        """捕捉一次感測器數據樣本"""
-        try:
-            accel = self.sensor.get_accel_data()
-            gyro = self.sensor.get_gyro_data()
-            temp = self.sensor.get_temp()
-            
-            # 計算總加速度
-            accel_magnitude = math.sqrt(accel['x']**2 + accel['y']**2 + accel['z']**2)
-            gyro_magnitude = math.sqrt(gyro['x']**2 + gyro['y']**2 + gyro['z']**2)
-            
-            sample = {
-                "timestamp": time.time(),
-                "accelerometer": {
-                    "x": round(accel['x'], 3),
-                    "y": round(accel['y'], 3),
-                    "z": round(accel['z'], 3),
-                    "magnitude": round(accel_magnitude, 3)
-                },
-                "gyroscope": {
-                    "x": round(gyro['x'], 3),
-                    "y": round(gyro['y'], 3),
-                    "z": round(gyro['z'], 3),
-                    "magnitude": round(gyro_magnitude, 3)
-                },
-                "temperature": round(temp, 2)
-            }
-            
-            return sample
-        except Exception as e:
-            print(f"✗ 讀取感測器失敗: {e}")
-            return None
-    
-    def calibrate_position(self, position_name, samples_count=50):
-        """校準特定位置
-        
-        Args:
-            position_name: 位置名稱 ("left", "center", "right")
-            samples_count: 採樣次數
-        """
-        position_display = {
-            "left": "左邊",
-            "center": "中間",
-            "right": "右邊"
+    },
+    'right': {
+        'accel_offset': {'x': 0.0, 'y': 0.0, 'z': 0.0},
+        'gyro_offset': {'x': 0.0, 'y': 0.0, 'z': 0.0},
+        'accel_scale': {'x': 1.0, 'y': 1.0, 'z': 1.0},
+        'gyro_scale': {'x': 1.0, 'y': 1.0, 'z': 1.0},
+        'axis_mapping': {
+            'x': 'x',
+            'y': 'y',
+            'z': 'z'
+        },
+        'axis_invert': {
+            'x': False,
+            'y': False,
+            'z': False
+        },
+        'rotation': {
+            'pitch': 0.0,
+            'roll': 0.0,
+            'yaw': 0.0
         }
-        
-        print(f"\n{'='*70}")
-        print(f"📍 校準位置: {position_display[position_name]}")
-        print(f"{'='*70}")
-        
-        print(f"\n準備動作:")
-        print(f"  1. 拿起右邊鼓棒")
-        print(f"  2. 準備揮向 {position_display[position_name]} 的鼓")
-        print(f"  3. 準備好後按 Enter 開始...")
-        
-        input()
-        
-        print(f"\n開始校準！")
-        print(f"請重複揮擊 {position_display[position_name]} 的鼓")
-        print(f"將記錄 {samples_count} 次打擊數據\n")
-        
-        samples = []
-        hit_count = 0
-        threshold = 2.0  # 加速度閾值 (g)
-        cooldown = 0.3   # 冷卻時間
-        last_hit_time = 0
-        
-        print("等待打擊...")
-        
-        while hit_count < samples_count:
-            sample = self.capture_sample()
-            if sample is None:
-                time.sleep(0.01)
-                continue
-            
-            # 檢測是否為打擊動作
-            current_time = time.time()
-            accel_mag = sample['accelerometer']['magnitude']
-            
-            # 扣除重力 (假設靜止時為 ~10 m/s² 或 ~1g)
-            net_accel = abs(accel_mag - 1.0) if accel_mag < 8.0 else abs(accel_mag / 9.8 - 1.0)
-            
-            if net_accel > threshold and current_time - last_hit_time > cooldown:
-                hit_count += 1
-                samples.append(sample)
-                last_hit_time = current_time
-                
-                print(f"✓ 打擊 #{hit_count:2d}/{samples_count} | "
-                      f"加速度: {net_accel:.2f}g | "
-                      f"陀螺儀: {sample['gyroscope']['magnitude']:.1f}°/s")
-            
-            time.sleep(0.01)  # 100 Hz 採樣
-        
-        print(f"\n✓ 完成 {position_display[position_name]} 位置校準！")
-        
-        # 儲存樣本
-        self.calibration_data["positions"][position_name]["samples"] = samples
-        
-        # 計算統計資料
-        self.calculate_statistics(position_name)
-    
-    def calculate_statistics(self, position_name):
-        """計算位置的統計資料
-        
-        Args:
-            position_name: 位置名稱
-        """
-        samples = self.calibration_data["positions"][position_name]["samples"]
-        
-        if not samples:
-            return
-        
-        # 提取數據
-        accel_x = [s['accelerometer']['x'] for s in samples]
-        accel_y = [s['accelerometer']['y'] for s in samples]
-        accel_z = [s['accelerometer']['z'] for s in samples]
-        accel_mag = [s['accelerometer']['magnitude'] for s in samples]
-        
-        gyro_x = [s['gyroscope']['x'] for s in samples]
-        gyro_y = [s['gyroscope']['y'] for s in samples]
-        gyro_z = [s['gyroscope']['z'] for s in samples]
-        gyro_mag = [s['gyroscope']['magnitude'] for s in samples]
-        
-        # 計算平均值和標準差
-        def mean(data):
-            return sum(data) / len(data)
-        
-        def std(data):
-            m = mean(data)
-            variance = sum((x - m) ** 2 for x in data) / len(data)
-            return math.sqrt(variance)
-        
-        statistics = {
-            "sample_count": len(samples),
-            "accelerometer": {
-                "x": {"mean": round(mean(accel_x), 3), "std": round(std(accel_x), 3)},
-                "y": {"mean": round(mean(accel_y), 3), "std": round(std(accel_y), 3)},
-                "z": {"mean": round(mean(accel_z), 3), "std": round(std(accel_z), 3)},
-                "magnitude": {"mean": round(mean(accel_mag), 3), "std": round(std(accel_mag), 3)}
-            },
-            "gyroscope": {
-                "x": {"mean": round(mean(gyro_x), 3), "std": round(std(gyro_x), 3)},
-                "y": {"mean": round(mean(gyro_y), 3), "std": round(std(gyro_y), 3)},
-                "z": {"mean": round(mean(gyro_z), 3), "std": round(std(gyro_z), 3)},
-                "magnitude": {"mean": round(mean(gyro_mag), 3), "std": round(std(gyro_mag), 3)}
-            }
-        }
-        
-        self.calibration_data["positions"][position_name]["statistics"] = statistics
-    
-    def display_summary(self):
-        """顯示校準摘要"""
-        print(f"\n{'='*70}")
-        print("📊 校準摘要")
-        print(f"{'='*70}\n")
-        
-        positions = {
-            "left": "左邊",
-            "center": "中間",
-            "right": "右邊"
-        }
-        
-        for pos_key, pos_name in positions.items():
-            stats = self.calibration_data["positions"][pos_key]["statistics"]
-            if not stats:
-                continue
-            
-            print(f"【{pos_name}】")
-            print(f"  樣本數: {stats['sample_count']}")
-            print(f"  加速度:")
-            print(f"    X: {stats['accelerometer']['x']['mean']:6.2f} ± {stats['accelerometer']['x']['std']:.2f}")
-            print(f"    Y: {stats['accelerometer']['y']['mean']:6.2f} ± {stats['accelerometer']['y']['std']:.2f}")
-            print(f"    Z: {stats['accelerometer']['z']['mean']:6.2f} ± {stats['accelerometer']['z']['std']:.2f}")
-            print(f"    總: {stats['accelerometer']['magnitude']['mean']:6.2f} ± {stats['accelerometer']['magnitude']['std']:.2f}")
-            print(f"  陀螺儀:")
-            print(f"    X: {stats['gyroscope']['x']['mean']:6.1f} ± {stats['gyroscope']['x']['std']:.1f} °/s")
-            print(f"    Y: {stats['gyroscope']['y']['mean']:6.1f} ± {stats['gyroscope']['y']['std']:.1f} °/s")
-            print(f"    Z: {stats['gyroscope']['z']['mean']:6.1f} ± {stats['gyroscope']['z']['std']:.1f} °/s")
-            print(f"    總: {stats['gyroscope']['magnitude']['mean']:6.1f} ± {stats['gyroscope']['magnitude']['std']:.1f} °/s")
-            print()
-    
-    def save_calibration(self, filename="drumstick_calibration.json"):
-        """儲存校準數據到檔案
-        
-        Args:
-            filename: 檔案名稱
-        """
-        try:
-            # 確保在正確的目錄
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            filepath = os.path.join(script_dir, filename)
-            
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(self.calibration_data, f, indent=2, ensure_ascii=False)
-            
-            print(f"✓ 校準數據已儲存: {filepath}")
-            print(f"  檔案大小: {os.path.getsize(filepath) / 1024:.2f} KB")
-            
-            return True
-        except Exception as e:
-            print(f"✗ 儲存失敗: {e}")
-            return False
-    
-    def run(self):
-        """執行完整校準流程"""
-        print("\n" + "=" * 70)
-        print("開始校準流程")
-        print("=" * 70)
-        print("\n你將要校準右邊鼓棒的三個打擊位置:")
-        print("  1. 左邊的鼓")
-        print("  2. 中間的鼓")
-        print("  3. 右邊的鼓")
-        print("\n每個位置需要打擊 50 次，讓系統學習你的動作模式")
-        
-        # 校準三個位置
-        positions = [
-            ("left", "左邊"),
-            ("center", "中間"),
-            ("right", "右邊")
-        ]
-        
-        for pos_key, pos_name in positions:
-            self.calibrate_position(pos_key, samples_count=50)
-        
-        # 顯示摘要
-        self.display_summary()
-        
-        # 儲存數據
-        print("\n" + "=" * 70)
-        self.save_calibration()
-        
-        print("\n" + "=" * 70)
-        print("🎉 校準完成！")
-        print("=" * 70)
-        print("\n下一步:")
-        print("  1. 校準數據已儲存為 drumstick_calibration.json")
-        print("  2. 可以使用這些數據訓練位置辨識模型")
-        print("  3. 或直接在遊戲中使用這些統計資料進行判斷")
+    },
+    'global': {
+        'hit_threshold': 2.0,
+        'smooth_factor': 0.5,
+        'dead_zone': 0.1
+    }
+}
+
+# Current calibration parameters (global variable)
+current_params = None
 
 
-def main():
-    """主程式"""
+def load_calibration():
+    """Load calibration parameters"""
+    global current_params
+
+    if os.path.exists(CALIBRATION_FILE):
+        try:
+            with open(CALIBRATION_FILE, 'r', encoding='utf-8') as f:
+                current_params = json.load(f)
+                print(f"Loaded calibration parameters: {CALIBRATION_FILE}")
+                return current_params
+        except Exception as e:
+            print(f"Failed to load calibration: {e}")
+            current_params = DEFAULT_PARAMS.copy()
+            return current_params
+    else:
+        print("Using default calibration parameters")
+        current_params = DEFAULT_PARAMS.copy()
+        return current_params
+
+
+def save_calibration(params=None):
+    """Save calibration parameters"""
+    global current_params
+
+    if params is not None:
+        current_params = params
+
     try:
-        calibrator = DrumStickCalibrator()
-        calibrator.run()
-    
-    except KeyboardInterrupt:
-        print("\n\n校準已中斷")
-    
+        with open(CALIBRATION_FILE, 'w', encoding='utf-8') as f:
+            json.dump(current_params, f, indent=2, ensure_ascii=False)
+        print(f"Calibration parameters saved: {CALIBRATION_FILE}")
+        return True
     except Exception as e:
-        print(f"\n程式發生錯誤: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Failed to save calibration: {e}")
+        return False
 
 
-if __name__ == "__main__":
-    main()
+def get_params():
+    """Get current calibration parameters"""
+    global current_params
+
+    if current_params is None:
+        load_calibration()
+
+    return current_params
+
+
+def update_params(stick, category, key, value):
+    """Update a single parameter"""
+    global current_params
+
+    if current_params is None:
+        load_calibration()
+
+    try:
+        if category == 'global':
+            current_params['global'][key] = value
+        else:
+            current_params[stick][category][key] = value
+
+        save_calibration()
+        return True
+    except Exception as e:
+        print(f"Failed to update parameter: {e}")
+        return False
+
+
+def reset_calibration(stick=None):
+    """Reset calibration parameters"""
+    global current_params
+
+    if stick is None:
+        current_params = DEFAULT_PARAMS.copy()
+    else:
+        current_params[stick] = DEFAULT_PARAMS[stick].copy()
+
+    save_calibration()
+    print(f"Reset calibration: {stick if stick else 'all'}")
+
+
+def apply_calibration(stick, raw_accel, raw_gyro):
+    """
+    Apply calibration parameters to raw sensor data
+
+    Args:
+        stick: 'left' or 'right'
+        raw_accel: {'x': float, 'y': float, 'z': float}
+        raw_gyro: {'x': float, 'y': float, 'z': float}
+
+    Returns:
+        calibrated_accel, calibrated_gyro
+    """
+    if current_params is None:
+        load_calibration()
+
+    params = current_params[stick]
+
+    # Step 1: Apply offset
+    accel = {
+        'x': raw_accel['x'] - params['accel_offset']['x'],
+        'y': raw_accel['y'] - params['accel_offset']['y'],
+        'z': raw_accel['z'] - params['accel_offset']['z']
+    }
+
+    gyro = {
+        'x': raw_gyro['x'] - params['gyro_offset']['x'],
+        'y': raw_gyro['y'] - params['gyro_offset']['y'],
+        'z': raw_gyro['z'] - params['gyro_offset']['z']
+    }
+
+    # Step 2: Apply scaling
+    accel = {
+        'x': accel['x'] * params['accel_scale']['x'],
+        'y': accel['y'] * params['accel_scale']['y'],
+        'z': accel['z'] * params['accel_scale']['z']
+    }
+
+    gyro = {
+        'x': gyro['x'] * params['gyro_scale']['x'],
+        'y': gyro['y'] * params['gyro_scale']['y'],
+        'z': gyro['z'] * params['gyro_scale']['z']
+    }
+
+    # Step 3: Apply axis mapping and inversion
+    mapped_accel = {}
+    mapped_gyro = {}
+
+    for real_axis in ['x', 'y', 'z']:
+        sensor_axis = params['axis_mapping'][real_axis]
+
+        # Accelerometer
+        value_accel = accel[sensor_axis]
+        if params['axis_invert'][real_axis]:
+            value_accel = -value_accel
+        mapped_accel[real_axis] = value_accel
+
+        # Gyroscope
+        value_gyro = gyro[sensor_axis]
+        if params['axis_invert'][real_axis]:
+            value_gyro = -value_gyro
+        mapped_gyro[real_axis] = value_gyro
+
+    # Step 4: Apply dead zone
+    dead_zone = current_params['global']['dead_zone']
+    for axis in ['x', 'y', 'z']:
+        if abs(mapped_accel[axis]) < dead_zone:
+            mapped_accel[axis] = 0.0
+        if abs(mapped_gyro[axis]) < dead_zone:
+            mapped_gyro[axis] = 0.0
+
+    return mapped_accel, mapped_gyro
+
+
+def get_calibration_summary():
+    """Get calibration parameters summary (for display)"""
+    if current_params is None:
+        load_calibration()
+
+    summary = {
+        'left': {
+            'has_offset': any(v != 0 for v in current_params['left']['accel_offset'].values()),
+            'has_scale': any(v != 1.0 for v in current_params['left']['accel_scale'].values()),
+            'has_mapping': any(current_params['left']['axis_mapping'][k] != k for k in ['x', 'y', 'z']),
+            'has_invert': any(current_params['left']['axis_invert'].values())
+        },
+        'right': {
+            'has_offset': any(v != 0 for v in current_params['right']['accel_offset'].values()),
+            'has_scale': any(v != 1.0 for v in current_params['right']['accel_scale'].values()),
+            'has_mapping': any(current_params['right']['axis_mapping'][k] != k for k in ['x', 'y', 'z']),
+            'has_invert': any(current_params['right']['axis_invert'].values())
+        }
+    }
+
+    return summary
+
+
+# Initialize: load calibration parameters
+load_calibration()
+
+
+if __name__ == '__main__':
+    # Test program
+    print("Calibration Module Test")
+    print("=" * 60)
+
+    # Load parameters
+    params = get_params()
+    print("Current parameters:")
+    print(json.dumps(params, indent=2))
+
+    # Test applying calibration
+    print("\nTest applying calibration:")
+    raw_accel = {'x': 1.0, 'y': 0.5, 'z': -0.2}
+    raw_gyro = {'x': 10.0, 'y': -5.0, 'z': 3.0}
+
+    cal_accel, cal_gyro = apply_calibration('left', raw_accel, raw_gyro)
+    print(f"Raw accel: {raw_accel}")
+    print(f"Calibrated accel: {cal_accel}")
+    print(f"Raw gyro: {raw_gyro}")
+    print(f"Calibrated gyro: {cal_gyro}")
+
+    # Test summary
+    print("\nCalibration summary:")
+    summary = get_calibration_summary()
+    print(json.dumps(summary, indent=2))
