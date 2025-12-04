@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙鼓棒即時監控系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', '微軟正黑體', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .timestamp {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .drum-sticks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stick-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .stick-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .stick-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .stick-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stick-address {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .data-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: "▶";
+            margin-right: 8px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .data-item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .data-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .data-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+
+        .data-unit {
+            font-size: 0.8em;
+            color: #888;
+            margin-left: 3px;
+        }
+
+        .status {
+            text-align: center;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .status.connected {
+            background: #10b981;
+        }
+
+        .status.disconnected {
+            background: #ef4444;
+        }
+
+        .right-stick {
+            border-top: 5px solid #3b82f6;
+        }
+
+        .left-stick {
+            border-top: 5px solid #ec4899;
+        }
+
+        @media (max-width: 768px) {
+            .drum-sticks {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥁 雙鼓棒即時監控系統</h1>
+        <div class="timestamp">⏰ 時間：<span id="timestamp">載入中...</span></div>
+
+        <div class="drum-sticks">
+            <!-- 右手鼓棒 -->
+            <div class="stick-card right-stick">
+                <div class="stick-header">
+                    <div class="stick-icon">👉</div>
+                    <div>
+                        <div class="stick-title">右手鼓棒</div>
+                        <div class="stick-address">0x68</div>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <div class="section-title">加速度 (g)</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">X 軸</div>
+                            <div class="data-value" id="right-acc-x">0.000</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Y 軸</div>
+                            <div class="data-value" id="right-acc-y">0.000</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Z 軸</div>
+                            <div class="data-value" id="right-acc-z">0.000</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <div class="section-title">陀螺儀 (°/s)</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">X 軸</div>
+                            <div class="data-value" id="right-gyro-x">0.00</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Y 軸</div>
+                            <div class="data-value" id="right-gyro-y">0.00</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Z 軸</div>
+                            <div class="data-value" id="right-gyro-z">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 左手鼓棒 -->
+            <div class="stick-card left-stick">
+                <div class="stick-header">
+                    <div class="stick-icon">👈</div>
+                    <div>
+                        <div class="stick-title">左手鼓棒</div>
+                        <div class="stick-address">0x69</div>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <div class="section-title">加速度 (g)</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">X 軸</div>
+                            <div class="data-value" id="left-acc-x">0.000</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Y 軸</div>
+                            <div class="data-value" id="left-acc-y">0.000</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Z 軸</div>
+                            <div class="data-value" id="left-acc-z">0.000</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <div class="section-title">陀螺儀 (°/s)</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">X 軸</div>
+                            <div class="data-value" id="left-gyro-x">0.00</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Y 軸</div>
+                            <div class="data-value" id="left-gyro-y">0.00</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Z 軸</div>
+                            <div class="data-value" id="left-gyro-z">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status connected" id="status">🟢 連線中</div>
+    </div>
+
+    <script>
+        // 更新數據顯示
+        function updateDisplay(data) {
+            // 更新時間戳
+            document.getElementById('timestamp').textContent = data.timestamp;
+
+            // 更新右手鼓棒數據
+            document.getElementById('right-acc-x').textContent = data.right.accel.x.toFixed(3);
+            document.getElementById('right-acc-y').textContent = data.right.accel.y.toFixed(3);
+            document.getElementById('right-acc-z').textContent = data.right.accel.z.toFixed(3);
+            document.getElementById('right-gyro-x').textContent = data.right.gyro.x.toFixed(2);
+            document.getElementById('right-gyro-y').textContent = data.right.gyro.y.toFixed(2);
+            document.getElementById('right-gyro-z').textContent = data.right.gyro.z.toFixed(2);
+
+            // 更新左手鼓棒數據
+            document.getElementById('left-acc-x').textContent = data.left.accel.x.toFixed(3);
+            document.getElementById('left-acc-y').textContent = data.left.accel.y.toFixed(3);
+            document.getElementById('left-acc-z').textContent = data.left.accel.z.toFixed(3);
+            document.getElementById('left-gyro-x').textContent = data.left.gyro.x.toFixed(2);
+            document.getElementById('left-gyro-y').textContent = data.left.gyro.y.toFixed(2);
+            document.getElementById('left-gyro-z').textContent = data.left.gyro.z.toFixed(2);
+
+            // 更新狀態為連線中
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = '🟢 連線中';
+            statusEl.className = 'status connected';
+        }
+
+        // 顯示錯誤狀態
+        function showError() {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = '🔴 連線錯誤';
+            statusEl.className = 'status disconnected';
+        }
+
+        // 定時取得數據
+        function fetchData() {
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => updateDisplay(data))
+                .catch(error => {
+                    console.error('錯誤:', error);
+                    showError();
+                });
+        }
+
+        // 每 100ms 更新一次數據
+        setInterval(fetchData, 100);
+
+        // 頁面載入時立即取得數據
+        fetchData();
+    </script>
+</body>
+</html>
