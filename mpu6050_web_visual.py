@@ -36,13 +36,13 @@ sensor_data = {
 
 # 互補濾波器參數
 alpha = 0.98
-dt = 0.01
+dt = 0.005  # 5ms = 200Hz (原本 10ms = 100Hz)
 
 # 打擊偵測參數
 gravity_baseline = 1.0
 unit_scale = 1.0
 threshold = 2.0  # 加速度閾值 (g)
-cooldown = 0.1   # 冷卻時間 (秒)
+cooldown = 0.05  # 冷卻時間 (秒) - 降低以提高響應速度
 last_hit_time = 0
 hit_count = 0
 max_acceleration = 0.0
@@ -181,9 +181,22 @@ def calculate_angles():
         gyro = sensor.get_gyro_data()
         temp = sensor.get_temp()
         
+        # === 座標系統說明 ===
+        # MPU6050 安裝方式：
+        #   X 軸 = 鼓棒長度方向（前後）
+        #   Y 軸 = 左右方向（橫向）
+        #   Z 軸 = 上下方向（敲擊方向）
+        # 
+        # 角度定義：
+        #   Roll  (繞X軸) = 左右傾斜 = atan2(Y, Z)
+        #   Pitch (繞Y軸) = 上下擺動 = atan2(-Z, sqrt(X² + Y²))
+        #   Yaw   (繞Z軸) = 水平旋轉 = 陀螺儀積分
+        
         # 從加速度計計算角度（度）
+        # Roll: 鼓棒向左/右傾斜
         accel_roll = math.atan2(accel['y'], accel['z']) * 180 / math.pi
-        accel_pitch = math.atan2(-accel['x'], math.sqrt(accel['y']**2 + accel['z']**2)) * 180 / math.pi
+        # Pitch: 鼓棒向上/下擺動（修正為使用 Z 軸）
+        accel_pitch = math.atan2(-accel['z'], math.sqrt(accel['x']**2 + accel['y']**2)) * 180 / math.pi
         
         # 如果有校準 offset，先計算相對角度
         if calibration_config and 'calibration' in calibration_config:
@@ -200,9 +213,9 @@ def calculate_angles():
                     sensor_data['yaw'] += 360
             else:
                 # 沒有校準時，使用互補濾波器
-                gyro_roll = sensor_data['roll'] + gyro['x'] * dt
-                gyro_pitch = sensor_data['pitch'] + gyro['y'] * dt
-                gyro_yaw = sensor_data['yaw'] + gyro['z'] * dt
+                gyro_roll = sensor_data['roll'] + gyro['x'] * dt  # 繞X軸（鼓棒長度方向）
+                gyro_pitch = sensor_data['pitch'] + gyro['y'] * dt  # 繞Y軸（左右方向）
+                gyro_yaw = sensor_data['yaw'] + gyro['z'] * dt  # 繞Z軸（上下方向）
                 
                 sensor_data['roll'] = alpha * gyro_roll + (1 - alpha) * accel_roll
                 sensor_data['pitch'] = alpha * gyro_pitch + (1 - alpha) * accel_pitch
@@ -276,6 +289,21 @@ def sensor_loop():
 def index():
     """主頁面"""
     return render_template('mpu6050_visual.html')
+
+@app.route('/calibration')
+def calibration():
+    """參數微調頁面"""
+    return render_template('calibration.html')
+
+@app.route('/calibration-advanced')
+def calibration_advanced():
+    """智能校準頁面 - 根據數據分析結果自動校準"""
+    return render_template('calibration_advanced.html')
+
+@app.route('/data-collection')
+def data_collection():
+    """數據收集工具頁面"""
+    return render_template('data_collection.html')
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):

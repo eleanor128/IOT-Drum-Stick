@@ -1,0 +1,51 @@
+{
+  "calibration_date": "2025-12-02T07:40:22.655Z",
+  "total_samples": 1730,
+  "recommended": {
+    "method": "single_offset",
+    "roll": -8.68,
+    "pitch": -69.77,
+    "yaw": -21.6
+  },
+  "advanced": {
+    "method": "position_specific",
+    "center": {
+      "roll": -8.68,
+      "pitch": -69.77,
+      "yaw": -21.6
+    },
+    "left": {
+      "roll": 21.76,
+      "pitch": -77.64,
+      "yaw": -124.53
+    },
+    "right": {
+      "roll": -40.45,
+      "pitch": -78.42,
+      "yaw": 80.98
+    }
+  },
+  "position_detection": {
+    "yaw_ranges": {
+      "center": {
+        "min": 15,
+        "max": 28,
+        "median": 21.6
+      },
+      "left": {
+        "min": 28,
+        "max": 38,
+        "median": 34.53
+      },
+      "right": {
+        "min": 5,
+        "max": 15,
+        "median": 9.02
+      }
+    }
+  },
+  "drum_hit_threshold": {
+    "z_accel": 34.83,
+    "description": "重力加速度 + 2倍標準差"
+  }
+}
