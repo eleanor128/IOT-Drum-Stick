@@ -123,30 +123,27 @@ def read_mpu6050_data(address, stick_name=None):
     # 應用校準 (如果有指定stick_name)
     if stick_name:
         cal_accel, cal_gyro = calibration.apply_calibration(stick_name, raw_accel, raw_gyro)
-
-        # 對調 X 和 Y 軸以符合現實空間定義
-        cal_accel_swapped = {
-            'x': cal_accel['y'],  # 現實 Y → 虛擬 X
-            'y': cal_accel['x'],  # 現實 X → 虛擬 Y
-            'z': cal_accel['z']
-        }
-        cal_gyro_swapped = {
-            'x': cal_gyro['y'],
-            'y': cal_gyro['x'],
-            'z': cal_gyro['z']
-        }
-        cal_accel = cal_accel_swapped
-        cal_gyro = cal_gyro_swapped
     else:
         cal_accel, cal_gyro = raw_accel, raw_gyro
 
     # 計算加速度總量 (使用校準後的數據)
     magnitude = math.sqrt(cal_accel['x']**2 + cal_accel['y']**2 + cal_accel['z']**2)
 
-    # 計算傾斜角度 (使用校準後的數據)
-    # 反轉正負號以符合實際運動方向
-    pitch = -math.atan2(cal_accel['y'], math.sqrt(cal_accel['x']**2 + cal_accel['z']**2)) * 180 / math.pi
-    roll = -math.atan2(-cal_accel['x'], cal_accel['z']) * 180 / math.pi
+    # 計算鼓棒姿態角度
+    # 感測器軸向: X=鼓棒尖端方向, Y=垂直鼓棒(左右), Z=垂直地面(上下)
+    #
+    # vertical_angle: 鼓棒的垂直角度（提起/放下），基於 Z 軸加速度
+    # - Z軸朝上（正值）表示鼓棒向上
+    # - 計算鼓棒與水平面的夾角
+    vertical_angle = math.atan2(cal_accel['z'], math.sqrt(cal_accel['x']**2 + cal_accel['y']**2)) * 180 / math.pi
+
+    # horizontal_angle: 鼓棒的水平方向（左/中/右），基於 Y 軸加速度
+    # - Y軸正值表示向某一側傾斜
+    horizontal_angle = math.atan2(cal_accel['y'], cal_accel['x']) * 180 / math.pi
+
+    # 輸出為標準的 pitch/roll 格式以保持 API 兼容性
+    pitch = vertical_angle    # 上下角度
+    roll = horizontal_angle   # 左右角度
 
     return {
         'accel': cal_accel,
