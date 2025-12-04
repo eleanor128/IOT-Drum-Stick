@@ -32,7 +32,23 @@
             font-family: monospace;
             font-size: 14px;
             max-width: 350px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
             backdrop-filter: blur(10px);
+        }
+        #info-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        #info-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        #info-panel::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.5);
+            border-radius: 4px;
+        }
+        #info-panel::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.8);
         }
         .info-row {
             margin: 5px 0;
@@ -86,16 +102,40 @@
             <span id="left-position" class="position-indicator pos-none">---</span>
         </div>
         <div class="info-row">
-            <span class="info-label">俯仰角:</span>
+            <span class="info-label">俯仰角 (Pitch):</span>
             <span class="info-value" id="left-pitch">0°</span>
         </div>
         <div class="info-row">
-            <span class="info-label">翻滾角:</span>
+            <span class="info-label">翻滾角 (Roll):</span>
             <span class="info-value" id="left-roll">0°</span>
         </div>
         <div class="info-row">
-            <span class="info-label">加速度:</span>
+            <span class="info-label">總加速度:</span>
             <span class="info-value" id="left-accel">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度 X:</span>
+            <span class="info-value" id="left-accel-x">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度 Y:</span>
+            <span class="info-value" id="left-accel-y">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度 Z:</span>
+            <span class="info-value" id="left-accel-z">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">陀螺儀 X:</span>
+            <span class="info-value" id="left-gyro-x">0.0°/s</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">陀螺儀 Y:</span>
+            <span class="info-value" id="left-gyro-y">0.0°/s</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">陀螺儀 Z:</span>
+            <span class="info-value" id="left-gyro-z">0.0°/s</span>
         </div>
 
         <div style="margin: 15px 0 10px 0; color: #60a5fa;">👉 右手鼓棒</div>
@@ -104,16 +144,40 @@
             <span id="right-position" class="position-indicator pos-none">---</span>
         </div>
         <div class="info-row">
-            <span class="info-label">俯仰角:</span>
+            <span class="info-label">俯仰角 (Pitch):</span>
             <span class="info-value" id="right-pitch">0°</span>
         </div>
         <div class="info-row">
-            <span class="info-label">翻滾角:</span>
+            <span class="info-label">翻滾角 (Roll):</span>
             <span class="info-value" id="right-roll">0°</span>
         </div>
         <div class="info-row">
-            <span class="info-label">加速度:</span>
+            <span class="info-label">總加速度:</span>
             <span class="info-value" id="right-accel">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度 X:</span>
+            <span class="info-value" id="right-accel-x">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度 Y:</span>
+            <span class="info-value" id="right-accel-y">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">加速度 Z:</span>
+            <span class="info-value" id="right-accel-z">0.00 g</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">陀螺儀 X:</span>
+            <span class="info-value" id="right-gyro-x">0.0°/s</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">陀螺儀 Y:</span>
+            <span class="info-value" id="right-gyro-y">0.0°/s</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">陀螺儀 Z:</span>
+            <span class="info-value" id="right-gyro-z">0.0°/s</span>
         </div>
     </div>
 
@@ -333,6 +397,28 @@
             floor.receiveShadow = true;
             scene.add(floor);
 
+            // 添加座標軸（5 單位長度）
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+
+            // 添加座標軸標籤（使用小球體標記）
+            const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+
+            // X 軸標記（紅色）
+            const xMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+            xMarker.position.set(5, 0, 0);
+            scene.add(xMarker);
+
+            // Y 軸標記（綠色）
+            const yMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+            yMarker.position.set(0, 5, 0);
+            scene.add(yMarker);
+
+            // Z 軸標記（藍色）
+            const zMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0x0000ff }));
+            zMarker.position.set(0, 0, 5);
+            scene.add(zMarker);
+
             // 創建爵士鼓組
             const DRUM_COLOR = 0x8B0000;
             const BASE_Y = 0;
@@ -480,10 +566,24 @@
 
         // --- 更新資訊面板 ---
         function updateInfoPanel(side, stickData) {
+            // 更新角度
             document.getElementById(`${side}-pitch`).textContent = stickData.angle.pitch.toFixed(1) + '°';
             document.getElementById(`${side}-roll`).textContent = stickData.angle.roll.toFixed(1) + '°';
+
+            // 更新總加速度
             document.getElementById(`${side}-accel`).textContent = stickData.magnitude.toFixed(2) + ' g';
 
+            // 更新加速度 XYZ
+            document.getElementById(`${side}-accel-x`).textContent = stickData.accel.x.toFixed(2) + ' g';
+            document.getElementById(`${side}-accel-y`).textContent = stickData.accel.y.toFixed(2) + ' g';
+            document.getElementById(`${side}-accel-z`).textContent = stickData.accel.z.toFixed(2) + ' g';
+
+            // 更新陀螺儀 XYZ
+            document.getElementById(`${side}-gyro-x`).textContent = stickData.gyro.x.toFixed(1) + '°/s';
+            document.getElementById(`${side}-gyro-y`).textContent = stickData.gyro.y.toFixed(1) + '°/s';
+            document.getElementById(`${side}-gyro-z`).textContent = stickData.gyro.z.toFixed(1) + '°/s';
+
+            // 更新位置指示器
             const posEl = document.getElementById(`${side}-position`);
             if (stickData.hit_position) {
                 const posText = {
