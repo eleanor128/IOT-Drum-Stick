@@ -85,6 +85,97 @@
             border-radius: 25px;
             font-weight: bold;
         }
+        #offset-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 13px;
+            max-width: 320px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        #offset-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        #offset-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        #offset-panel::-webkit-scrollbar-thumb {
+            background: rgba(79, 195, 247, 0.5);
+            border-radius: 3px;
+        }
+        #offset-panel h3 {
+            margin: 15px 0 10px 0;
+            font-size: 14px;
+            color: #4fc3f7;
+            border-bottom: 1px solid #4fc3f7;
+            padding-bottom: 5px;
+        }
+        .offset-input-row {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .offset-input-row label {
+            min-width: 80px;
+            color: #aaa;
+        }
+        .offset-input-row input {
+            flex: 1;
+            padding: 5px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+        }
+        .offset-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        .offset-btn:hover {
+            transform: translateY(-2px);
+        }
+        .offset-btn-reset {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .axis-legend {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        .axis-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        .axis-color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        .axis-x { background: #ff0000; }
+        .axis-y { background: #00ff00; }
+        .axis-z { background: #0000ff; }
     </style>
 </head>
 <body>
@@ -181,6 +272,77 @@
         </div>
     </div>
 
+    <!-- Offset 控制面板 -->
+    <div id="offset-panel">
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #fff;">
+            ⚙️ 感測器歸零
+        </div>
+
+        <!-- 座標軸顏色說明 -->
+        <div class="axis-legend">
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #fff;">📐 座標軸顏色</div>
+            <div class="axis-item">
+                <div class="axis-color-box axis-x"></div>
+                <span>X 軸 - 紅色</span>
+            </div>
+            <div class="axis-item">
+                <div class="axis-color-box axis-y"></div>
+                <span>Y 軸 - 綠色</span>
+            </div>
+            <div class="axis-item">
+                <div class="axis-color-box axis-z"></div>
+                <span>Z 軸 - 藍色</span>
+            </div>
+        </div>
+
+        <!-- 選擇鼓棒 -->
+        <div style="margin: 15px 0;">
+            <label style="color: #aaa; display: block; margin-bottom: 5px;">選擇鼓棒:</label>
+            <select id="offset-stick-selector" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; color: white;">
+                <option value="left">👈 左手 (Left)</option>
+                <option value="right">👉 右手 (Right)</option>
+            </select>
+        </div>
+
+        <!-- 加速度 Offset -->
+        <h3>加速度 Offset (g)</h3>
+        <div class="offset-input-row">
+            <label>Accel X:</label>
+            <input type="number" id="offset-accel-x" step="0.01" value="0" placeholder="0.00">
+        </div>
+        <div class="offset-input-row">
+            <label>Accel Y:</label>
+            <input type="number" id="offset-accel-y" step="0.01" value="0" placeholder="0.00">
+        </div>
+        <div class="offset-input-row">
+            <label>Accel Z:</label>
+            <input type="number" id="offset-accel-z" step="0.01" value="0" placeholder="0.00">
+        </div>
+
+        <!-- 陀螺儀 Offset -->
+        <h3>陀螺儀 Offset (°/s)</h3>
+        <div class="offset-input-row">
+            <label>Gyro X:</label>
+            <input type="number" id="offset-gyro-x" step="0.1" value="0" placeholder="0.0">
+        </div>
+        <div class="offset-input-row">
+            <label>Gyro Y:</label>
+            <input type="number" id="offset-gyro-y" step="0.1" value="0" placeholder="0.0">
+        </div>
+        <div class="offset-input-row">
+            <label>Gyro Z:</label>
+            <input type="number" id="offset-gyro-z" step="0.1" value="0" placeholder="0.0">
+        </div>
+
+        <!-- 按鈕 -->
+        <button class="offset-btn" id="auto-zero-btn">🎯 自動歸零 (使用當前值)</button>
+        <button class="offset-btn offset-btn-reset" id="reset-offset-btn">↺ 重置所有 Offset</button>
+
+        <div style="margin-top: 10px; padding: 10px; background: rgba(79, 195, 247, 0.1); border-radius: 6px; font-size: 11px; color: #aaa;">
+            💡 提示：點擊「自動歸零」會將當前感測器讀數設為 offset，使所有數據變為 0
+        </div>
+    </div>
+
     <div id="status-bar">🟢 系統運行中</div>
 
     <script>
@@ -190,6 +352,27 @@
 
         // 打擊視覺效果
         let hitParticles = [];
+
+        // Offset 設定 (分別儲存左右手)
+        let sensorOffsets = {
+            left: {
+                accel: { x: 0, y: 0, z: 0 },
+                gyro: { x: 0, y: 0, z: 0 }
+            },
+            right: {
+                accel: { x: 0, y: 0, z: 0 },
+                gyro: { x: 0, y: 0, z: 0 }
+            }
+        };
+
+        // 當前選擇的鼓棒 (用於 offset 控制)
+        let selectedOffsetStick = 'left';
+
+        // 原始感測器數據 (用於自動歸零)
+        let rawSensorData = {
+            left: { accel: { x: 0, y: 0, z: 0 }, gyro: { x: 0, y: 0, z: 0 } },
+            right: { accel: { x: 0, y: 0, z: 0 }, gyro: { x: 0, y: 0, z: 0 } }
+        };
 
         const container = document.getElementById('scene-container');
 
@@ -566,22 +749,42 @@
 
         // --- 更新資訊面板 ---
         function updateInfoPanel(side, stickData) {
+            // 儲存原始數據 (用於自動歸零)
+            rawSensorData[side].accel = { ...stickData.accel };
+            rawSensorData[side].gyro = { ...stickData.gyro };
+
+            // 應用 offset
+            const offset = sensorOffsets[side];
+            const accelWithOffset = {
+                x: stickData.accel.x - offset.accel.x,
+                y: stickData.accel.y - offset.accel.y,
+                z: stickData.accel.z - offset.accel.z
+            };
+            const gyroWithOffset = {
+                x: stickData.gyro.x - offset.gyro.x,
+                y: stickData.gyro.y - offset.gyro.y,
+                z: stickData.gyro.z - offset.gyro.z
+            };
+
             // 更新角度
             document.getElementById(`${side}-pitch`).textContent = stickData.angle.pitch.toFixed(1) + '°';
             document.getElementById(`${side}-roll`).textContent = stickData.angle.roll.toFixed(1) + '°';
 
-            // 更新總加速度
-            document.getElementById(`${side}-accel`).textContent = stickData.magnitude.toFixed(2) + ' g';
+            // 更新總加速度 (使用應用 offset 後的數據)
+            const magnitudeWithOffset = Math.sqrt(
+                accelWithOffset.x ** 2 + accelWithOffset.y ** 2 + accelWithOffset.z ** 2
+            );
+            document.getElementById(`${side}-accel`).textContent = magnitudeWithOffset.toFixed(2) + ' g';
 
-            // 更新加速度 XYZ
-            document.getElementById(`${side}-accel-x`).textContent = stickData.accel.x.toFixed(2) + ' g';
-            document.getElementById(`${side}-accel-y`).textContent = stickData.accel.y.toFixed(2) + ' g';
-            document.getElementById(`${side}-accel-z`).textContent = stickData.accel.z.toFixed(2) + ' g';
+            // 更新加速度 XYZ (應用 offset)
+            document.getElementById(`${side}-accel-x`).textContent = accelWithOffset.x.toFixed(2) + ' g';
+            document.getElementById(`${side}-accel-y`).textContent = accelWithOffset.y.toFixed(2) + ' g';
+            document.getElementById(`${side}-accel-z`).textContent = accelWithOffset.z.toFixed(2) + ' g';
 
-            // 更新陀螺儀 XYZ
-            document.getElementById(`${side}-gyro-x`).textContent = stickData.gyro.x.toFixed(1) + '°/s';
-            document.getElementById(`${side}-gyro-y`).textContent = stickData.gyro.y.toFixed(1) + '°/s';
-            document.getElementById(`${side}-gyro-z`).textContent = stickData.gyro.z.toFixed(1) + '°/s';
+            // 更新陀螺儀 XYZ (應用 offset)
+            document.getElementById(`${side}-gyro-x`).textContent = gyroWithOffset.x.toFixed(1) + '°/s';
+            document.getElementById(`${side}-gyro-y`).textContent = gyroWithOffset.y.toFixed(1) + '°/s';
+            document.getElementById(`${side}-gyro-z`).textContent = gyroWithOffset.z.toFixed(1) + '°/s';
 
             // 更新位置指示器
             const posEl = document.getElementById(`${side}-position`);
@@ -619,10 +822,84 @@
             renderer.render(scene, camera);
         }
 
+        // --- Offset 控制功能 ---
+
+        // 載入當前選擇鼓棒的 offset 到輸入框
+        function loadOffsetInputs() {
+            const stick = selectedOffsetStick;
+            const offset = sensorOffsets[stick];
+
+            document.getElementById('offset-accel-x').value = offset.accel.x.toFixed(2);
+            document.getElementById('offset-accel-y').value = offset.accel.y.toFixed(2);
+            document.getElementById('offset-accel-z').value = offset.accel.z.toFixed(2);
+            document.getElementById('offset-gyro-x').value = offset.gyro.x.toFixed(1);
+            document.getElementById('offset-gyro-y').value = offset.gyro.y.toFixed(1);
+            document.getElementById('offset-gyro-z').value = offset.gyro.z.toFixed(1);
+        }
+
+        // 從輸入框儲存 offset
+        function saveOffsetFromInputs() {
+            const stick = selectedOffsetStick;
+
+            sensorOffsets[stick].accel.x = parseFloat(document.getElementById('offset-accel-x').value) || 0;
+            sensorOffsets[stick].accel.y = parseFloat(document.getElementById('offset-accel-y').value) || 0;
+            sensorOffsets[stick].accel.z = parseFloat(document.getElementById('offset-accel-z').value) || 0;
+            sensorOffsets[stick].gyro.x = parseFloat(document.getElementById('offset-gyro-x').value) || 0;
+            sensorOffsets[stick].gyro.y = parseFloat(document.getElementById('offset-gyro-y').value) || 0;
+            sensorOffsets[stick].gyro.z = parseFloat(document.getElementById('offset-gyro-z').value) || 0;
+
+            console.log(`已更新 ${stick} 手鼓棒的 offset:`, sensorOffsets[stick]);
+        }
+
+        // 鼓棒選擇器切換
+        document.getElementById('offset-stick-selector').addEventListener('change', (e) => {
+            selectedOffsetStick = e.target.value;
+            loadOffsetInputs();
+            console.log(`切換到 ${selectedOffsetStick} 手鼓棒`);
+        });
+
+        // 輸入框變更時自動儲存
+        ['offset-accel-x', 'offset-accel-y', 'offset-accel-z',
+         'offset-gyro-x', 'offset-gyro-y', 'offset-gyro-z'].forEach(id => {
+            document.getElementById(id).addEventListener('change', saveOffsetFromInputs);
+        });
+
+        // 自動歸零按鈕
+        document.getElementById('auto-zero-btn').addEventListener('click', () => {
+            const stick = selectedOffsetStick;
+            const raw = rawSensorData[stick];
+
+            // 將當前讀數設為 offset
+            sensorOffsets[stick].accel = { ...raw.accel };
+            sensorOffsets[stick].gyro = { ...raw.gyro };
+
+            // 更新輸入框
+            loadOffsetInputs();
+
+            console.log(`✓ 已自動歸零 ${stick} 手鼓棒`);
+            alert(`✓ 已將 ${stick === 'left' ? '左手' : '右手'} 鼓棒歸零`);
+        });
+
+        // 重置 offset 按鈕
+        document.getElementById('reset-offset-btn').addEventListener('click', () => {
+            const stick = selectedOffsetStick;
+
+            sensorOffsets[stick].accel = { x: 0, y: 0, z: 0 };
+            sensorOffsets[stick].gyro = { x: 0, y: 0, z: 0 };
+
+            loadOffsetInputs();
+
+            console.log(`✓ 已重置 ${stick} 手鼓棒的 offset`);
+            alert(`✓ 已重置 ${stick === 'left' ? '左手' : '右手'} 鼓棒的 offset`);
+        });
+
         // --- 啟動應用程式 ---
         window.onload = function () {
             init();
             animate();
+
+            // 載入初始 offset 設定
+            loadOffsetInputs();
 
             // 每 50ms 更新一次數據
             setInterval(fetchSensorData, 50);
