@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>鼓棒參數微調 - MPU6050</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -328,6 +327,14 @@
     <div class="overlay">
         <h2>📊 即時感測器數據</h2>
         <div class="data-grid">
+            <span class="data-label">選擇鼓棒:</span>
+            <span>
+                <select id="stick-selector" style="background: #333; color: #4fc3f7; border: 1px solid #4fc3f7; padding: 5px; border-radius: 5px;">
+                    <option value="right">右手 (Right)</option>
+                    <option value="left">左手 (Left)</option>
+                </select>
+            </span>
+
             <span class="data-label">連線狀態:</span>
             <span>
                 <span class="status-indicator status-disconnected" id="status-indicator"></span>
@@ -515,8 +522,9 @@
         let drumStick;
         let grid;
 
-        // Socket.IO 連接
-        const socket = io();
+        // 連接狀態
+        let isConnected = false;
+        let selectedStick = 'right';  // 預設選擇右手鼓棒
 
         // 偏移量
         let positionOffset = { x: 0, y: 0, z: 0 };
@@ -761,45 +769,56 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // Socket.IO 事件處理
-        socket.on('connect', () => {
-            console.log('✓ WebSocket 已連接');
-            document.getElementById('status').textContent = '已連接';
-            document.getElementById('status-indicator').className = 'status-indicator status-connected';
-        });
+        // REST API 數據輪詢
+        async function fetchSensorData() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
 
-        socket.on('disconnect', () => {
-            console.log('✗ WebSocket 已斷線');
-            document.getElementById('status').textContent = '未連接';
-            document.getElementById('status-indicator').className = 'status-indicator status-disconnected';
-        });
+                if (!isConnected) {
+                    console.log('✓ API 已連接');
+                    document.getElementById('status').textContent = '已連接';
+                    document.getElementById('status-indicator').className = 'status-indicator status-connected';
+                    isConnected = true;
+                }
 
-        socket.on('sensor_data', (data) => {
-            // 更新顯示
-            document.getElementById('roll').textContent = data.roll.toFixed(1) + '°';
-            document.getElementById('pitch').textContent = data.pitch.toFixed(1) + '°';
-            document.getElementById('yaw').textContent = data.yaw.toFixed(1) + '°';
-            document.getElementById('accel-x').textContent = data.accel.x.toFixed(2) + ' m/s²';
-            document.getElementById('accel-y').textContent = data.accel.y.toFixed(2) + ' m/s²';
-            document.getElementById('accel-z').textContent = data.accel.z.toFixed(2) + ' m/s²';
-            
-            const totalAccel = Math.sqrt(
-                data.accel.x ** 2 + 
-                data.accel.y ** 2 + 
-                data.accel.z ** 2
-            );
-            document.getElementById('accel-total').textContent = totalAccel.toFixed(2) + ' m/s²';
-            document.getElementById('temp').textContent = data.temperature.toFixed(1) + '°C';
+                // 選擇要顯示的鼓棒數據
+                const stickData = data[selectedStick];
 
-            // 更新當前數據
-            currentSensorData = {
-                roll: data.roll,
-                pitch: data.pitch,
-                yaw: data.yaw
-            };
+                // 更新顯示
+                document.getElementById('roll').textContent = stickData.angle.roll.toFixed(1) + '°';
+                document.getElementById('pitch').textContent = stickData.angle.pitch.toFixed(1) + '°';
+                document.getElementById('yaw').textContent = '0.0°';  // 沒有 yaw 數據
+                document.getElementById('accel-x').textContent = stickData.accel.x.toFixed(2) + ' g';
+                document.getElementById('accel-y').textContent = stickData.accel.y.toFixed(2) + ' g';
+                document.getElementById('accel-z').textContent = stickData.accel.z.toFixed(2) + ' g';
 
-            // 更新鼓棒姿態
-            updateDrumStick();
+                document.getElementById('accel-total').textContent = stickData.magnitude.toFixed(2) + ' g';
+                document.getElementById('temp').textContent = 'N/A';  // 沒有溫度數據
+
+                // 更新當前數據
+                currentSensorData = {
+                    roll: stickData.angle.roll,
+                    pitch: stickData.angle.pitch,
+                    yaw: 0
+                };
+            } catch (error) {
+                if (isConnected) {
+                    console.log('✗ API 連接失敗');
+                    document.getElementById('status').textContent = '未連接';
+                    document.getElementById('status-indicator').className = 'status-indicator status-disconnected';
+                    isConnected = false;
+                }
+            }
+        }
+
+        // 每 50ms 更新一次數據
+        setInterval(fetchSensorData, 50);
+
+        // 鼓棒選擇器
+        document.getElementById('stick-selector').addEventListener('change', (e) => {
+            selectedStick = e.target.value;
+            console.log('切換到', selectedStick === 'right' ? '右手' : '左手', '鼓棒');
         });
 
         // UI 控制事件

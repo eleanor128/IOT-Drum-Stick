@@ -130,8 +130,9 @@ def read_mpu6050_data(address, stick_name=None):
     magnitude = math.sqrt(cal_accel['x']**2 + cal_accel['y']**2 + cal_accel['z']**2)
 
     # 計算傾斜角度 (使用校準後的數據)
-    pitch = math.atan2(cal_accel['y'], math.sqrt(cal_accel['x']**2 + cal_accel['z']**2)) * 180 / math.pi
-    roll = math.atan2(-cal_accel['x'], cal_accel['z']) * 180 / math.pi
+    # 反轉正負號以符合實際運動方向
+    pitch = -math.atan2(cal_accel['y'], math.sqrt(cal_accel['x']**2 + cal_accel['z']**2)) * 180 / math.pi
+    roll = -math.atan2(-cal_accel['x'], cal_accel['z']) * 180 / math.pi
 
     return {
         'accel': cal_accel,
