@@ -281,8 +281,7 @@ def get_data():
 
 
 @app.route('/gemini')
-def index():
-    """主頁面"""
+def gemini():
     return render_template('gemini_drum.html')
 
 @app.route('/api/calibrate_ready_position', methods=['POST'])
