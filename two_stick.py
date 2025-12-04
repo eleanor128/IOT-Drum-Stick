@@ -155,6 +155,9 @@ def read_mpu6050_data(address, stick_name=None):
     # - Y軸正值表示向某一側傾斜
     horizontal_angle = math.atan2(cal_accel['y'], cal_accel['x']) * 180 / math.pi
 
+    # 加上 90 度的初始偏移（因為鼓棒初始位置是逆時鐘水平轉 90 度）
+    horizontal_angle = horizontal_angle + 90
+
     # 輸出為標準的 pitch/roll 格式以保持 API 兼容性
     pitch = vertical_angle    # 上下角度
     roll = horizontal_angle   # 左右角度
