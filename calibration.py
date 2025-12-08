@@ -1,75 +1,79 @@
 from mpu6050 import mpu6050
 import time
-import json
 import statistics
+import datetime
 
 sensor = mpu6050(0x68)
 
-SAMPLES = 200        # 收集多少筆資料（200筆 ≈ 5 秒）
-DELAY = 0.025        # 每筆延遲 (40Hz)
-SAVE_PATH = "calibration.json"
+LOG_HZ = 10             # 每秒10筆，想要 1Hz 就改成 1
+INTERVAL = 1 / LOG_HZ   # 每筆間隔 0.1 秒
+BASELINE_SEC = 1        # 前 1 秒做 baseline
+BASELINE_SAMPLES = LOG_HZ * BASELINE_SEC
 
-def collect_data():
-    accel_x = []
-    accel_y = []
-    accel_z = []
-    gyro_x = []
-    gyro_y = []
-    gyro_z = []
+# 收集 baseline （前1秒）
+def collect_baseline():
+    print("正在收集 baseline（請保持靜止 1 秒）…")
+    ax = []
+    ay = []
+    az = []
+    gx = []
+    gy = []
+    gz = []
 
-    print("開始收集靜止資料（請保持感測器不動）...")
-
-    for _ in range(SAMPLES):
+    for _ in range(BASELINE_SAMPLES):
         a = sensor.get_accel_data()
         g = sensor.get_gyro_data()
 
-        accel_x.append(a["x"])
-        accel_y.append(a["y"])
-        accel_z.append(a["z"])
-        gyro_x.append(g["x"])
-        gyro_y.append(g["y"])
-        gyro_z.append(g["z"])
+        ax.append(a["x"])
+        ay.append(a["y"])
+        az.append(a["z"])
 
-        time.sleep(DELAY)
+        gx.append(g["x"])
+        gy.append(g["y"])
+        gz.append(g["z"])
 
-    print("資料收集完成！\n")
-    return accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
+        time.sleep(INTERVAL)
 
+    print("Baseline 收集完成\n")
 
-def compute_offset(data):
-    return statistics.mean(data)
-
-
-def generate_calibration(accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z):
     return {
-        "left": {
-            "accel_offset": {
-                "x": compute_offset(accel_x),
-                "y": compute_offset(accel_y),
-                "z": compute_offset(accel_z) - 9.81  # 重力校正
-            },
-            "gyro_offset": {
-                "x": compute_offset(gyro_x),
-                "y": compute_offset(gyro_y),
-                "z": compute_offset(gyro_z)
-            },
-            "accel_scale": {"x": 1, "y": 1, "z": 1},
-            "gyro_scale": {"x": 1, "y": 1, "z": 1},
-            "axis_mapping": {"x": "x", "y": "y", "z": "z"},
-            "axis_invert": {"x": False, "y": False, "z": False},
-            "rotation": {"pitch": 0, "roll": 0, "yaw": 0}
+        "accel": {
+            "x": statistics.mean(ax),
+            "y": statistics.mean(ay),
+            "z": statistics.mean(az),
         },
-        "right": "COPY LEFT LATER"  # 你之後可以改
+        "gyro": {
+            "x": statistics.mean(gx),
+            "y": statistics.mean(gy),
+            "z": statistics.mean(gz),
+        },
     }
 
 
-def save_json(data):
-    with open(SAVE_PATH, "w") as f:
-        json.dump(data, f, indent=2)
-    print(f"Calibration saved to {SAVE_PATH}")
+def live_log(baseline):
+    print("開始連續 log （Ctrl+C 停止）")
+    while True:
+        a = sensor.get_accel_data()
+        g = sensor.get_gyro_data()
+        now = datetime.datetime.now().strftime("%H:%M:%S")
+
+        # 計算 Δ（方便看漂移）
+        da = {k: a[k] - baseline["accel"][k] for k in a}
+        dg = {k: g[k] - baseline["gyro"][k] for k in g}
+
+        print(f"[{now}]")
+        print(f" Accel: x={a['x']:.4f} (Δ={da['x']:+.4f}), "
+              f"y={a['y']:.4f} (Δ={da['y']:+.4f}), "
+              f"z={a['z']:.4f} (Δ={da['z']:+.4f})")
+
+        print(f" Gyro : x={g['x']:.4f} (Δ={dg['x']:+.4f}), "
+              f"y={g['y']:.4f} (Δ={dg['y']:+.4f}), "
+              f"z={g['z']:.4f} (Δ={dg['z']:+.4f})")
+
+        print("-" * 60)
+        time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":
-    ax, ay, az, gx, gy, gz = collect_data()
-    calibration_data = generate_calibration(ax, ay, az, gx, gy, gz)
-    save_json(calibration_data)
+    baseline = collect_baseline()
+    live_log(baseline)
