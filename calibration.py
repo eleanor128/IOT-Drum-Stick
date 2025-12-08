@@ -81,4 +81,4 @@ print("開始 logging，每秒一筆（Ctrl+C 停止）")
 
 while True:
     log_once()
-    time.sleep(1)
+    time.sleep(0.01)
