@@ -466,7 +466,7 @@
 
             // 鼓棒初始位置
             positions: {
-                left: { x: -1.5, y: 1.5, z: 10 },
+                left: { x: -1.5, y: 1.5, z: 0.5 },
                 right: { x: 1.5, y: 1.5, z: 0.5 }
             }
         };
@@ -534,7 +534,9 @@
                 shininess: 20
             });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
-            stick.rotation.z = Math.PI / 2; // 水平放置
+            // stick.rotation.z = Math.PI / 2; // 水平放置
+            stick.rotation.z = 0; // 水平放置
+
             group.add(stick);
 
             // 鼓棒尖端（球體）
