@@ -1,4 +1,3 @@
-# hit_detection.py
 import time
 import math
 import pygame
@@ -20,15 +19,26 @@ sounds = {
 
 hit_cooldown = 0
 
+
 def detect_drum(pitch, roll):
-    if pitch > -10:
+    """
+    根據 roll (左右角度) 分區，pitch 要往下才能敲擊
+    """
+
+    if pitch > -5:   # pitch > -5 表示還沒往下揮
         return None
 
-    if roll < -20:
+    if roll < -40:
+        return "Crash"
+    elif -40 <= roll < -20:
         return "Hi-hat"
     elif -20 <= roll <= 20:
         return "Snare"
-    elif roll > 20:
+    elif 20 < roll <= 40:
+        return "Tom 1"
+    elif 40 < roll <= 60:
+        return "Tom 2"
+    elif roll > 60:
         return "Ride"
 
     return None
@@ -36,16 +46,16 @@ def detect_drum(pitch, roll):
 
 print("開始敲擊偵測！（Ctrl+C 停止）")
 
-
 while True:
     pitch, roll, ax, ay, az, gx, gy, gz = update_angle()
 
-    # ---- 新增更精準的敲擊條件 ----
-    fast_swing = abs(gy) > 80 or abs(gz) > 80   # 快速揮動
-    downward_hit = az > 9.5                     # 有朝下撞擊的特徵
+    # ---- 更靈敏的敲擊條件 ----
+    is_fast = abs(gy) > 40       # 上下揮動
+    is_hit_accel = az > 9.0      # 瞬間加速度增加（撞擊特徵）
 
     if hit_cooldown == 0:
-        if fast_swing and downward_hit:
+        if is_fast and is_hit_accel:
+
             drum = detect_drum(pitch, roll)
 
             if drum:
@@ -54,7 +64,7 @@ while True:
                 if drum in sounds:
                     sounds[drum].play()
 
-                hit_cooldown = 6
+                hit_cooldown = 8   # 冷卻避免連續誤觸發
     else:
         hit_cooldown -= 1
 
