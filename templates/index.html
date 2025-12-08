@@ -11,8 +11,12 @@
 <body>
 
 <canvas id="drumCanvas" width="900" height="450"></canvas>
+<button onclick="enableAudio()" style="position:fixed; top:20px; left:20px;">
+    🔊 Enable Drum Sound
+</button>
 
 <script>
+
 // --------------------- 音效載入 ---------------------
 const sounds = {
     "Symbal":    new Audio("/static/sounds/symbal.wav"),
@@ -29,7 +33,19 @@ Object.values(sounds).forEach(s => {
     s.volume = 1.0;
 });
 
-// --------------------- 畫布設定 ----------------------
+// --------------------- 使用者啟動音效 ---------------------
+function enableAudio() {
+    Object.values(sounds).forEach(s => {
+        s.play().then(() => {
+            s.pause();
+            s.currentTime = 0;
+        }).catch(e => {});
+    });
+
+    alert("Audio Enabled! 🎵 Ready to drum!");
+}
+
+// --------------------- 畫布設定 ---------------------
 const canvas = document.getElementById("drumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -45,17 +61,16 @@ const zones = [
     { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d" },
 ];
 
-// --------------------- 角度轉畫布座標 ---------------------
+// --------------------- 將角度轉到畫布 ---------------------
 function mapAngleToXY(pitch, roll) {
     let x = (roll + 90) / 180 * canvas.width;
     let y = (pitch + 60) / 120 * canvas.height;
-
     x = Math.max(0, Math.min(canvas.width, x));
     y = Math.max(0, Math.min(canvas.height, y));
     return {x, y};
 }
 
-// --------------------- 畫面更新 ---------------------
+// --------------------- 畫畫面 ---------------------
 function draw(pitch, roll) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -75,23 +90,22 @@ function draw(pitch, roll) {
     ctx.fill();
 }
 
-// --------------------- 敲擊偵測 ---------------------
+// --------------------- Hit 偵測 ---------------------
 let hitCooldown = 0;
 
 function detectZone(pitch, roll) {
     if (roll < -20) return "Hihat";
-    if (roll >  20) return "Ride";
-    return "Snare";
+    if (roll > 20) return "Ride";
+    return "Snare";  
 }
 
 function detectHit(ax, ay, az, gy, gz) {
-    const acc = Math.sqrt(ax*ax + ay*ay + az*az);
     const fastSwing = Math.abs(gy) > 70 || Math.abs(gz) > 70;
     const downward = az > 9.2;
-    return (fastSwing && downward);
+    return fastSwing && downward;
 }
 
-// --------------------- 單一 update() ---------------------
+// --------------------- 主迴圈 ---------------------
 function update() {
     fetch("/data")
         .then(res => res.json())
@@ -111,12 +125,17 @@ function update() {
                     hitCooldown = 6;
                 }
             }
-        });
+        })
+        .catch(err => console.log("Fetch error:", err));
 
     requestAnimationFrame(update);
 }
 
 update();
+
 </script>
+
+
+
 </body>
 </html>
