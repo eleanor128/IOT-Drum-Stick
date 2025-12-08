@@ -13,6 +13,23 @@
 <canvas id="drumCanvas" width="900" height="450"></canvas>
 
 <script>
+// --------------------- 音效載入 ---------------------
+const sounds = {
+    "Symbal":    new Audio("/static/sounds/symbal.wav"),
+    "Tom_high":  new Audio("/static/sounds/tom_high.wav"),
+    "Tom_mid":   new Audio("/static/sounds/tom_mid.wav"),
+    "Ride":      new Audio("/static/sounds/ride.wav"),
+    "Hihat":     new Audio("/static/sounds/hihat.wav"),
+    "Snare":     new Audio("/static/sounds/snare.wav"),
+    "Tom_floor": new Audio("/static/sounds/tom_floor.wav"),
+};
+
+Object.values(sounds).forEach(s => {
+    s.preload = "auto";
+    s.volume = 1.0;
+});
+
+// --------------------- 畫布設定 ----------------------
 const canvas = document.getElementById("drumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -28,29 +45,29 @@ const zones = [
     { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d" },
 ];
 
+// --------------------- 角度轉畫布座標 ---------------------
 function mapAngleToXY(pitch, roll) {
     let x = (roll + 90) / 180 * canvas.width;
     let y = (pitch + 60) / 120 * canvas.height;
 
     x = Math.max(0, Math.min(canvas.width, x));
     y = Math.max(0, Math.min(canvas.height, y));
-
     return {x, y};
 }
 
+// --------------------- 畫面更新 ---------------------
 function draw(pitch, roll) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // draw zones
     zones.forEach(z => {
         ctx.fillStyle = z.color;
         ctx.fillRect(z.x, z.y, z.w, z.h);
+
         ctx.fillStyle = "#fff";
         ctx.font = "20px Arial";
         ctx.fillText(z.name, z.x + 10, z.y + 30);
     });
 
-    // draw red dot
     const pos = mapAngleToXY(pitch, roll);
     ctx.fillStyle = "red";
     ctx.beginPath();
@@ -58,19 +75,48 @@ function draw(pitch, roll) {
     ctx.fill();
 }
 
+// --------------------- 敲擊偵測 ---------------------
+let hitCooldown = 0;
+
+function detectZone(pitch, roll) {
+    if (roll < -20) return "Hihat";
+    if (roll >  20) return "Ride";
+    return "Snare";
+}
+
+function detectHit(ax, ay, az, gy, gz) {
+    const acc = Math.sqrt(ax*ax + ay*ay + az*az);
+    const fastSwing = Math.abs(gy) > 70 || Math.abs(gz) > 70;
+    const downward = az > 9.2;
+    return (fastSwing && downward);
+}
+
+// --------------------- 單一 update() ---------------------
 function update() {
     fetch("/data")
         .then(res => res.json())
         .then(d => {
             draw(d.pitch, d.roll);
+
+            if (hitCooldown > 0) {
+                hitCooldown--;
+                return;
+            }
+
+            if (detectHit(d.ax, d.ay, d.az, d.gy, d.gz)) {
+                let zone = detectZone(d.pitch, d.roll);
+                if (zone && sounds[zone]) {
+                    sounds[zone].currentTime = 0;
+                    sounds[zone].play();
+                    hitCooldown = 6;
+                }
+            }
         });
 
     requestAnimationFrame(update);
 }
 
 update();
-
 </script>
-
 </body>
 </html>

@@ -12,7 +12,12 @@ def data():
     pitch, roll, ax, ay, az, gx, gy, gz = update_angle()
     return jsonify({
         "pitch": pitch,
-        "roll": roll
+        "roll": roll,
+        "ax": ax,
+        "ay": ay,
+        "az": az,
+        "gy": gy,
+        "gz": gz
     })
 
 if __name__ == "__main__":
