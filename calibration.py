@@ -37,4 +37,39 @@ def collect_data():
 
 
 def compute_offset(data):
-    return statistics.mean
+    return statistics.mean(data)
+
+
+def generate_calibration(accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z):
+    return {
+        "left": {
+            "accel_offset": {
+                "x": compute_offset(accel_x),
+                "y": compute_offset(accel_y),
+                "z": compute_offset(accel_z) - 9.81  # 重力校正
+            },
+            "gyro_offset": {
+                "x": compute_offset(gyro_x),
+                "y": compute_offset(gyro_y),
+                "z": compute_offset(gyro_z)
+            },
+            "accel_scale": {"x": 1, "y": 1, "z": 1},
+            "gyro_scale": {"x": 1, "y": 1, "z": 1},
+            "axis_mapping": {"x": "x", "y": "y", "z": "z"},
+            "axis_invert": {"x": False, "y": False, "z": False},
+            "rotation": {"pitch": 0, "roll": 0, "yaw": 0}
+        },
+        "right": "COPY LEFT LATER"  # 你之後可以改
+    }
+
+
+def save_json(data):
+    with open(SAVE_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"Calibration saved to {SAVE_PATH}")
+
+
+if __name__ == "__main__":
+    ax, ay, az, gx, gy, gz = collect_data()
+    calibration_data = generate_calibration(ax, ay, az, gx, gy, gz)
+    save_json(calibration_data)
