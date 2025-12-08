@@ -144,23 +144,22 @@ def read_mpu6050_data(address, stick_name=None):
     magnitude = math.sqrt(cal_accel['x']**2 + cal_accel['y']**2 + cal_accel['z']**2)
 
     # 計算鼓棒姿態角度
-    # 感測器軸向: X=鼓棒尖端方向, Y=垂直鼓棒(左右), Z=垂直地面(上下)
+    # 新的鼓棒方向設定: 水平於 XZ 平面，尖端指向 Z 軸負向
     #
-    # vertical_angle: 鼓棒的垂直角度（提起/放下），基於 Z 軸加速度
-    # - Z軸朝上（正值）表示鼓棒向上
-    # - 計算鼓棒與水平面的夾角
-    vertical_angle = math.atan2(cal_accel['z'], math.sqrt(cal_accel['x']**2 + cal_accel['y']**2)) * 180 / math.pi
+    # 當鼓棒水平靜止時：
+    # - Z 軸加速度 ≈ 0 (鼓棒水平)
+    # - X 軸加速度 ≈ 0 (沒有前後傾斜)
+    # - Y 軸加速度 ≈ -1g (重力向下)
 
-    # horizontal_angle: 鼓棒的水平方向（左/中/右），基於 Y 軸加速度
-    # - Y軸正值表示向某一側傾斜
-    horizontal_angle = math.atan2(cal_accel['y'], cal_accel['x']) * 180 / math.pi
+    # pitch: 鼓棒的俯仰角（上下傾斜）
+    # - 基於 X 軸加速度（尖端向下為負，向上為正）
+    # - 水平時應為 0°
+    pitch = -math.atan2(cal_accel['x'], math.sqrt(cal_accel['y']**2 + cal_accel['z']**2)) * 180 / math.pi
 
-    # 加上 90 度的初始偏移（因為鼓棒初始位置是逆時鐘水平轉 90 度）
-    horizontal_angle = horizontal_angle + 90
-
-    # 輸出為標準的 pitch/roll 格式以保持 API 兼容性
-    pitch = vertical_angle    # 上下角度
-    roll = horizontal_angle   # 左右角度
+    # roll: 鼓棒的橫滾角（左右傾斜）
+    # - 基於 Z 軸加速度（向左傾斜為負，向右為正）
+    # - 水平時應為 0°
+    roll = math.atan2(cal_accel['z'], cal_accel['y']) * 180 / math.pi
 
     return {
         'accel': cal_accel,
