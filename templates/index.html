@@ -17,35 +17,47 @@
 
 <script>
 
-// --------------------- 音效載入 ---------------------
-const sounds = {
-    "Symbal":    new Audio("/sounds/symbal.wav"),
-    "Tom_high":  new Audio("/sounds/tom_high.wav"),
-    "Tom_mid":   new Audio("/sounds/tom_mid.wav"),
-    "Ride":      new Audio("/sounds/ride.wav"),
-    "Hihat":     new Audio("/sounds/hihat.wav"),
-    "Snare":     new Audio("/sounds/snare.wav"),
-    "Tom_floor": new Audio("/sounds/tom_floor.wav"),
-};
+// --------------------- AudioContext 初始化 ---------------------
+let audioCtx;
+let buffers = {};
 
-Object.values(sounds).forEach(s => {
-    s.preload = "auto";
-    s.volume = 1.0;
-});
+async function enableAudio() {
+    if (audioCtx) {
+        alert("Audio already enabled!");
+        return;
+    }
 
-// --------------------- 使用者啟動音效 ---------------------
-function enableAudio() {
-    Object.values(sounds).forEach(s => {
-        s.play().then(() => {
-            s.pause();
-            s.currentTime = 0;
-        }).catch(e => {});
-    });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    alert("Audio Enabled! 🎵 Ready to drum!");
+    const files = {
+        "Symbal": "/sounds/symbal.wav",
+        "Tom_high": "/sounds/tom_high.wav",
+        "Tom_mid": "/sounds/tom_mid.wav",
+        "Ride": "/sounds/ride.wav",
+        "Hihat": "/sounds/hihat.wav",
+        "Snare": "/sounds/snare.wav",
+        "Tom_floor": "/sounds/tom_floor.wav",
+    };
+
+    for (const key in files) {
+        const res = await fetch(files[key]);
+        const arr = await res.arrayBuffer();
+        buffers[key] = await audioCtx.decodeAudioData(arr);
+    }
+
+    alert("Audio Enabled! 🥁 Sounds ready!");
 }
 
-// --------------------- 畫布設定 ---------------------
+function playSound(name) {
+    if (!audioCtx || !buffers[name]) return;
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffers[name];
+    src.connect(audioCtx.destination);
+    src.start(0);
+}
+
+
+// --------------------- 畫布 ---------------------
 const canvas = document.getElementById("drumCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -61,7 +73,6 @@ const zones = [
     { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d" },
 ];
 
-// --------------------- 將角度轉到畫布 ---------------------
 function mapAngleToXY(pitch, roll) {
     let x = (roll + 90) / 180 * canvas.width;
     let y = (pitch + 60) / 120 * canvas.height;
@@ -70,7 +81,6 @@ function mapAngleToXY(pitch, roll) {
     return {x, y};
 }
 
-// --------------------- 畫畫面 ---------------------
 function draw(pitch, roll) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -90,13 +100,14 @@ function draw(pitch, roll) {
     ctx.fill();
 }
 
-// --------------------- Hit 偵測 ---------------------
+
+// --------------------- HIT 偵測 ---------------------
 let hitCooldown = 0;
 
 function detectZone(pitch, roll) {
     if (roll < -20) return "Hihat";
     if (roll > 20) return "Ride";
-    return "Snare";  
+    return "Snare";
 }
 
 function detectHit(ax, ay, az, gy, gz) {
@@ -104,6 +115,7 @@ function detectHit(ax, ay, az, gy, gz) {
     const downward = az > 9.2;
     return fastSwing && downward;
 }
+
 
 // --------------------- 主迴圈 ---------------------
 function update() {
@@ -119,11 +131,8 @@ function update() {
 
             if (detectHit(d.ax, d.ay, d.az, d.gy, d.gz)) {
                 let zone = detectZone(d.pitch, d.roll);
-                if (zone && sounds[zone]) {
-                    sounds[zone].currentTime = 0;
-                    sounds[zone].play();
-                    hitCooldown = 6;
-                }
+                playSound(zone);
+                hitCooldown = 6;
             }
         })
         .catch(err => console.log("Fetch error:", err));
@@ -134,6 +143,7 @@ function update() {
 update();
 
 </script>
+
 
 
 
