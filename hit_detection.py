@@ -9,13 +9,13 @@ pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=256)
 pygame.mixer.init()
 
 sounds = {
-    "Hi-hat": pygame.mixer.Sound("sounds/hihat.mp3"),
-    "Ride": pygame.mixer.Sound("sounds/ride.mp3"),
-    "Snare": pygame.mixer.Sound("sounds/snare.mp3"),
-    "Tom 1": pygame.mixer.Sound("sounds/tom_high.mp3"),
-    "Tom 2": pygame.mixer.Sound("sounds/tom_mid.mp3"),
-    "Floor Tom": pygame.mixer.Sound("sounds/tom_floor.mp3"),
-    "Crash": pygame.mixer.Sound("sounds/symbal.mp3"),
+    "Hi-hat": pygame.mixer.Sound("sounds/hihat.wav"),
+    "Ride": pygame.mixer.Sound("sounds/ride.wav"),
+    "Snare": pygame.mixer.Sound("sounds/snare.wav"),
+    "Tom 1": pygame.mixer.Sound("sounds/tom_high.wav"),
+    "Tom 2": pygame.mixer.Sound("sounds/tom_mid.wav"),
+    "Floor Tom": pygame.mixer.Sound("sounds/tom_floor.wav"),
+    "Crash": pygame.mixer.Sound("sounds/symbal.wav"),
 }
 
 hit_cooldown = 0
