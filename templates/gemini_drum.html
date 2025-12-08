@@ -7,7 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- ==================== CSS 樣式區 ==================== -->
     <style>
+        /* === 基礎樣式 === */
         body {
             margin: 0;
             overflow: hidden;
@@ -21,6 +24,8 @@
         canvas {
             display: block;
         }
+
+        /* === 左側資訊面板樣式 === */
         #info-panel {
             position: absolute;
             top: 20px;
@@ -74,17 +79,8 @@
         .pos-center { background: #10b981; color: white; }
         .pos-right { background: #3b82f6; color: white; }
         .pos-none { background: #6b7280; color: white; }
-        #status-bar {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(16, 185, 129, 0.9);
-            color: white;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-weight: bold;
-        }
+
+        /* === 右側 Offset 控制面板樣式 === */
         #offset-panel {
             position: absolute;
             top: 20px;
@@ -176,17 +172,33 @@
         .axis-x { background: #ff0000; }
         .axis-y { background: #00ff00; }
         .axis-z { background: #0000ff; }
+
+        /* === 底部狀態列樣式 === */
+        #status-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
     </style>
 </head>
+
+<!-- ==================== HTML 結構區 ==================== -->
 <body>
     <div id="scene-container"></div>
 
-    <!-- 資訊面板 -->
+    <!-- 左側：即時數據顯示面板 -->
     <div id="info-panel">
         <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #fff;">
             🥁 即時鼓棒追蹤
         </div>
 
+        <!-- 左手鼓棒數據 -->
         <div style="margin-bottom: 10px; color: #fbbf24;">👈 左手鼓棒</div>
         <div class="info-row">
             <span class="info-label">位置:</span>
@@ -229,6 +241,7 @@
             <span class="info-value" id="left-gyro-z">0.0°/s</span>
         </div>
 
+        <!-- 右手鼓棒數據 -->
         <div style="margin: 15px 0 10px 0; color: #60a5fa;">👉 右手鼓棒</div>
         <div class="info-row">
             <span class="info-label">位置:</span>
@@ -272,7 +285,7 @@
         </div>
     </div>
 
-    <!-- Offset 控制面板 -->
+    <!-- 右側：感測器 Offset 控制面板 -->
     <div id="offset-panel">
         <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #fff;">
             ⚙️ 感測器歸零
@@ -304,7 +317,7 @@
             </select>
         </div>
 
-        <!-- 加速度 Offset -->
+        <!-- 加速度 Offset 輸入 -->
         <h3>加速度 Offset (g)</h3>
         <div class="offset-input-row">
             <label>Accel X:</label>
@@ -319,7 +332,7 @@
             <input type="number" id="offset-accel-z" step="0.01" value="0" placeholder="0.00">
         </div>
 
-        <!-- 陀螺儀 Offset -->
+        <!-- 陀螺儀 Offset 輸入 -->
         <h3>陀螺儀 Offset (°/s)</h3>
         <div class="offset-input-row">
             <label>Gyro X:</label>
@@ -334,7 +347,7 @@
             <input type="number" id="offset-gyro-z" step="0.1" value="0" placeholder="0.0">
         </div>
 
-        <!-- 按鈕 -->
+        <!-- 控制按鈕 -->
         <button class="offset-btn" id="auto-zero-btn">🎯 自動歸零 (使用當前值)</button>
         <button class="offset-btn offset-btn-reset" id="reset-offset-btn">↺ 重置所有 Offset</button>
 
@@ -343,17 +356,22 @@
         </div>
     </div>
 
+    <!-- 底部狀態列 -->
     <div id="status-bar">🟢 系統運行中</div>
 
+    <!-- ==================== JavaScript 程式區 ==================== -->
     <script>
+        // ============================================================
+        // 【區塊 1】全域變數與設定參數
+        // ============================================================
+
+        // === Three.js 場景物件 ===
         let scene, camera, renderer, controls;
         let leftDrumstick, rightDrumstick;
-        let leftStickTip, rightStickTip; // 鼓棒尖端（用於打擊檢測）
-
-        // 打擊視覺效果
+        let leftStickTip, rightStickTip;
         let hitParticles = [];
 
-        // Offset 設定 (分別儲存左右手)
+        // === 感測器數據 Offset 設定（用於歸零校準）===
         let sensorOffsets = {
             left: {
                 accel: { x: 0, y: 0, z: 0 },
@@ -365,27 +383,154 @@
             }
         };
 
-        // 當前選擇的鼓棒 (用於 offset 控制)
+        // === 當前選擇的鼓棒（用於 offset 控制）===
         let selectedOffsetStick = 'left';
 
-        // 原始感測器數據 (用於自動歸零)
+        // === 原始感測器數據（用於自動歸零）===
         let rawSensorData = {
             left: { accel: { x: 0, y: 0, z: 0 }, gyro: { x: 0, y: 0, z: 0 } },
             right: { accel: { x: 0, y: 0, z: 0 }, gyro: { x: 0, y: 0, z: 0 } }
         };
 
+        // === 打擊狀態追蹤 ===
+        let prevLeftHitting = false;
+        let prevRightHitting = false;
+
         const container = document.getElementById('scene-container');
+
+
+        // ============================================================
+        // 【區塊 2】3D 場景設定參數區
+        // ============================================================
+
+        const SCENE_CONFIG = {
+            // 相機設定
+            camera: {
+                fov: 75,
+                near: 0.1,
+                far: 1000,
+                position: { x: 3, y: 3, z: 4 }
+            },
+
+            // 座標軸設定
+            axes: {
+                size: 5,  // 座標軸長度
+                markerSize: 0.1,  // 軸端標記球體大小
+                // Y-Z 軸對調：Y顯示在Z位置，Z顯示在Y位置
+                xMarkerPos: { x: 5, y: 0, z: 0 },
+                yMarkerPos: { x: 0, y: 5, z: 0 },  
+                zMarkerPos: { x: 0, y: 0, z: 5 }   
+            },
+
+            // 燈光設定
+            lighting: {
+                ambient: { color: 0x404040, intensity: 0.5 },
+                spot1: { color: 0xFFFFFF, intensity: 3.5, distance: 10, position: { x: -3, y: 6, z: 2 } },
+                spot2: { color: 0xFFFFFF, intensity: 3.5, distance: 10, position: { x: 3, y: 6, z: 2 } }
+            },
+
+            // 地板設定
+            floor: {
+                size: 15,
+                color: 0x1A1A1A
+            },
+
+            // 控制器設定
+            controls: {
+                target: { x: 0, y: 1, z: 0 },
+                minDistance: 2,
+                maxDistance: 10,
+                maxPolarAngle: Math.PI / 2.1
+            }
+        };
+
+
+        // ============================================================
+        // 【區塊 3】鼓棒與爵士鼓設定參數區
+        // ============================================================
+
+        const DRUMSTICK_CONFIG = {
+            // 鼓棒尺寸
+            length: 1.2,
+            radius: 0.02,
+            tipRadius: 0.035,
+            gripRadius: 0.024,
+            gripLength: 0.15,
+
+            // 鼓棒顏色
+            colors: {
+                left: 0xFBBF24,   // 黃色
+                right: 0x60A5FA,  // 藍色
+                wood: 0xD2691E    // 木頭色
+            },
+
+            // 鼓棒初始位置
+            positions: {
+                left: { x: -1.5, y: 1.5, z: 0.5 },
+                right: { x: 1.5, y: 1.5, z: 0.5 }
+            }
+        };
+
+        const DRUM_SET_CONFIG = {
+            // 爵士鼓組顏色
+            drumColor: 0x8B0000,
+            snareColor: 0xFFFFFF,
+            cymbalColor: 0xAAAA00,
+            standColor: 0x333333,
+
+            // 鼓的位置與尺寸
+            bassDrum: { radius: 0.8, height: 0.7, position: { x: 0, y: 0, z: 0 } },
+            snareDrum: { radius: 0.35, height: 0.2, position: { x: -1.0, y: 0.5, z: 0.5 } },
+            tomDrum: { radius: 0.3, height: 0.3, position: { x: 0.6, y: 0.9, z: -0.6 } },
+
+            // 鈸的位置與尺寸
+            hiHat: { radius: 0.4, position: { x: -1.5, y: 1.2, z: -0.2 } },
+            rideCymbal: { radius: 0.6, position: { x: 1.8, y: 1.2, z: 0.5 } },
+            crashCymbal: { radius: 0.5, position: { x: 0.5, y: 1.7, z: -1.5 } }
+        };
+
+
+        // ============================================================
+        // 【區塊 4】打擊效果設定參數區
+        // ============================================================
+
+        const HIT_EFFECT_CONFIG = {
+            particleCount: 20,      // 粒子數量
+            particleSize: 0.08,     // 粒子大小
+            lifetime: 1.0,          // 粒子壽命（秒）
+            gravity: 0.01,          // 重力效果
+            velocityRange: 0.3      // 速度隨機範圍
+        };
+
+
+        // ============================================================
+        // 【區塊 5】數據更新設定參數區
+        // ============================================================
+
+        const DATA_CONFIG = {
+            updateInterval: 50,     // 數據更新間隔（毫秒）
+            hitThreshold: 2.0,      // 打擊閾值（加速度）
+            heightMultiplier: 0.1   // 高度變化倍數
+        };
+
+
+        // ============================================================
+        // 【區塊 6】Three.js 3D 物件創建函數
+        // ============================================================
 
         // --- 創建鼓棒 ---
         function createDrumstick(color) {
             const group = new THREE.Group();
 
             // 鼓棒主體（圓柱體）
-            const stickLength = 1.2;
-            const stickRadius = 0.02;
-            const stickGeometry = new THREE.CylinderGeometry(stickRadius, stickRadius * 0.7, stickLength, 8);
+            const stickGeometry = new THREE.CylinderGeometry(
+                DRUMSTICK_CONFIG.radius,
+                DRUMSTICK_CONFIG.radius * 0.7,
+                DRUMSTICK_CONFIG.length,
+                8
+            );
             const stickMaterial = new THREE.MeshPhongMaterial({
-                color: 0xD2691E, // 木頭色
+                color: DRUMSTICK_CONFIG.colors.wood,
                 shininess: 20
             });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
@@ -393,22 +538,27 @@
             group.add(stick);
 
             // 鼓棒尖端（球體）
-            const tipGeometry = new THREE.SphereGeometry(0.035, 16, 16);
+            const tipGeometry = new THREE.SphereGeometry(DRUMSTICK_CONFIG.tipRadius, 16, 16);
             const tipMaterial = new THREE.MeshPhongMaterial({
                 color: color,
                 emissive: color,
                 emissiveIntensity: 0.3
             });
             const tip = new THREE.Mesh(tipGeometry, tipMaterial);
-            tip.position.x = stickLength / 2;
+            tip.position.x = DRUMSTICK_CONFIG.length / 2;
             group.add(tip);
 
             // 鼓棒握柄標記（彩色環）
-            const gripGeometry = new THREE.CylinderGeometry(stickRadius * 1.2, stickRadius * 1.2, 0.15, 8);
+            const gripGeometry = new THREE.CylinderGeometry(
+                DRUMSTICK_CONFIG.gripRadius,
+                DRUMSTICK_CONFIG.gripRadius,
+                DRUMSTICK_CONFIG.gripLength,
+                8
+            );
             const gripMaterial = new THREE.MeshPhongMaterial({ color: color });
             const grip = new THREE.Mesh(gripGeometry, gripMaterial);
             grip.rotation.z = Math.PI / 2;
-            grip.position.x = -stickLength / 3;
+            grip.position.x = -DRUMSTICK_CONFIG.length / 3;
             group.add(grip);
 
             group.castShadow = true;
@@ -418,19 +568,18 @@
 
         // --- 創建打擊粒子效果 ---
         function createHitEffect(position, color) {
-            const particleCount = 20;
             const geometry = new THREE.BufferGeometry();
             const positions = [];
             const velocities = [];
 
-            for (let i = 0; i < particleCount; i++) {
+            for (let i = 0; i < HIT_EFFECT_CONFIG.particleCount; i++) {
                 positions.push(position.x, position.y, position.z);
 
                 // 隨機速度
                 velocities.push(
-                    (Math.random() - 0.5) * 0.3,
-                    Math.random() * 0.3,
-                    (Math.random() - 0.5) * 0.3
+                    (Math.random() - 0.5) * HIT_EFFECT_CONFIG.velocityRange,
+                    Math.random() * HIT_EFFECT_CONFIG.velocityRange,
+                    (Math.random() - 0.5) * HIT_EFFECT_CONFIG.velocityRange
                 );
             }
 
@@ -438,7 +587,7 @@
 
             const material = new THREE.PointsMaterial({
                 color: color,
-                size: 0.08,
+                size: HIT_EFFECT_CONFIG.particleSize,
                 transparent: true,
                 opacity: 1.0,
                 blending: THREE.AdditiveBlending
@@ -450,7 +599,7 @@
             hitParticles.push({
                 particles: particles,
                 velocities: velocities,
-                lifetime: 1.0
+                lifetime: HIT_EFFECT_CONFIG.lifetime
             });
         }
 
@@ -474,7 +623,7 @@
                     positions[j + 2] += effect.velocities[j + 2];
 
                     // 重力
-                    effect.velocities[j + 1] -= 0.01;
+                    effect.velocities[j + 1] -= HIT_EFFECT_CONFIG.gravity;
                 }
                 effect.particles.geometry.attributes.position.needsUpdate = true;
 
@@ -483,7 +632,7 @@
             }
         }
 
-        // --- 輔助函數：創建鼓 ---
+        // --- 創建鼓 ---
         function createDrum(radius, height, color, position, rotation) {
             const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
             const material = new THREE.MeshPhongMaterial({
@@ -502,11 +651,11 @@
             return drum;
         }
 
-        // --- 輔助函數：創建鈸 ---
+        // --- 創建鈸 ---
         function createCymbal(radius, thickness, position, rotation) {
             const geometry = new THREE.CylinderGeometry(radius, radius * 0.9, thickness, 64);
             const material = new THREE.MeshStandardMaterial({
-                color: 0xAAAA00,
+                color: DRUM_SET_CONFIG.cymbalColor,
                 metalness: 0.9,
                 roughness: 0.2,
                 side: THREE.DoubleSide
@@ -522,10 +671,10 @@
             return cymbal;
         }
 
-        // --- 輔助函數：創建支架 ---
+        // --- 創建支架 ---
         function createStand(x, y, z, height) {
             const geometry = new THREE.CylinderGeometry(0.05, 0.05, height, 8);
-            const material = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const material = new THREE.MeshLambertMaterial({ color: DRUM_SET_CONFIG.standColor });
             const stand = new THREE.Mesh(geometry, material);
             stand.position.set(x, y + height / 2, z);
             stand.castShadow = true;
@@ -534,15 +683,28 @@
             return stand;
         }
 
-        // --- 初始化 3D 場景 ---
+
+        // ============================================================
+        // 【區塊 7】Three.js 場景初始化函數
+        // ============================================================
+
         function init() {
             // 場景
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x050505);
 
             // 相機
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(3, 3, 4);
+            camera = new THREE.PerspectiveCamera(
+                SCENE_CONFIG.camera.fov,
+                window.innerWidth / window.innerHeight,
+                SCENE_CONFIG.camera.near,
+                SCENE_CONFIG.camera.far
+            );
+            camera.position.set(
+                SCENE_CONFIG.camera.position.x,
+                SCENE_CONFIG.camera.position.y,
+                SCENE_CONFIG.camera.position.z
+            );
 
             // 渲染器
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -553,11 +715,23 @@
             container.appendChild(renderer.domElement);
 
             // 燈光
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            const ambientLight = new THREE.AmbientLight(
+                SCENE_CONFIG.lighting.ambient.color,
+                SCENE_CONFIG.lighting.ambient.intensity
+            );
             scene.add(ambientLight);
 
-            const spotLight1 = new THREE.SpotLight(0xFFFFFF, 3.5, 10, Math.PI / 8, 0.5, 0.5);
-            spotLight1.position.set(-3, 6, 2);
+            const spotLight1 = new THREE.SpotLight(
+                SCENE_CONFIG.lighting.spot1.color,
+                SCENE_CONFIG.lighting.spot1.intensity,
+                SCENE_CONFIG.lighting.spot1.distance,
+                Math.PI / 8, 0.5, 0.5
+            );
+            spotLight1.position.set(
+                SCENE_CONFIG.lighting.spot1.position.x,
+                SCENE_CONFIG.lighting.spot1.position.y,
+                SCENE_CONFIG.lighting.spot1.position.z
+            );
             spotLight1.target.position.set(0, 0.5, 0);
             spotLight1.castShadow = true;
             spotLight1.shadow.mapSize.width = 1024;
@@ -565,97 +739,165 @@
             scene.add(spotLight1);
             scene.add(spotLight1.target);
 
-            const spotLight2 = new THREE.SpotLight(0xFFFFFF, 3.5, 10, Math.PI / 8, 0.5, 0.5);
-            spotLight2.position.set(3, 6, 2);
+            const spotLight2 = new THREE.SpotLight(
+                SCENE_CONFIG.lighting.spot2.color,
+                SCENE_CONFIG.lighting.spot2.intensity,
+                SCENE_CONFIG.lighting.spot2.distance,
+                Math.PI / 8, 0.5, 0.5
+            );
+            spotLight2.position.set(
+                SCENE_CONFIG.lighting.spot2.position.x,
+                SCENE_CONFIG.lighting.spot2.position.y,
+                SCENE_CONFIG.lighting.spot2.position.z
+            );
             spotLight2.target.position.set(0, 0.5, 0);
             spotLight2.castShadow = true;
             scene.add(spotLight2);
             scene.add(spotLight2.target);
 
             // 地板
-            const floorGeometry = new THREE.PlaneGeometry(15, 15);
-            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x1A1A1A });
+            const floorGeometry = new THREE.PlaneGeometry(
+                SCENE_CONFIG.floor.size,
+                SCENE_CONFIG.floor.size
+            );
+            const floorMaterial = new THREE.MeshLambertMaterial({
+                color: SCENE_CONFIG.floor.color
+            });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             scene.add(floor);
 
-            // 添加座標軸（5 單位長度）
-            const axesHelper = new THREE.AxesHelper(5);
+            // 添加座標軸
+            const axesHelper = new THREE.AxesHelper(SCENE_CONFIG.axes.size);
             scene.add(axesHelper);
 
             // 添加座標軸標籤（使用小球體標記）
-            const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const markerGeometry = new THREE.SphereGeometry(SCENE_CONFIG.axes.markerSize, 16, 16);
 
             // X 軸標記（紅色）
             const xMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-            xMarker.position.set(5, 0, 0);
+            xMarker.position.set(
+                SCENE_CONFIG.axes.xMarkerPos.x,
+                SCENE_CONFIG.axes.xMarkerPos.y,
+                SCENE_CONFIG.axes.xMarkerPos.z
+            );
             scene.add(xMarker);
 
             // Y 軸標記（綠色） - 對調後顯示在 Z 位置
             const yMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-            yMarker.position.set(0, 0, 5);  // 原本 Z 軸的位置
+            yMarker.position.set(
+                SCENE_CONFIG.axes.yMarkerPos.x,
+                SCENE_CONFIG.axes.yMarkerPos.y,
+                SCENE_CONFIG.axes.yMarkerPos.z
+            );
             scene.add(yMarker);
 
             // Z 軸標記（藍色） - 對調後顯示在 Y 位置
             const zMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0x0000ff }));
-            zMarker.position.set(0, 5, 0);  // 原本 Y 軸的位置
+            zMarker.position.set(
+                SCENE_CONFIG.axes.zMarkerPos.x,
+                SCENE_CONFIG.axes.zMarkerPos.y,
+                SCENE_CONFIG.axes.zMarkerPos.z
+            );
             scene.add(zMarker);
 
             // 創建爵士鼓組
-            const DRUM_COLOR = 0x8B0000;
+            const cfg = DRUM_SET_CONFIG;
             const BASE_Y = 0;
 
             // 大鼓
-            createDrum(0.8, 0.7, DRUM_COLOR, { x: 0, y: BASE_Y, z: 0 }, { x: 0, y: 0, z: 0 });
+            createDrum(
+                cfg.bassDrum.radius,
+                cfg.bassDrum.height,
+                cfg.drumColor,
+                cfg.bassDrum.position,
+                { x: 0, y: 0, z: 0 }
+            );
 
             // 小鼓
             const snareStandHeight = 0.5;
-            createStand(-1.0, BASE_Y, 0.5, snareStandHeight);
-            createDrum(0.35, 0.2, 0xFFFFFF, { x: -1.0, y: BASE_Y + snareStandHeight, z: 0.5 }, { x: -Math.PI / 16, y: 0, z: 0 });
+            createStand(cfg.snareDrum.position.x, BASE_Y, cfg.snareDrum.position.z, snareStandHeight);
+            createDrum(
+                cfg.snareDrum.radius,
+                cfg.snareDrum.height,
+                cfg.snareColor,
+                { x: cfg.snareDrum.position.x, y: BASE_Y + snareStandHeight, z: cfg.snareDrum.position.z },
+                { x: -Math.PI / 16, y: 0, z: 0 }
+            );
 
             // 中鼓
             const tomStandHeight = 0.9;
-            createStand(0.6, BASE_Y, -0.6, tomStandHeight);
-            createDrum(0.3, 0.3, DRUM_COLOR, { x: 0.6, y: BASE_Y + tomStandHeight, z: -0.6 }, { x: Math.PI / 16, y: 0, z: 0 });
+            createStand(cfg.tomDrum.position.x, BASE_Y, cfg.tomDrum.position.z, tomStandHeight);
+            createDrum(
+                cfg.tomDrum.radius,
+                cfg.tomDrum.height,
+                cfg.drumColor,
+                { x: cfg.tomDrum.position.x, y: BASE_Y + tomStandHeight, z: cfg.tomDrum.position.z },
+                { x: Math.PI / 16, y: 0, z: 0 }
+            );
 
             // 鈸架
             const standHeightTall = 1.2;
 
             // Hi-Hat
-            createStand(-1.5, BASE_Y, -0.2, standHeightTall);
-            createCymbal(0.4, 0.02, { x: -1.5, y: BASE_Y + standHeightTall, z: -0.2 }, { x: 0, y: 0, z: 0 });
-            createCymbal(0.38, 0.01, { x: -1.5, y: BASE_Y + standHeightTall + 0.02, z: -0.2 }, { x: 0, y: 0, z: 0 });
+            createStand(cfg.hiHat.position.x, BASE_Y, cfg.hiHat.position.z, standHeightTall);
+            createCymbal(cfg.hiHat.radius, 0.02,
+                { x: cfg.hiHat.position.x, y: BASE_Y + standHeightTall, z: cfg.hiHat.position.z },
+                { x: 0, y: 0, z: 0 }
+            );
+            createCymbal(cfg.hiHat.radius * 0.95, 0.01,
+                { x: cfg.hiHat.position.x, y: BASE_Y + standHeightTall + 0.02, z: cfg.hiHat.position.z },
+                { x: 0, y: 0, z: 0 }
+            );
 
             // Ride Cymbal
-            createStand(1.8, BASE_Y, 0.5, standHeightTall);
-            createCymbal(0.6, 0.02, { x: 1.8, y: BASE_Y + standHeightTall + 0.05, z: 0.5 }, { x: Math.PI / 8, y: 0, z: 0 });
+            createStand(cfg.rideCymbal.position.x, BASE_Y, cfg.rideCymbal.position.z, standHeightTall);
+            createCymbal(cfg.rideCymbal.radius, 0.02,
+                { x: cfg.rideCymbal.position.x, y: BASE_Y + standHeightTall + 0.05, z: cfg.rideCymbal.position.z },
+                { x: Math.PI / 8, y: 0, z: 0 }
+            );
 
             // Crash Cymbal
-            createStand(0.5, BASE_Y, -1.5, standHeightTall + 0.5);
-            createCymbal(0.5, 0.02, { x: 0.5, y: BASE_Y + standHeightTall + 0.5 + 0.05, z: -1.5 }, { x: Math.PI / 12, y: 0, z: 0 });
+            createStand(cfg.crashCymbal.position.x, BASE_Y, cfg.crashCymbal.position.z, standHeightTall + 0.5);
+            createCymbal(cfg.crashCymbal.radius, 0.02,
+                { x: cfg.crashCymbal.position.x, y: BASE_Y + standHeightTall + 0.5 + 0.05, z: cfg.crashCymbal.position.z },
+                { x: Math.PI / 12, y: 0, z: 0 }
+            );
 
             // 創建兩支鼓棒
-            const leftStick = createDrumstick(0xFBBF24); // 黃色
+            const leftStick = createDrumstick(DRUMSTICK_CONFIG.colors.left);
             leftDrumstick = leftStick.group;
             leftStickTip = leftStick.tip;
-            leftDrumstick.position.set(-1.5, 1.5, 0.5);
+            leftDrumstick.position.set(
+                DRUMSTICK_CONFIG.positions.left.x,
+                DRUMSTICK_CONFIG.positions.left.y,
+                DRUMSTICK_CONFIG.positions.left.z
+            );
             scene.add(leftDrumstick);
 
-            const rightStick = createDrumstick(0x60A5FA); // 藍色
+            const rightStick = createDrumstick(DRUMSTICK_CONFIG.colors.right);
             rightDrumstick = rightStick.group;
             rightStickTip = rightStick.tip;
-            rightDrumstick.position.set(1.5, 1.5, 0.5);
+            rightDrumstick.position.set(
+                DRUMSTICK_CONFIG.positions.right.x,
+                DRUMSTICK_CONFIG.positions.right.y,
+                DRUMSTICK_CONFIG.positions.right.z
+            );
             scene.add(rightDrumstick);
 
             // 操控
             controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 1, 0);
+            controls.target.set(
+                SCENE_CONFIG.controls.target.x,
+                SCENE_CONFIG.controls.target.y,
+                SCENE_CONFIG.controls.target.z
+            );
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.minDistance = 2;
-            controls.maxDistance = 10;
-            controls.maxPolarAngle = Math.PI / 2.1;
+            controls.minDistance = SCENE_CONFIG.controls.minDistance;
+            controls.maxDistance = SCENE_CONFIG.controls.maxDistance;
+            controls.maxPolarAngle = SCENE_CONFIG.controls.maxPolarAngle;
 
             // 響應式設計
             window.addEventListener('resize', onWindowResize, false);
@@ -667,9 +909,10 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- 更新鼓棒位置和姿態 ---
-        let prevLeftHitting = false;
-        let prevRightHitting = false;
+
+        // ============================================================
+        // 【區塊 8】鼓棒位置與姿態更新函數
+        // ============================================================
 
         function updateDrumsticks(data) {
             if (!data || !leftDrumstick || !rightDrumstick) return;
@@ -695,8 +938,8 @@
 
                 // 根據加速度調整高度（模擬打擊動作）
                 const leftAccel = data.left.magnitude;
-                if (leftAccel > 2.0) {
-                    leftDrumstick.position.y = 1.0 + (leftAccel - 2.0) * 0.1;
+                if (leftAccel > DATA_CONFIG.hitThreshold) {
+                    leftDrumstick.position.y = 1.0 + (leftAccel - DATA_CONFIG.hitThreshold) * DATA_CONFIG.heightMultiplier;
                 } else {
                     leftDrumstick.position.y = 1.5;
                 }
@@ -705,7 +948,7 @@
                 if (data.left.is_hitting && !prevLeftHitting) {
                     const tipWorldPos = new THREE.Vector3();
                     leftStickTip.getWorldPosition(tipWorldPos);
-                    createHitEffect(tipWorldPos, 0xFBBF24);
+                    createHitEffect(tipWorldPos, DRUMSTICK_CONFIG.colors.left);
                 }
                 prevLeftHitting = data.left.is_hitting;
 
@@ -730,8 +973,8 @@
                 }
 
                 const rightAccel = data.right.magnitude;
-                if (rightAccel > 2.0) {
-                    rightDrumstick.position.y = 1.0 + (rightAccel - 2.0) * 0.1;
+                if (rightAccel > DATA_CONFIG.hitThreshold) {
+                    rightDrumstick.position.y = 1.0 + (rightAccel - DATA_CONFIG.hitThreshold) * DATA_CONFIG.heightMultiplier;
                 } else {
                     rightDrumstick.position.y = 1.5;
                 }
@@ -739,7 +982,7 @@
                 if (data.right.is_hitting && !prevRightHitting) {
                     const tipWorldPos = new THREE.Vector3();
                     rightStickTip.getWorldPosition(tipWorldPos);
-                    createHitEffect(tipWorldPos, 0x60A5FA);
+                    createHitEffect(tipWorldPos, DRUMSTICK_CONFIG.colors.right);
                 }
                 prevRightHitting = data.right.is_hitting;
 
@@ -747,7 +990,11 @@
             }
         }
 
-        // --- 更新資訊面板 ---
+
+        // ============================================================
+        // 【區塊 9】資訊面板更新函數（含 Offset 應用）
+        // ============================================================
+
         function updateInfoPanel(side, stickData) {
             // 儲存原始數據 (用於自動歸零)
             rawSensorData[side].accel = { ...stickData.accel };
@@ -802,6 +1049,11 @@
             }
         }
 
+
+        // ============================================================
+        // 【區塊 10】後端數據獲取與動畫循環
+        // ============================================================
+
         // --- 從後端獲取數據 ---
         function fetchSensorData() {
             fetch('/api/data')
@@ -822,7 +1074,10 @@
             renderer.render(scene, camera);
         }
 
-        // --- Offset 控制功能 ---
+
+        // ============================================================
+        // 【區塊 11】Offset 控制功能（感測器歸零）
+        // ============================================================
 
         // 載入當前選擇鼓棒的 offset 到輸入框
         function loadOffsetInputs() {
@@ -850,6 +1105,11 @@
 
             console.log(`已更新 ${stick} 手鼓棒的 offset:`, sensorOffsets[stick]);
         }
+
+
+        // ============================================================
+        // 【區塊 12】UI 事件監聽器
+        // ============================================================
 
         // 鼓棒選擇器切換
         document.getElementById('offset-stick-selector').addEventListener('change', (e) => {
@@ -893,7 +1153,11 @@
             alert(`✓ 已重置 ${stick === 'left' ? '左手' : '右手'} 鼓棒的 offset`);
         });
 
-        // --- 啟動應用程式 ---
+
+        // ============================================================
+        // 【區塊 13】應用程式啟動
+        // ============================================================
+
         window.onload = function () {
             init();
             animate();
@@ -902,7 +1166,7 @@
             loadOffsetInputs();
 
             // 每 50ms 更新一次數據
-            setInterval(fetchSensorData, 50);
+            setInterval(fetchSensorData, DATA_CONFIG.updateInterval);
         };
     </script>
 </body>
