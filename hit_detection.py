@@ -36,12 +36,8 @@ def detect_drum(pitch, roll):
 
 print("開始敲擊偵測！（Ctrl+C 停止）")
 
-pygame.mixer.init()
-sound = pygame.mixer.Sound("sounds/snare.wav")
-
 
 while True:
-    sound.play()
     pitch, roll, ax, ay, az, gx, gy, gz = update_angle()
 
     # ---- 新增更精準的敲擊條件 ----
