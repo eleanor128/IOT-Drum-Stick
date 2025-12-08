@@ -1,24 +1,40 @@
 from mpu6050 import mpu6050
 import time
-import datetime
+import json
+import statistics
 
-sensor = mpu6050(0x68)   # 預設 I2C 位址
+sensor = mpu6050(0x68)
 
-def log_once():
-    accel = sensor.get_accel_data()
-    gyro = sensor.get_gyro_data()
-    temp = sensor.get_temp()
+SAMPLES = 200        # 收集多少筆資料（200筆 ≈ 5 秒）
+DELAY = 0.025        # 每筆延遲 (40Hz)
+SAVE_PATH = "calibration.json"
 
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def collect_data():
+    accel_x = []
+    accel_y = []
+    accel_z = []
+    gyro_x = []
+    gyro_y = []
+    gyro_z = []
 
-    print(f"[{now}]")
-    print(f" Accel: x={accel['x']:.4f}, y={accel['y']:.4f}, z={accel['z']:.4f}")
-    print(f" Gyro : x={gyro['x']:.4f}, y={gyro['y']:.4f}, z={gyro['z']:.4f}")
-    print(f" Temp : {temp:.2f} °C")
-    print("-" * 40)
+    print("開始收集靜止資料（請保持感測器不動）...")
 
-if __name__ == "__main__":
-    print("開始 logging，每秒更新一次（Ctrl+C 結束）")
-    while True:
-        log_once()
-        time.sleep(1)
+    for _ in range(SAMPLES):
+        a = sensor.get_accel_data()
+        g = sensor.get_gyro_data()
+
+        accel_x.append(a["x"])
+        accel_y.append(a["y"])
+        accel_z.append(a["z"])
+        gyro_x.append(g["x"])
+        gyro_y.append(g["y"])
+        gyro_z.append(g["z"])
+
+        time.sleep(DELAY)
+
+    print("資料收集完成！\n")
+    return accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
+
+
+def compute_offset(data):
+    return statistics.mean
