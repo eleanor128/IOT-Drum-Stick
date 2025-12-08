@@ -4,7 +4,7 @@ import math
 import json
 from flask import Flask, render_template, jsonify, request
 from threading import Thread, Lock
-import calibration
+import calibration_right
 
 # MPU6050 暫存器
 PWR_MGMT_1 = 0x6B
@@ -122,7 +122,7 @@ def read_mpu6050_data(address, stick_name=None):
 
     # 應用校準 (如果有指定stick_name)
     if stick_name:
-        cal_accel, cal_gyro = calibration.apply_calibration(stick_name, raw_accel, raw_gyro)
+        cal_accel, cal_gyro = calibration_right.apply_calibration(stick_name, raw_accel, raw_gyro)
 
         # 對調 X 和 Y 軸
         cal_accel_swapped = {
@@ -333,7 +333,7 @@ def calibration_page():
 @app.route('/api/calibration/get')
 def get_calibration():
     """API：取得校準參數"""
-    import calibration as cal_module
+    import calibration_right as cal_module
     params = cal_module.get_params()
     return jsonify({
         'status': 'success',
@@ -345,7 +345,7 @@ def get_calibration():
 def update_calibration():
     """API：更新校準參數"""
     try:
-        import calibration as cal_module
+        import calibration_right as cal_module
         data = request.get_json()
         stick = data.get('stick')  # 'left' or 'right'
         category = data.get('category')  # 'accel_offset', 'gyro_offset', etc.
@@ -366,7 +366,7 @@ def update_calibration():
 def save_calibration():
     """API：儲存校準參數"""
     try:
-        import calibration as cal_module
+        import calibration_right as cal_module
         success = cal_module.save_calibration()
 
         if success:
@@ -381,7 +381,7 @@ def save_calibration():
 def reset_calibration():
     """API：重置校準參數"""
     try:
-        import calibration as cal_module
+        import calibration_right as cal_module
         data = request.get_json()
         stick = data.get('stick')  # None for all, 'left' or 'right' for specific
 

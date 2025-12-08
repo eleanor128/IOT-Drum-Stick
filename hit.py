@@ -8,13 +8,13 @@ pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=256)
 pygame.mixer.init()
 
 sounds = {
-    "Hi-hat": pygame.mixer.Sound("sounds/hihat.wav"),
-    "Ride": pygame.mixer.Sound("sounds/ride.wav"),
-    "Snare": pygame.mixer.Sound("sounds/snare.wav"),
-    "Tom 1": pygame.mixer.Sound("sounds/tom_high.wav"),
-    "Tom 2": pygame.mixer.Sound("sounds/tom_mid.wav"),
-    "Floor Tom": pygame.mixer.Sound("sounds/tom_floor.wav"),
-    "Crash": pygame.mixer.Sound("sounds/symbal.wav"),
+    "Hi-hat": pygame.mixer.Sound("static/sounds/hihat.wav"),
+    "Ride": pygame.mixer.Sound("static/sounds/ride.wav"),
+    "Snare": pygame.mixer.Sound("static/sounds/snare.wav"),
+    "Tom 1": pygame.mixer.Sound("static/sounds/tom_high.wav"),
+    "Tom 2": pygame.mixer.Sound("static/sounds/tom_mid.wav"),
+    "Floor Tom": pygame.mixer.Sound("static/sounds/tom_floor.wav"),
+    "Crash": pygame.mixer.Sound("static/sounds/symbal.wav"),
 }
 
 # ---- 靈敏敲擊參數 ----
