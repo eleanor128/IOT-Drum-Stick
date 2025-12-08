@@ -931,13 +931,17 @@
 
             // 更新左手鼓棒
             if (data.left) {
-                // 根據俯仰角和翻滾角計算鼓棒姿態
+                // 根據俯仰角和翻滾角計算鼓棒姿態（轉換為弧度）
                 const leftPitch = data.left.angle.pitch * Math.PI / 180;
                 const leftRoll = data.left.angle.roll * Math.PI / 180;
 
-                // 設定鼓棒旋轉（根據感測器數據）
-                leftDrumstick.rotation.x = leftPitch;
-                leftDrumstick.rotation.z = leftRoll;
+                // 設定鼓棒旋轉（疊加初始旋轉）
+                // pitch 控制上下揮動，roll 控制左右傾斜
+                leftDrumstick.rotation.set(
+                    DRUMSTICK_CONFIG.initialRotation.x + leftPitch,
+                    DRUMSTICK_CONFIG.initialRotation.y,
+                    DRUMSTICK_CONFIG.initialRotation.z + leftRoll
+                );
 
                 // 根據打擊位置調整 X 座標
                 if (data.left.hit_position === 'left') {
@@ -970,11 +974,17 @@
 
             // 更新右手鼓棒
             if (data.right) {
+                // 根據俯仰角和翻滾角計算鼓棒姿態（轉換為弧度）
                 const rightPitch = data.right.angle.pitch * Math.PI / 180;
                 const rightRoll = data.right.angle.roll * Math.PI / 180;
 
-                rightDrumstick.rotation.x = rightPitch;
-                rightDrumstick.rotation.z = rightRoll;
+                // 設定鼓棒旋轉（疊加初始旋轉）
+                // pitch 控制上下揮動，roll 控制左右傾斜
+                rightDrumstick.rotation.set(
+                    DRUMSTICK_CONFIG.initialRotation.x + rightPitch,
+                    DRUMSTICK_CONFIG.initialRotation.y,
+                    DRUMSTICK_CONFIG.initialRotation.z + rightRoll
+                );
 
                 if (data.right.hit_position === 'left') {
                     rightDrumstick.position.x = -0.5;
