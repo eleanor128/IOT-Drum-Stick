@@ -9,8 +9,10 @@ GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
 
 pitch = 0.0
 roll  = 0.0
+alpha = 0.96
 
-alpha = 0.96   # 互補濾波係數，可調整
+prev_time = time.time()   # 用於自動計算 dt
+
 
 def get_calibrated():
     a_raw = sensor.get_accel_data()
@@ -29,26 +31,22 @@ def get_calibrated():
 
 def complementary_filter(pitch, roll, ax, ay, az, gx, gy, dt):
 
-    # ---- 加速度角度 ----
     accel_pitch = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
     accel_roll  = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
 
-    # ---- 陀螺儀積分 ----
     gyro_pitch = pitch + gx * dt
     gyro_roll  = roll  + gy * dt
 
-    # ---- 互補濾波 ----
     pitch = alpha * gyro_pitch + (1 - alpha) * accel_pitch
     roll  = alpha * gyro_roll  + (1 - alpha) * accel_roll
 
     return pitch, roll
 
 
-print("開始角度追蹤 (Ctrl+C 停止)")
+def update_angle():
+    """hit_detection.py 會呼叫這裡，不會跑迴圈、不輸出"""
+    global pitch, roll, prev_time
 
-prev_time = time.time()
-
-while True:
     now = time.time()
     dt = now - prev_time
     prev_time = now
@@ -57,6 +55,4 @@ while True:
 
     pitch, roll = complementary_filter(pitch, roll, ax, ay, az, gx, gy, dt)
 
-    print(f"Pitch={pitch:.2f}°,  Roll={roll:.2f}°")
-
-    time.sleep(0.001)   # 讓 CPU 呼吸一下
+    return pitch, roll, ax, ay, az, gx, gy, gz
