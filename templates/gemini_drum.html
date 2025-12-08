@@ -592,14 +592,14 @@
             xMarker.position.set(5, 0, 0);
             scene.add(xMarker);
 
-            // Y 軸標記（綠色）
+            // Y 軸標記（綠色） - 對調後顯示在 Z 位置
             const yMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-            yMarker.position.set(0, 5, 0);
+            yMarker.position.set(0, 0, 5);  // 原本 Z 軸的位置
             scene.add(yMarker);
 
-            // Z 軸標記（藍色）
+            // Z 軸標記（藍色） - 對調後顯示在 Y 位置
             const zMarker = new THREE.Mesh(markerGeometry, new THREE.MeshBasicMaterial({ color: 0x0000ff }));
-            zMarker.position.set(0, 0, 5);
+            zMarker.position.set(0, 5, 0);  // 原本 Y 軸的位置
             scene.add(zMarker);
 
             // 創建爵士鼓組
