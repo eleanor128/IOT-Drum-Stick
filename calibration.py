@@ -5,9 +5,8 @@ import datetime
 sensor = mpu6050(0x68)
 
 # 你的 offset（測量後填進來）
-ACCEL_OFFSET = {"x": 0.0571, "y": -0.4970, "z": 0.4590}
-GYRO_OFFSET  = {"x": -4.1900, "y": -1.2740, "z": 0.2100}
-
+ACCEL_OFFSET = {"x": 0.0605, "y": -0.0385, "z": 0.4891}
+GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
 
 
 def get_calibrated_data():
