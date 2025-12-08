@@ -468,6 +468,13 @@
             positions: {
                 left: { x: -1.5, y: 1.5, z: 0.5 },
                 right: { x: 1.5, y: 1.5, z: 0.5 }
+            },
+
+            // 鼓棒初始旋轉（弧度）- 水平於 XZ 平面，尖端指向 Z 軸負向
+            initialRotation: {
+                x: Math.PI / 2,    // 繞 X 軸旋轉 90°（讓鼓棒從垂直變水平）
+                y: Math.PI,        // 繞 Y 軸旋轉 180°（尖端從 +Z 轉向 -Z）
+                z: 0               // 不繞 Z 軸旋轉
             }
         };
 
@@ -534,9 +541,6 @@
                 shininess: 20
             });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
-            // stick.rotation.z = Math.PI / 2; // 水平放置
-            stick.rotation.z = 0; // 水平放置
-
             group.add(stick);
 
             // 鼓棒尖端（球體）
@@ -547,7 +551,7 @@
                 emissiveIntensity: 0.3
             });
             const tip = new THREE.Mesh(tipGeometry, tipMaterial);
-            tip.position.x = DRUMSTICK_CONFIG.length / 2;
+            tip.position.y = -DRUMSTICK_CONFIG.length / 2;  // 尖端位於圓柱體底部
             group.add(tip);
 
             // 鼓棒握柄標記（彩色環）
@@ -559,9 +563,15 @@
             );
             const gripMaterial = new THREE.MeshPhongMaterial({ color: color });
             const grip = new THREE.Mesh(gripGeometry, gripMaterial);
-            grip.rotation.z = Math.PI / 2;
-            grip.position.x = -DRUMSTICK_CONFIG.length / 3;
+            grip.position.y = DRUMSTICK_CONFIG.length / 3;  // 握把位於圓柱體上方
             group.add(grip);
+
+            // 套用初始旋轉
+            group.rotation.set(
+                DRUMSTICK_CONFIG.initialRotation.x,
+                DRUMSTICK_CONFIG.initialRotation.y,
+                DRUMSTICK_CONFIG.initialRotation.z
+            );
 
             group.castShadow = true;
 
