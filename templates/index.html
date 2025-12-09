@@ -78,6 +78,10 @@
         <span class="data-label">Roll (橫滾):</span>
         <span class="data-value" id="roll-value">0.0°</span>
     </div>
+    <div class="data-row">
+        <span class="data-label">Yaw (偏航):</span>
+        <span class="data-value" id="yaw-value">0.0°</span>
+    </div>
 
     <div class="section-divider"></div>
 
@@ -238,6 +242,7 @@ function updateSensorDisplay(data) {
     // 更新角度數據
     document.getElementById('pitch-value').textContent = data["pitch (y軸轉)"].toFixed(1) + '°';
     document.getElementById('roll-value').textContent = data["roll (x軸轉)"].toFixed(1) + '°';
+    document.getElementById('yaw-value').textContent = data["yaw (z軸轉)"].toFixed(1) + '°';
 
     // 更新加速度數據
     document.getElementById('accel-x-value').textContent = data.ax.toFixed(2) + ' g';

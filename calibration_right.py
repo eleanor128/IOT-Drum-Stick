@@ -9,6 +9,7 @@ GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
 
 pitch = 0.0
 roll  = 0.0
+yaw   = 0.0  # 新增 yaw 角度
 alpha = 0.96
 
 prev_time = time.time()   # 用於自動計算 dt
@@ -29,23 +30,26 @@ def get_calibrated():
     return ax, ay, az, gx, gy, gz
 
 
-def complementary_filter(pitch, roll, ax, ay, az, gx, gy, dt):
+def complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt):
 
     accel_pitch = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
     accel_roll  = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
 
     gyro_pitch = pitch + gx * dt
     gyro_roll  = roll  + gy * dt
+    gyro_yaw   = yaw   + gz * dt  # 使用陀螺儀 Z 軸積分計算 yaw
 
     pitch = alpha * gyro_pitch + (1 - alpha) * accel_pitch
     roll  = alpha * gyro_roll  + (1 - alpha) * accel_roll
+    # yaw 無法從加速度計算，只能使用陀螺儀積分
+    yaw   = gyro_yaw
 
-    return pitch, roll
+    return pitch, roll, yaw
 
 
 def update_angle():
     """hit_detection.py 會呼叫這裡，不會跑迴圈、不輸出"""
-    global pitch, roll, prev_time
+    global pitch, roll, yaw, prev_time
 
     now = time.time()
     dt = now - prev_time
@@ -53,6 +57,6 @@ def update_angle():
 
     ax, ay, az, gx, gy, gz = get_calibrated()
 
-    pitch, roll = complementary_filter(pitch, roll, ax, ay, az, gx, gy, dt)
+    pitch, roll, yaw = complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt)
 
-    return pitch, roll, ax, ay, az, gx, gy, gz
+    return roll, pitch, yaw, ax, ay, az, gx, gy, gz
