@@ -4,8 +4,59 @@
     <meta charset="UTF-8">
     <title>Drumstick Visualizer</title>
     <style>
-        body { background: #222; display: flex; justify-content: center; }
+        body {
+            background: #222;
+            display: flex;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', monospace;
+        }
         canvas { background: #fff; margin-top: 20px; }
+
+        /* 數據顯示面板 */
+        .sensor-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #4fc3f7;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            min-width: 280px;
+            backdrop-filter: blur(10px);
+        }
+
+        .sensor-panel h3 {
+            margin: 0 0 10px 0;
+            color: #4fc3f7;
+            font-size: 16px;
+            border-bottom: 2px solid #4fc3f7;
+            padding-bottom: 5px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+
+        .data-label {
+            color: #aaa;
+        }
+
+        .data-value {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: #444;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -14,6 +65,54 @@
 <button onclick="enableAudio()" style="position:fixed; top:20px; left:20px;">
     🔊 Enable Drum Sound
 </button>
+
+<!-- 感測器數據顯示面板 -->
+<div class="sensor-panel">
+    <h3>📊 感測器數據 (右手)</h3>
+
+    <div class="data-row">
+        <span class="data-label">Pitch (俯仰):</span>
+        <span class="data-value" id="pitch-value">0.0°</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">Roll (橫滾):</span>
+        <span class="data-value" id="roll-value">0.0°</span>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="data-row">
+        <span class="data-label">加速度 X:</span>
+        <span class="data-value" id="accel-x-value">0.00 g</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">加速度 Y:</span>
+        <span class="data-value" id="accel-y-value">0.00 g</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">加速度 Z:</span>
+        <span class="data-value" id="accel-z-value">0.00 g</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">總加速度:</span>
+        <span class="data-value" id="magnitude-value">0.00 g</span>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="data-row">
+        <span class="data-label">陀螺儀 X:</span>
+        <span class="data-value" id="gyro-x-value">0.0°/s</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">陀螺儀 Y:</span>
+        <span class="data-value" id="gyro-y-value">0.0°/s</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">陀螺儀 Z:</span>
+        <span class="data-value" id="gyro-z-value">0.0°/s</span>
+    </div>
+</div>
 
 <script>
 
@@ -134,20 +233,46 @@ function detectHit(ax, ay, az, gy, gz) {
 }
 
 
+// --------------------- 更新數據顯示面板 ---------------------
+function updateSensorDisplay(data) {
+    // 更新角度數據
+    document.getElementById('pitch-value').textContent = data.angle.pitch.toFixed(1) + '°';
+    document.getElementById('roll-value').textContent = data.angle.roll.toFixed(1) + '°';
+
+    // 更新加速度數據
+    document.getElementById('accel-x-value').textContent = data.accel.x.toFixed(2) + ' g';
+    document.getElementById('accel-y-value').textContent = data.accel.y.toFixed(2) + ' g';
+    document.getElementById('accel-z-value').textContent = data.accel.z.toFixed(2) + ' g';
+    document.getElementById('magnitude-value').textContent = data.magnitude.toFixed(2) + ' g';
+
+    // 更新陀螺儀數據
+    document.getElementById('gyro-x-value').textContent = data.gyro.x.toFixed(1) + '°/s';
+    document.getElementById('gyro-y-value').textContent = data.gyro.y.toFixed(1) + '°/s';
+    document.getElementById('gyro-z-value').textContent = data.gyro.z.toFixed(1) + '°/s';
+}
+
 // --------------------- 主迴圈 ---------------------
 function update() {
-    fetch("/data")
+    fetch("/api/data")
         .then(res => res.json())
-        .then(d => {
-            draw(d.pitch, d.roll);
+        .then(data => {
+            // 使用右手鼓棒的數據
+            const rightData = data.right;
+
+            // 更新畫布
+            draw(rightData.angle.pitch, rightData.angle.roll);
+
+            // 更新數據顯示面板
+            updateSensorDisplay(rightData);
 
             if (hitCooldown > 0) {
                 hitCooldown--;
                 return;
             }
 
-            if (detectHit(d.ax, d.ay, d.az, d.gy, d.gz)) {
-                let zone = detectZone(d.pitch, d.roll);
+            if (detectHit(rightData.accel.x, rightData.accel.y, rightData.accel.z,
+                         rightData.gyro.y, rightData.gyro.z)) {
+                let zone = detectZone(rightData.angle.pitch, rightData.angle.roll);
                 playSound(zone);
                 hitCooldown = 6;
             }
