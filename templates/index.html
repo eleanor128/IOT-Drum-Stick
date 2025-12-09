@@ -402,6 +402,7 @@ function updateSensorDisplay(data) {
     document.getElementById('gyro-z-value').textContent = data.gz.toFixed(1) + '°/s';
 }
 
+
 // --------------------- 主迴圈 ---------------------
 function update() {
     fetch("/data")
