@@ -152,9 +152,9 @@ def read_mpu6050_data(address, stick_name=None):
     # - Y 軸加速度 ≈ -1g (重力向下)
 
     # pitch: 鼓棒的俯仰角（上下傾斜）
-    # - 基於 X 軸加速度（尖端向下為負，向上為正）
+    # - 基於 X 軸加速度（向上揮時 X 變負，應產生正 pitch）
     # - 水平時應為 0°
-    pitch = -math.atan2(cal_accel['x'], math.sqrt(cal_accel['y']**2 + cal_accel['z']**2)) * 180 / math.pi
+    pitch = math.atan2(cal_accel['x'], math.sqrt(cal_accel['y']**2 + cal_accel['z']**2)) * 180 / math.pi
 
     # roll: 鼓棒的橫滾角（左右傾斜）
     # - 基於 Z 軸加速度（向左傾斜為負，向右為正）
