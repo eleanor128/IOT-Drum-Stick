@@ -74,8 +74,19 @@ const zones = [
 ];
 
 function mapAngleToXY(pitch, roll) {
+    // X 座標：roll 控制左右
+    // roll = -90 (左) → x = 0 (左邊)
+    // roll = 0 (中) → x = canvas.width / 2 (中間)
+    // roll = +90 (右) → x = canvas.width (右邊)
     let x = (roll + 90) / 180 * canvas.width;
-    let y = (pitch + 60) / 120 * canvas.height;
+
+    // Y 座標：pitch 控制上下（需要反轉）
+    // pitch = +60 (上) → y = 0 (頂部) ✓
+    // pitch = 0 (中) → y = canvas.height / 2 (中間)
+    // pitch = -60 (下) → y = canvas.height (底部) ✓
+    let y = (60 - pitch) / 120 * canvas.height;
+
+    // 限制範圍在畫布內
     x = Math.max(0, Math.min(canvas.width, x));
     y = Math.max(0, Math.min(canvas.height, y));
     return {x, y};
@@ -93,6 +104,7 @@ function draw(pitch, roll) {
         ctx.fillText(z.name, z.x + 10, z.y + 30);
     });
 
+    // 鼓棒紅點
     const pos = mapAngleToXY(pitch, roll);
     ctx.fillStyle = "red";
     ctx.beginPath();
