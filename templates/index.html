@@ -236,43 +236,42 @@ function detectHit(ax, ay, az, gy, gz) {
 // --------------------- 更新數據顯示面板 ---------------------
 function updateSensorDisplay(data) {
     // 更新角度數據
-    document.getElementById('pitch-value').textContent = data.angle.pitch.toFixed(1) + '°';
-    document.getElementById('roll-value').textContent = data.angle.roll.toFixed(1) + '°';
+    document.getElementById('pitch-value').textContent = data["pitch (y軸轉)"].toFixed(1) + '°';
+    document.getElementById('roll-value').textContent = data["roll (x軸轉)"].toFixed(1) + '°';
 
     // 更新加速度數據
-    document.getElementById('accel-x-value').textContent = data.accel.x.toFixed(2) + ' g';
-    document.getElementById('accel-y-value').textContent = data.accel.y.toFixed(2) + ' g';
-    document.getElementById('accel-z-value').textContent = data.accel.z.toFixed(2) + ' g';
-    document.getElementById('magnitude-value').textContent = data.magnitude.toFixed(2) + ' g';
+    document.getElementById('accel-x-value').textContent = data.ax.toFixed(2) + ' g';
+    document.getElementById('accel-y-value').textContent = data.ay.toFixed(2) + ' g';
+    document.getElementById('accel-z-value').textContent = data.az.toFixed(2) + ' g';
+
+    // 計算總加速度
+    const magnitude = Math.sqrt(data.ax * data.ax + data.ay * data.ay + data.az * data.az);
+    document.getElementById('magnitude-value').textContent = magnitude.toFixed(2) + ' g';
 
     // 更新陀螺儀數據
-    document.getElementById('gyro-x-value').textContent = data.gyro.x.toFixed(1) + '°/s';
-    document.getElementById('gyro-y-value').textContent = data.gyro.y.toFixed(1) + '°/s';
-    document.getElementById('gyro-z-value').textContent = data.gyro.z.toFixed(1) + '°/s';
+    document.getElementById('gyro-x-value').textContent = data.gx.toFixed(1) + '°/s';
+    document.getElementById('gyro-y-value').textContent = data.gy.toFixed(1) + '°/s';
+    document.getElementById('gyro-z-value').textContent = data.gz.toFixed(1) + '°/s';
 }
 
 // --------------------- 主迴圈 ---------------------
 function update() {
-    fetch("/api/data")
+    fetch("/data")
         .then(res => res.json())
         .then(data => {
-            // 使用右手鼓棒的數據
-            const rightData = data.right;
-
             // 更新畫布
-            draw(rightData.angle.pitch, rightData.angle.roll);
+            draw(data["pitch (y軸轉)"], data["roll (x軸轉)"]);
 
             // 更新數據顯示面板
-            updateSensorDisplay(rightData);
+            updateSensorDisplay(data);
 
             if (hitCooldown > 0) {
                 hitCooldown--;
                 return;
             }
 
-            if (detectHit(rightData.accel.x, rightData.accel.y, rightData.accel.z,
-                         rightData.gyro.y, rightData.gyro.z)) {
-                let zone = detectZone(rightData.angle.pitch, rightData.angle.roll);
+            if (detectHit(data.ax, data.ay, data.az, data.gy, data.gz)) {
+                let zone = detectZone(data["pitch (y軸轉)"], data["roll (x軸轉)"]);
                 playSound(zone);
                 hitCooldown = 6;
             }

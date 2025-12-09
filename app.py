@@ -9,13 +9,15 @@ def index():
 
 @app.route("/data")
 def data():
-    pitch, roll, ax, ay, az, gx, gy, gz = update_angle()
+    roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
     return jsonify({
-        "pitch": pitch,
-        "roll": roll,
+        "roll (x軸轉)": roll,
+        "pitch (y軸轉)": pitch,
+        "yaw (z軸轉)": yaw,
         "ax": ax,
         "ay": ay,
         "az": az,
+        "gx": gx,
         "gy": gy,
         "gz": gz
     })
