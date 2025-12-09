@@ -44,6 +44,12 @@ def complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt):
     # yaw 無法從加速度計算，只能使用陀螺儀積分
     yaw   = gyro_yaw
 
+    # 將 yaw 歸一化到 -180° 到 +180° 範圍內
+    while yaw > 180:
+        yaw -= 360
+    while yaw < -180:
+        yaw += 360
+
     return pitch, roll, yaw
 
 
