@@ -74,11 +74,12 @@ const zones = [
 ];
 
 function mapAngleToXY(pitch, roll) {
-    // X 座標：roll 控制左右
-    // roll = -90 (左) → x = 0 (左邊)
-    // roll = 0 (中) → x = canvas.width / 2 (中間)
-    // roll = +90 (右) → x = canvas.width (右邊)
-    // let x = (roll + 90) / 180 * canvas.width;
+    // X 座標：roll 控制左右移動（yaw 效果）
+    // 鼓棒向左傾斜 → roll 為負 → 紅點向左
+    // 鼓棒向右傾斜 → roll 為正 → 紅點向右
+    // roll = -45° (左) → x = 0 (左邊)
+    // roll = 0° (中) → x = canvas.width / 2 (中間)
+    // roll = +45° (右) → x = canvas.width (右邊)
     let x = (roll + 45) / 90 * canvas.width;
 
 
