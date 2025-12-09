@@ -78,7 +78,7 @@ function mapAngleToXY(pitch, roll) {
     // roll = -90 (左) → x = 0 (左邊)
     // roll = 0 (中) → x = canvas.width / 2 (中間)
     // roll = +90 (右) → x = canvas.width (右邊)
-    let x = (roll + 90) / 180 * canvas.width;
+    let x = (pitch + 90) / 180 * canvas.width;
 
     // Y 座標：pitch 控制上下（需要反轉）
     // pitch = +60 (上) → y = 0 (頂部) ✓
