@@ -225,12 +225,23 @@ function draw(pitch, roll) {
 let hitCooldown = 0;
 
 function detectZone(pitch, roll) {
-    if (roll < -20) return "Hihat";
-    if (roll > 20) return "Ride";
+    // 根據 pitch 和 roll 計算紅點的 X, Y 座標
+    const pos = mapAngleToXY(pitch, roll);
+
+    // 檢查紅點位於哪個區塊
+    for (const zone of zones) {
+        if (pos.x >= zone.x && pos.x < zone.x + zone.w &&
+            pos.y >= zone.y && pos.y < zone.y + zone.h) {
+            return zone.name;
+        }
+    }
+
+    // 預設返回 Snare（如果沒有匹配到任何區塊）
     return "Snare";
 }
 
 function detectHit(ax, ay, az, gy, gz) {
+    // 偵測快速揮動 + 向下加速度
     const fastSwing = Math.abs(gy) > 70 || Math.abs(gz) > 70;
     const downward = az > 9.2;
     return fastSwing && downward;
