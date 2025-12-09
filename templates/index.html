@@ -57,14 +57,51 @@
             background: #444;
             margin: 10px 0;
         }
+
+        /* 音效啟動按鈕 */
+        .audio-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #4fc3f7;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .audio-button:hover {
+            background: #0288d1;
+            transform: scale(1.05);
+        }
+
+        .audio-button.enabled {
+            background: #4caf50;
+        }
+
+        .status-text {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #4fc3f7;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
+<button id="enableAudioBtn" class="audio-button" onclick="enableAudio()">🔊 啟動音效</button>
+<div id="statusText" class="status-text">請點擊「啟動音效」按鈕</div>
+
 <canvas id="drumCanvas" width="900" height="450"></canvas>
-<button onclick="enableAudio()" style="position:fixed; top:20px; left:20px;">
-    🔊 Enable Drum Sound
-</button>
 
 <!-- 感測器數據顯示面板 -->
 <div class="sensor-panel">
@@ -120,43 +157,132 @@
 
 <script>
 
-// --------------------- AudioContext 初始化 ---------------------
+// --------------------- 多種音效播放方式 ---------------------
 let audioCtx;
-let buffers = {};
+let audioBuffers = {};
+let htmlAudioElements = {};
+let audioEnabled = false;
 
+// 方法 1: 預載 HTML5 Audio 元素（作為備用）
+function preloadHTMLAudio() {
+    const soundNames = ["Symbal", "Tom_high", "Tom_mid", "Ride", "Hihat", "Snare", "Tom_floor"];
+    soundNames.forEach(name => {
+        const audio = new Audio(`static/sounds/${name.toLowerCase()}.wav`);
+        audio.preload = "auto";
+        audio.load();
+        htmlAudioElements[name] = audio;
+    });
+    console.log("HTML5 Audio elements preloaded");
+}
+
+// 方法 2: Web Audio API（主要方法）
 async function enableAudio() {
-    if (audioCtx) {
-        alert("Audio already enabled!");
+    const btn = document.getElementById('enableAudioBtn');
+    const status = document.getElementById('statusText');
+    
+    if (audioEnabled) {
+        status.textContent = "音效已經啟動！";
         return;
     }
 
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+        btn.textContent = "⏳ 載入中...";
+        btn.disabled = true;
+        
+        // 初始化 AudioContext
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const files = {
+            "Symbal": "static/sounds/symbal.wav",
+            "Tom_high": "static/sounds/tom_high.wav",
+            "Tom_mid": "static/sounds/tom_mid.wav",
+            "Ride": "static/sounds/ride.wav",
+            "Hihat": "static/sounds/hihat.wav",
+            "Snare": "static/sounds/snare.wav",
+            "Tom_floor": "static/sounds/tom_floor.wav",
+        };
 
-    const files = {
-        "Symbal": "static/sounds/symbal.wav",
-        "Tom_high": "static/sounds/tom_high.wav",
-        "Tom_mid": "static/sounds/tom_mid.wav",
-        "Ride": "static/sounds/ride.wav",
-        "Hihat": "static/sounds/hihat.wav",
-        "Snare": "static/sounds/snare.wav",
-        "Tom_floor": "static/sounds/tom_floor.wav",
-    };
+        // 載入所有音效檔案
+        for (const key in files) {
+            try {
+                const response = await fetch(files[key]);
+                if (!response.ok) {
+                    console.error(`Failed to load ${key}: ${response.status}`);
+                    continue;
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                audioBuffers[key] = await audioCtx.decodeAudioData(arrayBuffer);
+                console.log(`Loaded: ${key}`);
+            } catch (err) {
+                console.error(`Error loading ${key}:`, err);
+            }
+        }
 
-    for (const key in files) {
-        const res = await fetch(files[key]);
-        const arr = await res.arrayBuffer();
-        buffers[key] = await audioCtx.decodeAudioData(arr);
+        audioEnabled = true;
+        btn.textContent = "✅ 音效已啟動";
+        btn.classList.add('enabled');
+        btn.disabled = false;
+        status.textContent = `音效已就緒！已載入 ${Object.keys(audioBuffers).length} 個音效`;
+        
+        // 播放測試音效
+        playSound("Snare");
+        
+    } catch (error) {
+        console.error("Audio initialization failed:", error);
+        status.textContent = "音效載入失敗，使用備用方案";
+        btn.textContent = "❌ 載入失敗";
+        btn.disabled = false;
+        
+        // 使用 HTML5 Audio 作為備用
+        preloadHTMLAudio();
+        audioEnabled = true;
     }
-
-    alert("Audio Enabled! 🥁 Sounds ready!");
 }
 
+// 播放音效（嘗試多種方法）
 function playSound(name) {
-    if (!audioCtx || !buffers[name]) return;
-    const src = audioCtx.createBufferSource();
-    src.buffer = buffers[name];
-    src.connect(audioCtx.destination);
-    src.start(0);
+    if (!audioEnabled) {
+        console.log("Audio not enabled yet");
+        return;
+    }
+
+    // 方法 1: Web Audio API（優先）
+    if (audioCtx && audioBuffers[name]) {
+        try {
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffers[name];
+            
+            // 添加音量控制
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.8; // 80% 音量
+            
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+            
+            console.log(`Playing: ${name} (Web Audio API)`);
+            return;
+        } catch (err) {
+            console.error(`Web Audio playback error for ${name}:`, err);
+        }
+    }
+
+    // 方法 2: HTML5 Audio（備用）
+    if (htmlAudioElements[name]) {
+        try {
+            const audio = htmlAudioElements[name].cloneNode();
+            audio.volume = 0.8;
+            audio.play().catch(err => {
+                console.error(`HTML5 Audio playback error for ${name}:`, err);
+            });
+            console.log(`Playing: ${name} (HTML5 Audio)`);
+            return;
+        } catch (err) {
+            console.error(`HTML5 Audio error for ${name}:`, err);
+        }
+    }
+
+    console.warn(`Could not play sound: ${name}`);
 }
 
 
@@ -175,6 +301,12 @@ const zones = [
     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9" },
     { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d" },
 ];
+
+// 在頁面載入時預載 HTML5 Audio（作為備用）
+window.addEventListener('load', function() {
+    preloadHTMLAudio();
+    console.log("Page loaded, HTML5 audio preloaded");
+});
 
 function mapAngleToXY(pitch, roll) {
     // X 座標：roll 控制左右移動（yaw 效果）
