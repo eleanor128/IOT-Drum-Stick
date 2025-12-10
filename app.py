@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, render_template
 from calibration_right import update_angle
-from hit_detection import detect_drum
 
 app = Flask(__name__,
             static_folder='static',
@@ -14,13 +13,13 @@ def index():
 def data():
     roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
 
-    # 使用 hit_detection.py 的邏輯判斷敲擊
+    # 只判斷是否有向下揮擊（使用 hit_detection.py 的條件）
     is_fast = abs(gy) > 40       # 上下揮動
     is_hit_accel = az > 9.0      # 瞬間加速度增加（撞擊特徵）
-    drum_name = None
+    is_downward = pitch < -5     # pitch < -5 表示往下揮
 
-    if is_fast and is_hit_accel:
-        drum_name = detect_drum(pitch, roll)
+    # 只回傳是否敲擊，不判斷是哪個鼓點
+    is_hit = is_fast and is_hit_accel and is_downward
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -32,7 +31,7 @@ def data():
         "gx": gx,
         "gy": gy,
         "gz": gz,
-        "drum": drum_name  # 回傳偵測到的鼓點名稱
+        "is_hit": is_hit  # 回傳是否偵測到向下揮擊
     })
 
 if __name__ == "__main__":

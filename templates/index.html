@@ -357,16 +357,21 @@ function draw(pitch, roll) {
 // --------------------- HIT 偵測 ---------------------
 let hitCooldown = 0;
 
-// 鼓點名稱對應表（hit_detection.py -> index.html）
-const drumNameMapping = {
-    "Hi-hat": "Hihat",
-    "Ride": "Ride",
-    "Snare": "Snare",
-    "Tom 1": "Tom_high",
-    "Tom 2": "Tom_mid",
-    "Floor Tom": "Tom_floor",
-    "Crash": "Symbal"
-};
+function detectZone(pitch, roll) {
+    // 根據 pitch 和 roll 計算紅點的 X, Y 座標
+    const pos = mapAngleToXY(pitch, roll);
+
+    // 檢查紅點位於哪個區塊
+    for (const zone of zones) {
+        if (pos.x >= zone.x && pos.x < zone.x + zone.w &&
+            pos.y >= zone.y && pos.y < zone.y + zone.h) {
+            return zone.name;
+        }
+    }
+
+    // 預設返回 Snare（如果沒有匹配到任何區塊）
+    return "Snare";
+}
 
 
 // --------------------- 更新數據顯示面板 ---------------------
@@ -403,17 +408,15 @@ function update() {
             // 更新數據顯示面板
             updateSensorDisplay(data);
 
-            // 使用後端的敲擊偵測結果
+            // 使用後端的敲擊偵測 + 前端的位置判斷
             if (hitCooldown > 0) {
                 hitCooldown--;
-            } else if (data.drum) {
-                // 將 hit_detection.py 的鼓點名稱轉換為音效檔案名稱
-                const soundName = drumNameMapping[data.drum];
-                if (soundName) {
-                    console.log(`🥁 Hit detected: ${data.drum} -> Playing: ${soundName}`);
-                    playSound(soundName);
-                    hitCooldown = 8;  // 與 hit_detection.py 相同的 cooldown
-                }
+            } else if (data.is_hit) {
+                // 後端確認有向下揮擊，前端根據紅點位置決定音效
+                const zone = detectZone(data["pitch (y軸轉)"], data["roll (x軸轉)"]);
+                console.log(`🥁 Hit detected at zone: ${zone}`);
+                playSound(zone);
+                hitCooldown = 8;  // 與 hit_detection.py 相同的 cooldown
             }
         })
         .catch(err => console.log("Fetch error:", err));
