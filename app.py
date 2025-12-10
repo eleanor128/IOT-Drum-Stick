@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, render_template
 from calibration_right import update_angle
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_folder='static',
+            static_url_path='/static')
 
 @app.route("/")
 def index():
