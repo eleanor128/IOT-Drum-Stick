@@ -167,7 +167,7 @@ let audioEnabled = false;
 function preloadHTMLAudio() {
     const soundNames = ["Symbal", "Tom_high", "Tom_mid", "Ride", "Hihat", "Snare", "Tom_floor"];
     soundNames.forEach(name => {
-        const audio = new Audio(`static/sounds/${name.toLowerCase()}.wav`);
+        const audio = new Audio(`/static/sounds/${name.toLowerCase()}.wav`);
         audio.preload = "auto";
         audio.load();
         htmlAudioElements[name] = audio;
@@ -193,13 +193,13 @@ async function enableAudio() {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         const files = {
-            "Symbal": "static/sounds/symbal.wav",
-            "Tom_high": "static/sounds/tom_high.wav",
-            "Tom_mid": "static/sounds/tom_mid.wav",
-            "Ride": "static/sounds/ride.wav",
-            "Hihat": "static/sounds/hihat.wav",
-            "Snare": "static/sounds/snare.wav",
-            "Tom_floor": "static/sounds/tom_floor.wav",
+            "Symbal": "/static/sounds/symbal.wav",
+            "Tom_high": "/static/sounds/tom_high.wav",
+            "Tom_mid": "/static/sounds/tom_mid.wav",
+            "Ride": "/static/sounds/ride.wav",
+            "Hihat": "/static/sounds/hihat.wav",
+            "Snare": "/static/sounds/snare.wav",
+            "Tom_floor": "/static/sounds/tom_floor.wav",
         };
 
         // 載入所有音效檔案
