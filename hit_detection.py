@@ -47,7 +47,7 @@ def detect_drum(pitch, roll):
 print("開始敲擊偵測！（Ctrl+C 停止）")
 
 while True:
-    pitch, roll, ax, ay, az, gx, gy, gz = update_angle()
+    roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
 
     # ---- 更靈敏的敲擊條件 ----
     is_fast = abs(gy) > 40       # 上下揮動
