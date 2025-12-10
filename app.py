@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template
 from calibration_right import update_angle
+from hit_detection import detect_drum
 
 app = Flask(__name__,
             static_folder='static',
@@ -23,6 +24,10 @@ def data():
         "gy": gy,
         "gz": gz
     })
+
+@app.route("/hit_detection")
+def hit_detection():
+    detect_drum()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
