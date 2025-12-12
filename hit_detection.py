@@ -28,19 +28,6 @@ def detect_drum(pitch, roll):
     if pitch > -5:   # pitch > -5 表示還沒往下揮
         return None
 
-    if roll < -40:
-        return "Crash"
-    elif -40 <= roll < -20:
-        return "Hi-hat"
-    elif -20 <= roll <= 20:
-        return "Snare"
-    elif 20 < roll <= 40:
-        return "Tom 1"
-    elif 40 < roll <= 60:
-        return "Tom 2"
-    elif roll > 60:
-        return "Ride"
-
     return None
 
 
