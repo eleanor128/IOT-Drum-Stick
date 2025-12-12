@@ -15,12 +15,12 @@ def index():
 def data():
     roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
 
-    # 參考 hit_detection.py 的邏輯，偵測快速揮動和瞬間停止
-    is_fast_swing = abs(gy) > 35  # Y軸角速度 (pitch速度) 夠快
+    # 只在向下揮動時觸發
+    is_downward_swing = gy < -30  # Y軸角速度為負，表示向下
     is_sudden_stop = az > 8.0     # Z軸加速度偵測到衝擊
 
     # 綜合判斷為敲擊
-    is_hit = is_fast_swing and is_sudden_stop
+    is_hit = is_downward_swing and is_sudden_stop
 
     return jsonify({
         "roll (x軸轉)": roll,
