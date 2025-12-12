@@ -209,8 +209,8 @@ function detectZone(pitch, yaw) {
         }
     }
 
-    // 預設返回 Snare (如果沒有匹配到任何區塊)
-    return "Snare";
+    // 預設返回 null (如果沒有匹配到任何區塊)
+    return null;
 }
 
 // --------------------- 更新數據顯示面板 ---------------------
