@@ -107,13 +107,14 @@
 <div class="sensor-panel">
     <h3>📊 感測器數據 (右手)</h3>
 
-    <div class="data-row">
-        <span class="data-label">Pitch (俯仰):</span>
-        <span class="data-value" id="pitch-value">0.0°</span>
-    </div>
+
     <div class="data-row">
         <span class="data-label">Roll (橫滾):</span>
         <span class="data-value" id="roll-value">0.0°</span>
+    </div>
+    <div class="data-row">
+        <span class="data-label">Pitch (俯仰):</span>
+        <span class="data-value" id="pitch-value">0.0°</span>
     </div>
     <div class="data-row">
         <span class="data-label">Yaw (偏航):</span>
@@ -162,19 +163,6 @@ let audioCtx;
 let audioBuffers = {};
 let htmlAudioElements = {};
 let audioEnabled = false;
-
-
-// 方法 1: 預載 HTML5 Audio 元素（作為備用）
-// function preloadHTMLAudio() {
-//     const soundNames = ["Symbal", "Tom_high", "Tom_mid", "Ride", "Hihat", "Snare", "Tom_floor"];
-//     soundNames.forEach(name => {
-//         const audio = new Audio(`/static/sounds/${name.toLowerCase()}.wav`);
-//         audio.preload = "auto";
-//         audio.load();
-//         htmlAudioElements[name] = audio;
-//     });
-//     console.log("HTML5 Audio elements preloaded");
-// }
 
 // 方法 2: Web Audio API（主要方法）
 async function enableAudio() {
