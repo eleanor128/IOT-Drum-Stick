@@ -308,11 +308,12 @@ function mapAngleToXY(pitch, yaw) {
 
 
     // Y 座標：pitch 控制上下
-    // let y = (60 - pitch) / 120 * canvas.height; // 移動方式相反
-    let y = (pitch + 30) / 120 * canvas.height;
+
+    // let y = (pitch + 30) / 120 * canvas.height;
 
     // 測試
-    // let y = (roll + 15) / 120 * canvas.height;
+    let y = (pitch - 30) / 120 * canvas.height;
+
 
 
 
