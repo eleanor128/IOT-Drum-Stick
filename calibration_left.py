@@ -2,7 +2,7 @@ from mpu6050 import mpu6050
 import time
 import math
 
-sensor = mpu6050(0x68)
+sensor = mpu6050(0x69)
 
 ACCEL_OFFSET = {"x": 0.0605, "y": -0.0385, "z": 0.4891}
 GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
