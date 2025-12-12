@@ -4,8 +4,8 @@ import math
 
 sensor = mpu6050(0x69)
 
-ACCEL_OFFSET = {"x": 0.0605, "y": -0.0385, "z": 0.4891}
-GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
+ACCEL_OFFSET = {"x": 1.71, "y": -1.23, "z": 1.52} 
+GYRO_OFFSET = {"x": -1.22, "y": 2.69, "z": 0.31}
 
 pitch = 0.0
 roll  = 0.0
@@ -53,7 +53,7 @@ def complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt):
     return pitch, roll, yaw
 
 
-def update_angle():
+def update_left_angle():
     """hit_detection.py 會呼叫這裡，不會跑迴圈、不輸出"""
     global pitch, roll, yaw, prev_time
 

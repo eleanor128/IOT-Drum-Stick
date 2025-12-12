@@ -128,7 +128,7 @@ function mapAngleToXY(pitch, yaw) {
     return {x, y};
 }
 
-function draw(pitch, yaw) {
+function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     zones.forEach(z => {
@@ -140,17 +140,35 @@ function draw(pitch, yaw) {
         ctx.fillText(z.name, z.x + 10, z.y + 30);
     });
 
-    // 鼓棒紅點
-    const pos = mapAngleToXY(pitch, yaw);
+    // 右手鼓棒（紅色）
+    const rightPos = mapAngleToXY(rightPitch, rightYaw);
     ctx.fillStyle = "red";
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
+    ctx.arc(rightPos.x, rightPos.y, 12, 0, Math.PI * 2);
     ctx.fill();
+    
+    // 添加標籤
+    ctx.fillStyle = "white";
+    ctx.font = "12px Arial";
+    ctx.fillText("R", rightPos.x - 4, rightPos.y + 4);
+
+    // 左手鼓棒（藍色）
+    const leftPos = mapAngleToXY(leftPitch, leftYaw);
+    ctx.fillStyle = "blue";
+    ctx.beginPath();
+    ctx.arc(leftPos.x, leftPos.y, 12, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 添加標籤
+    ctx.fillStyle = "white";
+    ctx.font = "12px Arial";
+    ctx.fillText("L", leftPos.x - 4, leftPos.y + 4);
 }
 
 
 // --------------------- HIT 偵測 ---------------------
-let hitCooldown = 0;
+let rightHitCooldown = 0;
+let leftHitCooldown = 0;
 
 function detectZone(pitch, yaw) {
     // 根據 pitch 和 yaw 計算紅點的 X, Y 座標
@@ -170,51 +188,64 @@ function detectZone(pitch, yaw) {
 
 
 // --------------------- 更新數據顯示面板 ---------------------
-function updateSensorDisplay(data) {
-    // 更新角度數據
-    document.getElementById('pitch-value').textContent = data["pitch (y軸轉)"].toFixed(1) + '°';
-    document.getElementById('roll-value').textContent = data["roll (x軸轉)"].toFixed(1) + '°';
-    document.getElementById('yaw-value').textContent = data["yaw (z軸轉)"].toFixed(1) + '°';
-
-    // 更新加速度數據
-    document.getElementById('accel-x-value').textContent = data.ax.toFixed(2) + ' g';
-    document.getElementById('accel-y-value').textContent = data.ay.toFixed(2) + ' g';
-    document.getElementById('accel-z-value').textContent = data.az.toFixed(2) + ' g';
-
-    // 計算總加速度
-    const magnitude = Math.sqrt(data.ax * data.ax + data.ay * data.ay + data.az * data.az);
-    document.getElementById('magnitude-value').textContent = magnitude.toFixed(2) + ' g';
-
-    // 更新陀螺儀數據
-    document.getElementById('gyro-x-value').textContent = data.gx.toFixed(1) + '°/s';
-    document.getElementById('gyro-y-value').textContent = data.gy.toFixed(1) + '°/s';
-    document.getElementById('gyro-z-value').textContent = data.gz.toFixed(1) + '°/s';
+function updateSensorDisplay(rightData, leftData) {
+    // 右手數據
+    document.getElementById('pitch-value').textContent = rightData["pitch (y軸轉)"].toFixed(1) + '° (R)';
+    document.getElementById('roll-value').textContent = rightData["roll (x軸轉)"].toFixed(1) + '° (R)';
+    document.getElementById('yaw-value').textContent = rightData["yaw (z軸轉)"].toFixed(1) + '° (R)';
+    document.getElementById('accel-x-value').textContent = rightData.ax.toFixed(2) + ' g (R)';
+    document.getElementById('accel-y-value').textContent = rightData.ay.toFixed(2) + ' g (R)';
+    document.getElementById('accel-z-value').textContent = rightData.az.toFixed(2) + ' g (R)';
+    
+    const rightMagnitude = Math.sqrt(rightData.ax * rightData.ax + rightData.ay * rightData.ay + rightData.az * rightData.az);
+    document.getElementById('magnitude-value').textContent = rightMagnitude.toFixed(2) + ' g (R)';
+    
+    document.getElementById('gyro-x-value').textContent = rightData.gx.toFixed(1) + '°/s (R)';
+    document.getElementById('gyro-y-value').textContent = rightData.gy.toFixed(1) + '°/s (R)';
+    document.getElementById('gyro-z-value').textContent = rightData.gz.toFixed(1) + '°/s (R)';
 }
 
 
 // --------------------- 主迴圈 ---------------------
 function update() {
-    fetch("/data")
-        .then(res => res.json())
-        .then(data => {
-            // 更新畫布
-            draw(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
+    // 同時獲取左右手數據
+    Promise.all([
+        fetch("/right_data").then(res => res.json()),
+        fetch("/left_data").then(res => res.json())
+    ])
+    .then(([rightData, leftData]) => {
+        // 繪製兩支鼓棒
+        draw(
+            rightData["pitch (y軸轉)"], 
+            rightData["yaw (z軸轉)"],
+            leftData["pitch (y軸轉)"], 
+            leftData["yaw (z軸轉)"]
+        );
+        
+        // 更新數據顯示（目前只顯示右手）
+        updateSensorDisplay(rightData, leftData);
 
-            // 更新數據顯示面板
-            updateSensorDisplay(data);
+        // 右手敲擊偵測
+        if (rightHitCooldown > 0) {
+            rightHitCooldown--;
+        } else if (rightData.is_hit) {
+            const zone = detectZone(rightData["pitch (y軸轉)"], rightData["yaw (z軸轉)"]);
+            console.log(`🥁 Right Hit: ${zone}`);
+            playSound(zone);
+            rightHitCooldown = 8;
+        }
 
-            // 使用後端的敲擊偵測 + 前端的位置判斷
-            if (hitCooldown > 0) {
-                hitCooldown--;
-            } else if (data.is_hit) {
-                // 後端確認有向下揮擊，前端根據紅點位置決定音效
-                const zone = detectZone(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
-                console.log(`🥁 Hit detected at zone: ${zone}`);
-                playSound(zone);
-                hitCooldown = 8;  // 與 hit_detection.py 相同的 cooldown
-            }
-        })
-        .catch(err => console.log("Fetch error:", err));
+        // 左手敲擊偵測
+        if (leftHitCooldown > 0) {
+            leftHitCooldown--;
+        } else if (leftData.is_hit) {
+            const zone = detectZone(leftData["pitch (y軸轉)"], leftData["yaw (z軸轉)"]);
+            console.log(`🥁 Left Hit: ${zone}`);
+            playSound(zone);
+            leftHitCooldown = 8;
+        }
+    })
+    .catch(err => console.log("Fetch error:", err));
 
     requestAnimationFrame(update);
 }
