@@ -1,6 +1,10 @@
 from flask import Flask, jsonify, render_template
 from calibration_right import update_right_angle
 from calibration_left import update_left_angle
+import threading
+
+# I2C 總線鎖，防止左右手感測器同時讀取造成衝突
+i2c_lock = threading.Lock()
 
 app = Flask(__name__,
             static_folder='static',
@@ -14,7 +18,8 @@ def index():
 
 @app.route("/right_data")
 def right_data():
-    roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
+    with i2c_lock:
+        roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
 
     # 閥值靈敏度在這邊調整
     # 只在向下揮動時觸發
@@ -39,7 +44,8 @@ def right_data():
 
 @app.route("/left_data")
 def left_data():
-    roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
+    with i2c_lock:
+        roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
 
     # 左手敲擊偵測（同樣的邏輯）
     is_downward_swing = gy > 20
