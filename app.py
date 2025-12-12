@@ -5,8 +5,7 @@ app = Flask(__name__,
             static_folder='static',
             static_url_path='/static')
 
-# 追蹤上一次的 pitch 值，用於計算變化量
-prev_pitch = 0
+
 
 @app.route("/")
 def index():
@@ -14,21 +13,14 @@ def index():
 
 @app.route("/data")
 def data():
-    global prev_pitch
-
     roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
 
-    # 計算 pitch 變化量（用於偵測向下揮擊動作）
-    delta_pitch = pitch - prev_pitch
-    prev_pitch = pitch
+    # 參考 hit_detection.py 的邏輯，偵測快速揮動和瞬間停止
+    is_fast_swing = abs(gy) > 35  # Y軸角速度 (pitch速度) 夠快
+    is_sudden_stop = az > 8.0     # Z軸加速度偵測到衝擊
 
-    # 只判斷是否有向下揮擊
-    is_fast = abs(gy) > 15           # 陀螺儀偵測到快速旋轉
-    is_hit_accel = ax < 0          # 瞬間加速度增加（撞擊特徵）
-    is_downward = delta_pitch < -10  # pitch 快速減少（向下揮）
-
-    # 只回傳是否敲擊，不判斷是哪個鼓點
-    is_hit = is_fast and is_hit_accel and is_downward
+    # 綜合判斷為敲擊
+    is_hit = is_fast_swing and is_sudden_stop
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -40,8 +32,7 @@ def data():
         "gx": gx,
         "gy": gy,
         "gz": gz,
-        "delta_pitch": delta_pitch,  # pitch 變化量（用於監控）
-        "is_hit": is_hit  # 回傳是否偵測到向下揮擊
+        "is_hit": is_hit
     })
 
 if __name__ == "__main__":
