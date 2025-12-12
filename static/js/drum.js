@@ -98,17 +98,24 @@ function playSound(name) {
 const canvas = document.getElementById("drumCanvas");
 const ctx = canvas.getContext("2d");
 
+// 定義每個鼓/鈸的圓心座標 (cx, cy) 和半徑 (r)
+// 假設 canvas 寬度約 900，高度約 450
 const zones = [
-    { name: "Symbal",    x: 0,   y: 0,   w: 225, h: 225, color:"#e5b3ff" },
-    { name: "Tom_high",  x: 225, y: 0,   w: 225, h: 225, color:"#00c864" },
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a" },
-    { name: "Ride",      x: 675, y: 0,   w: 225, h: 225, color:"#6eeee7" },
+    // 上排 (Tom-High, Tom-Mid, Ride, Symbal)
+    // 圓心 (cx, cy) 位於畫布頂部約 1/3 處 (y=150)
+    { name: "Hihat",     cx: 150, cy: 150, r: 80, color: "#CCCCCC" }, // 左邊的 Hi-Hat
+    { name: "Tom_high",  cx: 350, cy: 150, r: 85, color: "#B8574B" }, // 中高音鼓
+    { name: "Tom_mid",   cx: 550, cy: 150, r: 95, color: "#A04C40" }, // 中音鼓
+    { name: "Ride",      cx: 800, cy: 100, r: 100, color: "#E0E0E0" }, // 右上方的 Ride 鈸
 
-    { name: "Hihat",     x: 0,   y: 225, w: 225, h: 225, color:"#3232ff" },
-    { name: "Snare",     x: 225, y: 225, w: 225, h: 225, color:"#d9d9d9" },
-    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9" },
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d" },
+    // 下排 (Snare, Tom-Floor)
+    // 圓心 (cx, cy) 位於畫布底部約 2/3 處 (y=350)
+    { name: "Snare",     cx: 250, cy: 380, r: 110, color: "#D1D1D1" }, // 小鼓 (Snare)
+    { name: "Tom_floor", cx: 650, cy: 380, r: 120, color: "#8B453A" }, // 落地鼓 (Tom-Floor)
+    { name: "Symbal",    cx: 50,  cy: 300, r: 80, color: "#CCCCCC" }, // 增加一個左下角的 Crash Symbal 
 ];
+// 注意：Symbal 和 Hihat 的音效可能需要根據您的實際配置來分配 yaw 區間。
+// 由於音效名稱有 Symbal 和 Hihat，我們將其分開繪製。
 
 function mapAngleToXY(pitch, yaw) {
     // X 座標：yaw 控制左右移動
@@ -129,17 +136,33 @@ function mapAngleToXY(pitch, yaw) {
 }
 
 function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
+    // 1. 清空畫布
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // 2. 繪製所有鼓組 (使用圓形)
     zones.forEach(z => {
+        // 繪製鼓面
         ctx.fillStyle = z.color;
-        ctx.fillRect(z.x, z.y, z.w, z.h);
+        ctx.beginPath();
+        // 使用 cx, cy, r 繪製圓形
+        ctx.arc(z.cx, z.cy, z.r, 0, Math.PI * 2); 
+        ctx.fill();
 
-        ctx.fillStyle = "#fff";
+        // 繪製鼓框 (增加立體感)
+        ctx.strokeStyle = "#333333";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        // 繪製鼓/鈸名稱
+        ctx.fillStyle = (z.name === "Ride" || z.name === "Hihat" || z.name === "Symbal") ? "#333" : "#fff";
         ctx.font = "20px Arial";
-        ctx.fillText(z.name, z.x + 10, z.y + 30);
+        // 將文字置於圓心上方
+        ctx.textAlign = "center";
+        ctx.fillText(z.name, z.cx, z.cy - z.r / 2); 
     });
-
+    
+    // 3. 繪製鼓棒 (R, L) (保持不變)
+    
     // 右手鼓棒（紅色）
     const rightPos = mapAngleToXY(rightPitch, rightYaw);
     ctx.fillStyle = "red";
@@ -150,7 +173,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 添加標籤
     ctx.fillStyle = "white";
     ctx.font = "12px Arial";
-    ctx.fillText("R", rightPos.x - 4, rightPos.y + 4);
+    ctx.fillText("R", rightPos.x, rightPos.y + 4); // 使用 center 對齊
 
     // 左手鼓棒（藍色）
     const leftPos = mapAngleToXY(leftPitch, leftYaw);
@@ -162,30 +185,33 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 添加標籤
     ctx.fillStyle = "white";
     ctx.font = "12px Arial";
-    ctx.fillText("L", leftPos.x - 4, leftPos.y + 4);
+    ctx.fillText("L", leftPos.x, leftPos.y + 4); // 使用 center 對齊
 }
-
+// 注意：這裡的 draw 函式使用的是 zones 的 cx/cy/r 屬性。
 
 // --------------------- HIT 偵測 ---------------------
 let rightHitCooldown = 0;
 let leftHitCooldown = 0;
-
 function detectZone(pitch, yaw) {
     // 根據 pitch 和 yaw 計算紅點的 X, Y 座標
     const pos = mapAngleToXY(pitch, yaw);
 
-    // 檢查紅點位於哪個區塊
+    // 檢查紅點位於哪個圓形區塊 (圓形碰撞偵測)
     for (const zone of zones) {
-        if (pos.x >= zone.x && pos.x < zone.x + zone.w &&
-            pos.y >= zone.y && pos.y < zone.y + zone.h) {
+        // 計算紅點 (pos.x, pos.y) 到圓心 (zone.cx, zone.cy) 的距離
+        const distance = Math.sqrt(
+            Math.pow(pos.x - zone.cx, 2) + Math.pow(pos.y - zone.cy, 2)
+        );
+
+        // 如果距離小於半徑，則視為命中
+        if (distance < zone.r) {
             return zone.name;
         }
     }
 
-    // 預設返回 Snare（如果沒有匹配到任何區塊）
+    // 預設返回 Snare (如果沒有匹配到任何區塊)
     return "Snare";
 }
-
 
 // --------------------- 更新數據顯示面板 ---------------------
 function updateSensorDisplay(rightData, leftData) {
