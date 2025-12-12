@@ -13,8 +13,10 @@ def index():
 
 @app.route("/data")
 def data():
-    roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
+    pitch, roll, yaw, ax, ay, az, gx, gy, gz = update_angle()
 
+
+    # 閥值靈敏度在這邊調整
     # 只在向下揮動時觸發
     is_downward_swing = gy < -20  # Y軸角速度為負，表示向下
     is_sudden_stop = az < -1.0     # Z軸加速度偵測到衝擊
