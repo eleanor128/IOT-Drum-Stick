@@ -308,7 +308,8 @@ function mapAngleToXY(pitch, yaw) {
 
 
     // Y 座標：pitch 控制上下（反轉對應關係以匹配使用者體感）
-    let y = (pitch + 60) / 120 * canvas.height;
+    // let y = (pitch + 60) / 120 * canvas.height;
+    let y = ((1.0 - az) / 2.0) * canvas.height;
 
 
     // 限制範圍在畫布內
