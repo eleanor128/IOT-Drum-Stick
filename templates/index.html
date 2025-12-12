@@ -309,14 +309,14 @@ window.addEventListener('load', function() {
     console.log("Page loaded, HTML5 audio preloaded");
 });
 
-function mapAngleToXY(pitch, roll) {
-    // X 座標：roll 控制左右移動（yaw 效果）
-    // 鼓棒向左傾斜 → roll 為負 → 紅點向左
-    // 鼓棒向右傾斜 → roll 為正 → 紅點向右
-    // roll = -45° (左) → x = 0 (左邊)
-    // roll = 0° (中) → x = canvas.width / 2 (中間)
-    // roll = +45° (右) → x = canvas.width (右邊)
-    let x = (roll + 45) / 90 * canvas.width;
+function mapAngleToXY(pitch, yaw) {
+    // X 座標：yaw 控制左右移動
+    // 鼓棒向左 → yaw 為正 → 紅點向左
+    // 鼓棒向右 → yaw 為負 → 紅點向右
+    // yaw = +45° (左) → x = 0 (左邊)
+    // yaw = 0° (中) → x = canvas.width / 2 (中間)
+    // yaw = -45° (右) → x = canvas.width (右邊)
+    let x = (45 - yaw) / 90 * canvas.width;
 
 
     // Y 座標：pitch 控制上下（需要反轉）
@@ -324,7 +324,6 @@ function mapAngleToXY(pitch, roll) {
     // pitch = 0 (中) → y = canvas.height / 2 (中間)
     // pitch = -60 (下) → y = canvas.height (底部) ✓
     let y = (60 - pitch) / 120 * canvas.height;
-    // let y = (45 - pitch) / 90 * canvas.height;
 
 
     // 限制範圍在畫布內
@@ -333,7 +332,7 @@ function mapAngleToXY(pitch, roll) {
     return {x, y};
 }
 
-function draw(pitch, roll) {
+function draw(pitch, yaw) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     zones.forEach(z => {
@@ -346,7 +345,7 @@ function draw(pitch, roll) {
     });
 
     // 鼓棒紅點
-    const pos = mapAngleToXY(pitch, roll);
+    const pos = mapAngleToXY(pitch, yaw);
     ctx.fillStyle = "red";
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
@@ -357,9 +356,9 @@ function draw(pitch, roll) {
 // --------------------- HIT 偵測 ---------------------
 let hitCooldown = 0;
 
-function detectZone(pitch, roll) {
-    // 根據 pitch 和 roll 計算紅點的 X, Y 座標
-    const pos = mapAngleToXY(pitch, roll);
+function detectZone(pitch, yaw) {
+    // 根據 pitch 和 yaw 計算紅點的 X, Y 座標
+    const pos = mapAngleToXY(pitch, yaw);
 
     // 檢查紅點位於哪個區塊
     for (const zone of zones) {
@@ -403,7 +402,7 @@ function update() {
         .then(res => res.json())
         .then(data => {
             // 更新畫布
-            draw(data["pitch (y軸轉)"], data["roll (x軸轉)"]);
+            draw(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
 
             // 更新數據顯示面板
             updateSensorDisplay(data);
@@ -413,7 +412,7 @@ function update() {
                 hitCooldown--;
             } else if (data.is_hit) {
                 // 後端確認有向下揮擊，前端根據紅點位置決定音效
-                const zone = detectZone(data["pitch (y軸轉)"], data["roll (x軸轉)"]);
+                const zone = detectZone(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
                 console.log(`🥁 Hit detected at zone: ${zone}`);
                 playSound(zone);
                 hitCooldown = 8;  // 與 hit_detection.py 相同的 cooldown
