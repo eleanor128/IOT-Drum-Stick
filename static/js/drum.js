@@ -47,7 +47,7 @@ async function enableAudio() {
         }
 
         audioEnabled = true;
-        btn.textContent = "✅ 音效已啟動";
+        btn.textContent = "音效已啟動";
         btn.classList.add('enabled');
         btn.disabled = false;
         status.textContent = `音效已就緒！已載入 ${Object.keys(audioBuffers).length} 個音效`;
@@ -58,7 +58,7 @@ async function enableAudio() {
     } catch (error) {
         console.error("Audio initialization failed:", error);
         status.textContent = "音效載入失敗";
-        btn.textContent = "❌ 載入失敗";
+        btn.textContent = "載入失敗";
         btn.disabled = false;
     }
 }
