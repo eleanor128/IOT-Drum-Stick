@@ -53,7 +53,7 @@ def complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt):
     return pitch, roll, yaw
 
 
-def update_angle():
+def update_right_angle():
     """hit_detection.py 會呼叫這裡，不會跑迴圈、不輸出"""
     global pitch, roll, yaw, prev_time
 
@@ -66,3 +66,5 @@ def update_angle():
     pitch, roll, yaw = complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt)
 
     return roll, pitch, yaw, ax, ay, az, gx, gy, gz
+
+# 修改
