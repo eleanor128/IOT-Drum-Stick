@@ -98,10 +98,10 @@
 </head>
 <body>
 
-<button id="enableAudioBtn" class="audio-button" onclick="enableAudio()">🔊 啟動音效</button>
+<button id="enableAudioBtn" class="audio-button" onclick="enableAudio()">啟動音效</button>
 <div id="statusText" class="status-text">請點擊「啟動音效」按鈕</div>
 
-<canvas id="drumCanvas" width="900" height="450"></canvas>
+<div id="drumContainer" style="width: 900px; height: 600px; margin: 20px auto;"></div>
 
 <!-- 感測器數據顯示面板 -->
 <div class="sensor-panel">
@@ -156,6 +156,8 @@
     </div>
 </div>
 
+<!-- Three.js 庫 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="/static/js/drum.js"></script>
 </body>
 </html>

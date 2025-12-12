@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D IOT 鼓組視覺化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2em;
+        }
+
+        #enableAudioBtn {
+            padding: 15px 40px;
+            font-size: 18px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #enableAudioBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        #enableAudioBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #enableAudioBtn.enabled {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        #statusText {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #aaa;
+        }
+
+        #drumContainer {
+            width: 900px;
+            height: 600px;
+            margin: 20px auto;
+            border: 3px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        #sensorPanel {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .sensor-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .sensor-label {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .sensor-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🥁 3D IOT 鼓組控制器</h1>
+    
+    <button id="enableAudioBtn" onclick="enableAudio()">🔊 點擊啟用音效</button>
+    <div id="statusText">請先啟用音效</div>
+    
+    <div id="drumContainer"></div>
+    
+    <div id="sensorPanel">
+        <h3>📊 感測器數據 (右手為主顯示)</h3>
+        <div class="sensor-grid">
+            <div class="sensor-item">
+                <div class="sensor-label">Pitch (Y軸轉)</div>
+                <div class="sensor-value" id="pitch-value">0.0°</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Roll (X軸轉)</div>
+                <div class="sensor-value" id="roll-value">0.0°</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Yaw (Z軸轉)</div>
+                <div class="sensor-value" id="yaw-value">0.0°</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度 X</div>
+                <div class="sensor-value" id="accel-x-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度 Y</div>
+                <div class="sensor-value" id="accel-y-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度 Z</div>
+                <div class="sensor-value" id="accel-z-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度總量</div>
+                <div class="sensor-value" id="magnitude-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">陀螺儀 X</div>
+                <div class="sensor-value" id="gyro-x-value">0.0°/s</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">陀螺儀 Y</div>
+                <div class="sensor-value" id="gyro-y-value">0.0°/s</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">陀螺儀 Z</div>
+                <div class="sensor-value" id="gyro-z-value">0.0°/s</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/static/js/drum_3d.js"></script>
+</body>
+</html>

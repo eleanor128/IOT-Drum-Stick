@@ -16,6 +16,10 @@ app = Flask(__name__,
 def index():
     return render_template("index.html")
 
+@app.route("/3d")
+def index_3d():
+    return render_template("index_3d.html")
+
 @app.route("/right_data")
 def right_data():
     with i2c_lock:
