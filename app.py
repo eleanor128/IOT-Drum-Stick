@@ -14,7 +14,7 @@ def data():
     roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_angle()
 
     # 只判斷是否有向下揮擊（使用 hit_detection.py 的條件）
-    is_fast = abs(gy) > 40       # 上下揮動
+    is_fast = abs(gy) > 20       # 上下揮動
     is_hit_accel = az > 9.0      # 瞬間加速度增加（撞擊特徵）
     is_downward = pitch < -5     # pitch < -5 表示往下揮
 
