@@ -127,8 +127,8 @@ function init3D() {
         createdDrums.add(zone.name + zone.pos3d.join());
         
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
-        const radius = isCymbal ? 0.8 : 0.6;
-        const height = isCymbal ? 0.05 : 0.4;
+        const radius = isCymbal ? 1.2 : 0.9;  // 鼓的半徑
+        const height = isCymbal ? 0.05 : 0.5; // 鼓的高度
         
         const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
         const material = new THREE.MeshStandardMaterial({ 
