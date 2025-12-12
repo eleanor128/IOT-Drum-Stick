@@ -207,47 +207,75 @@ function updateSensorDisplay(rightData, leftData) {
 
 
 // --------------------- 主迴圈 ---------------------
-function update() {
-    // 同時獲取左右手數據
-    Promise.all([
-        fetch("/right_data").then(res => res.json()),
-        fetch("/left_data").then(res => res.json())
-    ])
-    .then(([rightData, leftData]) => {
-        // 繪製兩支鼓棒
-        draw(
-            rightData["pitch (y軸轉)"], 
-            rightData["yaw (z軸轉)"],
-            leftData["pitch (y軸轉)"], 
-            leftData["yaw (z軸轉)"]
-        );
-        
-        // 更新數據顯示（目前只顯示右手）
-        updateSensorDisplay(rightData, leftData);
+// 儲存最新的左右手數據
+let rightData = { "pitch (y軸轉)": 0, "yaw (z軸轉)": 0, "roll (x軸轉)": 0, ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0, is_hit: false };
+let leftData = { "pitch (y軸轉)": 0, "yaw (z軸轉)": 0, "roll (x軸轉)": 0, ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0, is_hit: false };
 
-        // 右手敲擊偵測
-        if (rightHitCooldown > 0) {
-            rightHitCooldown--;
-        } else if (rightData.is_hit) {
-            const zone = detectZone(rightData["pitch (y軸轉)"], rightData["yaw (z軸轉)"]);
-            console.log(`🥁 Right Hit: ${zone}`);
-            playSound(zone);
-            rightHitCooldown = 8;
-        }
-
-        // 左手敲擊偵測
-        if (leftHitCooldown > 0) {
-            leftHitCooldown--;
-        } else if (leftData.is_hit) {
-            const zone = detectZone(leftData["pitch (y軸轉)"], leftData["yaw (z軸轉)"]);
-            console.log(`🥁 Left Hit: ${zone}`);
-            playSound(zone);
-            leftHitCooldown = 8;
-        }
-    })
-    .catch(err => console.log("Fetch error:", err));
-
-    requestAnimationFrame(update);
+// 獨立更新右手數據
+function updateRight() {
+    fetch("/right_data")
+        .then(res => res.json())
+        .then(data => {
+            rightData = data;
+            
+            // 右手敲擊偵測
+            if (rightHitCooldown > 0) {
+                rightHitCooldown--;
+            } else if (data.is_hit) {
+                const zone = detectZone(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
+                console.log(`🥁 Right Hit: ${zone}`);
+                playSound(zone);
+                rightHitCooldown = 8;
+            }
+        })
+        .catch(err => console.log("Right fetch error:", err))
+        .finally(() => {
+            // 立即發起下一次請求，不等待動畫幀
+            setTimeout(updateRight, 0);
+        });
 }
 
-update();
+// 獨立更新左手數據
+function updateLeft() {
+    fetch("/left_data")
+        .then(res => res.json())
+        .then(data => {
+            leftData = data;
+            
+            // 左手敲擊偵測
+            if (leftHitCooldown > 0) {
+                leftHitCooldown--;
+            } else if (data.is_hit) {
+                const zone = detectZone(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
+                console.log(`🥁 Left Hit: ${zone}`);
+                playSound(zone);
+                leftHitCooldown = 8;
+            }
+        })
+        .catch(err => console.log("Left fetch error:", err))
+        .finally(() => {
+            // 立即發起下一次請求，不等待動畫幀
+            setTimeout(updateLeft, 0);
+        });
+}
+
+// 畫面渲染迴圈（60 FPS）
+function render() {
+    // 使用最新的數據繪製
+    draw(
+        rightData["pitch (y軸轉)"], 
+        rightData["yaw (z軸轉)"],
+        leftData["pitch (y軸轉)"], 
+        leftData["yaw (z軸轉)"]
+    );
+    
+    // 更新數據顯示
+    updateSensorDisplay(rightData, leftData);
+    
+    requestAnimationFrame(render);
+}
+
+// 啟動所有迴圈
+updateRight();
+updateLeft();
+render();
