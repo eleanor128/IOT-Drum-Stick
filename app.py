@@ -24,7 +24,7 @@ def data():
 
     # 只判斷是否有向下揮擊
     is_fast = abs(gy) > 15           # 陀螺儀偵測到快速旋轉
-    is_hit_accel = az > 7.5          # 瞬間加速度增加（撞擊特徵）
+    is_hit_accel = ax > 7.5          # 瞬間加速度增加（撞擊特徵）
     is_downward = delta_pitch < -10  # pitch 快速減少（向下揮）
 
     # 只回傳是否敲擊，不判斷是哪個鼓點
