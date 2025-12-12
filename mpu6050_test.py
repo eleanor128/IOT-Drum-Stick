@@ -29,4 +29,4 @@ while True:
     print("Temp:", temperature)
 
     # Wait for 1 second
-    time.sleep(1)
+    time.sleep(0.05)
