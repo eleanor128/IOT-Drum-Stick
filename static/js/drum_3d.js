@@ -273,7 +273,9 @@ function init3D() {
         const material = new THREE.MeshStandardMaterial({ 
             color: 0x1a1a1a,        // 深灰色
             metalness: isCymbal ? 0.7 : 0.2,
-            roughness: 0.3
+            roughness: 0.3,
+            emissive: 0x000000,     // 初始不發光
+            emissiveIntensity: 0
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(...zone.pos3d);
@@ -301,7 +303,7 @@ function init3D() {
         edgeMesh.rotation.x += Math.PI / 2;
         scene.add(edgeMesh);
         
-        drumMeshes[zone.name + zone.pos3d.join()] = mesh;
+        drumMeshes[zone.name] = mesh; // 改用名稱作為 Key，方便查找
         
     });
     
@@ -448,6 +450,31 @@ function lerp(start, end, factor) {
     return start + (end - start) * factor;
 }
 
+// 觸發鼓面發光動畫
+function triggerDrumGlow(drumName) {
+    const mesh = drumMeshes[drumName];
+    if (mesh && mesh.material) {
+        const zone = zones.find(z => z.name === drumName);
+        if (zone) {
+            mesh.material.emissive.set(zone.glowColor);
+            mesh.material.emissiveIntensity = 1.0; // 設定發光強度
+        }
+    }
+}
+
+// 更新發光衰減（每一幀呼叫）
+function updateDrumGlows() {
+    for (const key in drumMeshes) {
+        const mesh = drumMeshes[key];
+        if (mesh.material.emissiveIntensity > 0) {
+            mesh.material.emissiveIntensity = Math.max(0, mesh.material.emissiveIntensity - 0.05); // 衰減速度
+            if (mesh.material.emissiveIntensity === 0) {
+                mesh.material.emissive.set(0x000000); // 歸零後重置顏色
+            }
+        }
+    }
+}
+
 // 碰撞狀態追蹤（防止按住不放時連續觸發）
 let rightWasColliding = false;
 let leftWasColliding = false;
@@ -487,6 +514,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     if (rightResult.hitDrum) {
         if (!rightWasColliding && rightHitCooldown <= 0) {
             playSound(rightResult.hitDrum);
+            triggerDrumGlow(rightResult.hitDrum); // 觸發發光
             rightHitCooldown = 10; // 冷卻時間 (幀數)
             console.log(`🥁 Right Hit (3D): ${rightResult.hitDrum}`);
         }
@@ -511,6 +539,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     if (leftResult.hitDrum) {
         if (!leftWasColliding && leftHitCooldown <= 0) {
             playSound(leftResult.hitDrum);
+            triggerDrumGlow(leftResult.hitDrum); // 觸發發光
             leftHitCooldown = 10;
             console.log(`🥁 Left Hit (3D): ${leftResult.hitDrum}`);
         }
@@ -614,6 +643,7 @@ function render() {
         leftData.adjusted_pitch
     );
     updateSensorDisplay(rightData, leftData);
+    updateDrumGlows(); // 更新發光動畫狀態
     requestAnimationFrame(render);
 }
 
