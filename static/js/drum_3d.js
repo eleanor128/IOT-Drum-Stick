@@ -74,12 +74,12 @@ let rightStick, leftStick;
 
 const zones = [
     { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [3, 0.8, -0.5], radius: 1.0 },
-    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.8, 0.2, -0.5], radius: 0.8 },
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 1.5, 2], radius: 1.2 },
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5], radius: 0.7 },
+    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.8, 0.2, -0.5], radius: 1 },
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5], radius: 0.8 },
     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 0.3, 1.5], radius: 0.8 },
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 1.5, 2], radius: 1.3 },
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5], radius: 0.9 },
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 1.5, 2], radius: 1.5 },
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 1.5, 2], radius: 1.5 },
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5], radius: 1.2 },
 ];
 
 // 初始化 3D 場景
