@@ -89,7 +89,7 @@ function init3D() {
     
     camera = new THREE.PerspectiveCamera(60, 900 / 600, 0.1, 1000);
     camera.position.set(0, 3, -4);
-    camera.lookAt(0, 0, 1);
+    camera.lookAt(0, 0, 0);
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(900, 600);
