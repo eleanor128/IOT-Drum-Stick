@@ -156,7 +156,7 @@ function init3D() {
     });
     
     // 鼓棒（球體）
-    const stickGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+    const stickGeometry = new THREE.SphereGeometry(0.1, 16, 16);
     
     const rightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x660000 });
     rightStick = new THREE.Mesh(stickGeometry, rightMaterial);
