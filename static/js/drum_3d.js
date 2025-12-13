@@ -141,21 +141,28 @@ function detectDrumFromAccel(ax, ay, az) {
     return "Snare";
 }
 
-// 判斷是否為有效打擊
+// 判斷是否為有效打擊（向下揮動）
 function isValidHit(ax, ay, az, gx, gy, gz) {
-    // 1. 加速度幅度檢測（打擊力道）
+    // 1. 向下加速度檢測（Z軸加速度 - 必須條件）
+    const zAccelThreshold = 10;  // 向下打擊，提高閾值確保是向下
+    if (az < zAccelThreshold) {
+        return false;  // 如果不是向下，直接返回 false
+    }
+    
+    // 2. 陀螺儀Y軸檢測（手腕向下揮動的旋轉）
+    const gyroYThreshold = 50;  // Y軸旋轉速度（向下揮動特徵）
+    const hasDownwardSwing = Math.abs(gy) > gyroYThreshold;
+    
+    // 3. 加速度幅度檢測（打擊力道）
     const magnitude = Math.sqrt(ax * ax + ay * ay + az * az);
     const magnitudeThreshold = 12;  // 最小打擊力道
     
-    // 2. 陀螺儀檢測（快速揮動）
+    // 4. 陀螺儀總幅度檢測（快速揮動）
     const gyroMagnitude = Math.sqrt(gx * gx + gy * gy + gz * gz);
-    const gyroThreshold = 80;  // 最小旋轉速度（從數據觀察）
+    const gyroThreshold = 80;  // 最小旋轉速度
     
-    // 3. 向下加速度檢測（Z軸加速度變化）
-    const zAccelThreshold = 8;  // 向下打擊
-    
-    return (magnitude > magnitudeThreshold || gyroMagnitude > gyroThreshold) 
-           && az > zAccelThreshold;
+    // 必須同時滿足：向下加速 + (向下揮動 或 強力打擊)
+    return (hasDownwardSwing || magnitude > magnitudeThreshold || gyroMagnitude > gyroThreshold);
 }
 
 // 鼓棒 3D 位置映射（根據加速度數據）
