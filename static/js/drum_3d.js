@@ -171,7 +171,7 @@ function init3D() {
     });
     
     // 鼓棒（球體）
-    const stickGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+    const stickGeometry = new THREE.SphereGeometry(0.08, 16, 16);
     
     const rightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x660000 });
     rightStick = new THREE.Mesh(stickGeometry, rightMaterial);
@@ -184,24 +184,24 @@ function init3D() {
     scene.add(leftStick);
 }
 
-function createLabel(text, position) {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.width = 256;
-    canvas.height = 64;
+// function createLabel(text, position) {
+//     const canvas = document.createElement('canvas');
+//     const context = canvas.getContext('2d');
+//     canvas.width = 256;
+//     canvas.height = 64;
     
-    context.fillStyle = 'white';
-    context.font = 'bold 36px Arial';
-    context.textAlign = 'center';
-    context.fillText(text, 128, 45);
+//     context.fillStyle = 'white';
+//     context.font = 'bold 36px Arial';
+//     context.textAlign = 'center';
+//     context.fillText(text, 128, 45);
     
-    const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture });
-    const sprite = new THREE.Sprite(material);
-    sprite.position.set(position[0], position[1] + 1.2, position[2]);
-    sprite.scale.set(1.5, 0.4, 1);
-    scene.add(sprite);
-}
+//     const texture = new THREE.CanvasTexture(canvas);
+//     const material = new THREE.SpriteMaterial({ map: texture });
+//     const sprite = new THREE.Sprite(material);
+//     sprite.position.set(position[0], position[1] + 1.2, position[2]);
+//     sprite.scale.set(1.5, 0.4, 1);
+//     scene.add(sprite);
+// }
 
 // 保持原有的 mapAngleToXY 邏輯（用於敲擊偵測）
 function mapAngleToXY(pitch, yaw) {
