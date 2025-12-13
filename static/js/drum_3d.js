@@ -102,10 +102,10 @@ function init3D() {
     container.appendChild(renderer.domElement);
     
     // 光照
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(ambientLight);
     
-    const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    const light1 = new THREE.DirectionalLight(0xffffff, 0.3);
     light1.position.set(5, 10, 5);
     light1.castShadow = true;
     scene.add(light1);
