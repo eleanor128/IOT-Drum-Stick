@@ -280,33 +280,33 @@ function checkCollision(stickPos) {
     return collisionInfo;
 }
 
-// 繪製函數（3D版本）
+// 繪製函數（3D版本）- 以握把端為圓心旋轉鼓棒
 function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
-    // 計算 2D 坐標（用於敲擊偵測）
-    const rightPos2D = mapAngleToXY(rightPitch, rightYaw);
-    const leftPos2D = mapAngleToXY(leftPitch, leftYaw);
+    // 右手鼓棒的握把位置（手的位置）
+    // 根據 yaw 控制左右位置
+    const rightHandX = (45 - rightYaw) / 90 * 4 - 2;  // yaw 控制左右，範圍 -2 到 2
+    const rightHandY = 2.5;  // 固定高度
+    const rightHandZ = -2;   // 固定在靠近相機的位置
     
-    // 轉換為 3D 位置（pitch 控制上下）
-    let rightPos3D = mapXYto3D(rightPos2D.x, rightPos2D.y, rightPitch);
-    let leftPos3D = mapXYto3D(leftPos2D.x, leftPos2D.y, leftPitch);
+    // 左手鼓棒的握把位置
+    const leftHandX = (45 - leftYaw) / 90 * 4 - 2;
+    const leftHandY = 2.5;
+    const leftHandZ = -2;
     
-    // 碰撞檢測：右手鼓棒
-    const rightCollision = checkCollision(rightPos3D);
-    if (rightCollision.hit) {
-        rightPos3D = rightCollision.adjustedPos;
-        // console.log('🔴 右手碰到:', rightCollision.drumName);
-    }
+    // 更新右手鼓棒位置和旋轉
+    rightStick.position.set(rightHandX, rightHandY, rightHandZ);
+    // pitch 控制上下揮擊（繞 X 軸旋轉）- pitch增加→往上
+    rightStick.rotation.x = -(rightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
+    // yaw 控制左右擺動（繞 Y 軸旋轉）
+    rightStick.rotation.y = (rightYaw / 45) * (Math.PI / 6);  // 小範圍旋轉
     
-    // 碰撞檢測：左手鼓棒
-    const leftCollision = checkCollision(leftPos3D);
-    if (leftCollision.hit) {
-        leftPos3D = leftCollision.adjustedPos;
-        // console.log('🔵 左手碰到:', leftCollision.drumName);
-    }
+    // 更新左手鼓棒位置和旋轉
+    leftStick.position.set(leftHandX, leftHandY, leftHandZ);
+    leftStick.rotation.x = -(leftPitch / 45) * (Math.PI / 3);
+    leftStick.rotation.y = (leftYaw / 45) * (Math.PI / 6);
     
-    // 更新鼓棒位置
-    rightStick.position.set(...rightPos3D);
-    leftStick.position.set(...leftPos3D);
+    // TODO: 碰撞檢測需要重新設計，檢測鼓棒前端（敲擊端）的位置
+    // 可以通過計算鼓棒旋轉後的前端座標來實現
     
     // 渲染場景
     renderer.render(scene, camera);
