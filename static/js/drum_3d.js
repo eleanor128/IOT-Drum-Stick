@@ -182,13 +182,15 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     
     // Z軸（前後）：ay 控制深度
     // 基礎位置設為 -2.0 (靠近相機)
-    const z3d = -2.0 + ay * 0.03;
+    // 修正：增加 ay 的靈敏度 (0.03 -> 0.1)
+    // 新增：當手舉高時 (az < 10)，通常是為了打遠處的鼓，所以自動增加深度
+    const z3d = -2.0 + (ay * 0.1) + ((10 - az) * 0.1);
     
     // 限制範圍
     return [
         Math.max(-1.5, Math.min(1.5, x3d)),
         Math.max(0.3, Math.min(2.5, y3d)),
-        Math.max(-2.5, Math.min(-1.0, z3d))
+        Math.max(-2.5, Math.min(0.5, z3d)) // 放寬 Z 軸上限，從 -1.0 改為 0.5，讓鼓棒能伸到後排
     ];
 }
 
