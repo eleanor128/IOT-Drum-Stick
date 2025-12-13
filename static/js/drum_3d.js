@@ -303,7 +303,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     const rightHandZ = -2;   // 固定在靠近相機的位置
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 2;  // 降低移動範圍，減少靈敏度
+    const leftHandX = (leftYaw - 45) / 90 * 2 + 3;  // 降低移動範圍，減少靈敏度
     const leftHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const leftHandZ = -2;
     
