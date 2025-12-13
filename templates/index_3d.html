@@ -15,17 +15,53 @@
             background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
             color: white;
             font-family: 'Segoe UI', Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             padding: 20px;
             min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         h1 {
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             font-size: 2em;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .sensor-panel {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        .sensor-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .sensor-panel.left h3 {
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        .sensor-panel.right h3 {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
         }
 
         #enableAudioBtn {
@@ -64,60 +100,99 @@
         #drumContainer {
             width: 900px;
             height: 600px;
-            margin: 20px auto;
             border: 3px solid #555;
             border-radius: 10px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             overflow: hidden;
-        }
-
-        #sensorPanel {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            max-width: 900px;
-            width: 100%;
-        }
-
-        .sensor-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            flex-shrink: 0;
         }
 
         .sensor-item {
             background: rgba(255, 255, 255, 0.05);
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
-            border-left: 3px solid #667eea;
+            margin-bottom: 10px;
+        }
+
+        .sensor-panel.left .sensor-item {
+            border-left: 3px solid #4fc3f7;
+        }
+
+        .sensor-panel.right .sensor-item {
+            border-left: 3px solid #ff6b6b;
         }
 
         .sensor-label {
             color: #888;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 4px;
         }
 
         .sensor-value {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             color: #fff;
         }
     </style>
 </head>
 <body>
+    <div class="header">
+        <button id="enableAudioBtn" onclick="enableAudio()">點擊啟用音效</button>
+        <div id="statusText">請先啟用音效</div>
+    </div>
     
-    <button id="enableAudioBtn" onclick="enableAudio()">點擊啟用音效</button>
-    <div id="statusText">請先啟用音效</div>
-    
-    <div id="drumContainer"></div>
-    
-    <div id="sensorPanel">
-        <h3>📊 感測器數據 (右手為主顯示)</h3>
-        <div class="sensor-grid">
+    <div class="main-container">
+        <!-- 左手數據面板 -->
+        <div class="sensor-panel left">
+            <h3>🔵 左手數據</h3>
+            <div class="sensor-item">
+                <div class="sensor-label">Pitch (Y軸轉)</div>
+                <div class="sensor-value" id="left-pitch-value">0.0°</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Roll (X軸轉)</div>
+                <div class="sensor-value" id="left-roll-value">0.0°</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Yaw (Z軸轉)</div>
+                <div class="sensor-value" id="left-yaw-value">0.0°</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度 X</div>
+                <div class="sensor-value" id="left-accel-x-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度 Y</div>
+                <div class="sensor-value" id="left-accel-y-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度 Z</div>
+                <div class="sensor-value" id="left-accel-z-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">加速度總量</div>
+                <div class="sensor-value" id="left-magnitude-value">0.00 g</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">陀螺儀 X</div>
+                <div class="sensor-value" id="left-gyro-x-value">0.0°/s</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">陀螺儀 Y</div>
+                <div class="sensor-value" id="left-gyro-y-value">0.0°/s</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">陀螺儀 Z</div>
+                <div class="sensor-value" id="left-gyro-z-value">0.0°/s</div>
+            </div>
+        </div>
+
+        <!-- 3D 鼓組畫面 -->
+        <div id="drumContainer"></div>
+
+        <!-- 右手數據面板 -->
+        <div class="sensor-panel right">
+            <h3>🔴 右手數據</h3>
             <div class="sensor-item">
                 <div class="sensor-label">Pitch (Y軸轉)</div>
                 <div class="sensor-value" id="pitch-value">0.0°</div>
