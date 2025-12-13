@@ -72,18 +72,6 @@ let scene, camera, renderer;
 let drumMeshes = {};
 let rightStick, leftStick;
 
-// 保持原有的 zones 定義（用於敲擊偵測邏輯，2D 坐標）
-// const zones = [
-//     { name: "Symbal",    x: 0,   y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [-3, 0.5, 2] },
-//     { name: "Tom_high",  x: 225, y: 0,   w: 225, h: 225, color:"#00c864", pos3d: [-1, 0.3, 1.5] },
-//     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5] },
-//     { name: "Ride",      x: 675, y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [3, 0.5, 2] },
-//     { name: "Hihat",     x: 0,   y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [-3, 0.8, -0.5] },
-//     { name: "Snare",     x: 225, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0, 0.2, 0] },
-//     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0, 0.2, 0] },
-//     { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [3, 0, -0.5] },
-// ];
-
 const zones = [
     { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [3, 0, -0.5] },
     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0, 0.2, -0.5] },
@@ -91,7 +79,7 @@ const zones = [
     { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5] },
     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 0.3, 1.5] },
     { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-3, 0.5, 2] },
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-3, 0.5, -0.5] },
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-3, 0.3, -0.5] },
 ];
 
 // 初始化 3D 場景
