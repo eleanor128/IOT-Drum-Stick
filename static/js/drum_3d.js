@@ -13,7 +13,7 @@ async function enableAudio() {
     }
 
     try {
-        btn.textContent = "⏳ 載入中...";
+        btn.textContent = "載入中...";
         btn.disabled = true;
         
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -166,42 +166,51 @@ function init3D() {
         
         drumMeshes[zone.name + zone.pos3d.join()] = mesh;
         
-        // // 標籤
-        // createLabel(zone.name, zone.pos3d);
     });
     
-    // 鼓棒（球體）
-    const stickGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+    // 創建真實鼓棒（圓柱體 + 球形頂端）
+    function createDrumstick(color, emissiveColor) {
+        const drumstick = new THREE.Group();
+        
+        // 鼓棒主體（圓柱）
+        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.4, 8);
+        const stickMaterial = new THREE.MeshStandardMaterial({ 
+            color: color,
+            emissive: emissiveColor,
+            roughness: 0.7
+        });
+        const stickMesh = new THREE.Mesh(stickBody, stickMaterial);
+        stickMesh.castShadow = true;
+        drumstick.add(stickMesh);
+        
+        // 鼓棒頂端（球形敲擊端）
+        const tipGeometry = new THREE.SphereGeometry(0.025, 12, 12);
+        const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
+        tipMesh.position.y = 0.2;  // 放在棒子頂端
+        tipMesh.castShadow = true;
+        drumstick.add(tipMesh);
+        
+        // 鼓棒底端（握把）
+        const gripGeometry = new THREE.SphereGeometry(0.022, 12, 12);
+        const gripMesh = new THREE.Mesh(gripGeometry, stickMaterial);
+        gripMesh.position.y = -0.2;  // 放在棒子底端
+        gripMesh.castShadow = true;
+        drumstick.add(gripMesh);
+        
+        // 讓鼓棒傾斜，看起來像握在手中
+        drumstick.rotation.x = Math.PI / 6;  // 向前傾斜 30度
+        
+        return drumstick;
+    }
     
-    const rightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x660000 });
-    rightStick = new THREE.Mesh(stickGeometry, rightMaterial);
-    rightStick.castShadow = true;
+    // 創建右手鼓棒（紅色）
+    rightStick = createDrumstick(0xff0000, 0x660000);
     scene.add(rightStick);
     
-    const leftMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x000066 });
-    leftStick = new THREE.Mesh(stickGeometry, leftMaterial);
-    leftStick.castShadow = true;
+    // 創建左手鼓棒（藍色）
+    leftStick = createDrumstick(0x0000ff, 0x000066);
     scene.add(leftStick);
 }
-
-// function createLabel(text, position) {
-//     const canvas = document.createElement('canvas');
-//     const context = canvas.getContext('2d');
-//     canvas.width = 256;
-//     canvas.height = 64;
-    
-//     context.fillStyle = 'white';
-//     context.font = 'bold 36px Arial';
-//     context.textAlign = 'center';
-//     context.fillText(text, 128, 45);
-    
-//     const texture = new THREE.CanvasTexture(canvas);
-//     const material = new THREE.SpriteMaterial({ map: texture });
-//     const sprite = new THREE.Sprite(material);
-//     sprite.position.set(position[0], position[1] + 1.2, position[2]);
-//     sprite.scale.set(1.5, 0.4, 1);
-//     scene.add(sprite);
-// }
 
 // 感測器角度轉 2D 座標（用於敲擊偵測）
 // yaw: 左移增大、右移減小
