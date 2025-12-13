@@ -285,12 +285,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 右手鼓棒的握把位置（手的位置）
     // 根據 yaw 控制左右位置（反轉方向）
     const rightHandX = (rightYaw - 45) / 90 * 4 + 2;  // yaw 增加→往左，yaw 減少→往右
-    const rightHandY = 2.5;  // 固定高度
+    const rightHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const rightHandZ = -2;   // 固定在靠近相機的位置
     
     // 左手鼓棒的握把位置
     const leftHandX = (leftYaw - 45) / 90 * 4 + 2;
-    const leftHandY = 2.5;
+    const leftHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const leftHandZ = -2;
     
     // 更新右手鼓棒位置和旋轉
