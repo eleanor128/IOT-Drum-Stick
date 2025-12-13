@@ -79,7 +79,7 @@ const zones = [
     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 1, 1.5], radius: 1, rotation: -Math.PI / 7 },
     { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 2.5, 2], radius: 1.5, rotation: -Math.PI / 6 },
     { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 2.5, 2], radius: 1.5, rotation: -Math.PI / 6 },
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 425, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5], radius: 1.2, rotation: 0 },
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5], radius: 1.2, rotation: 0 },
 ];
 // Math.PI / 18	10°	微微傾斜
 // Math.PI / 9	20°	中度傾斜
@@ -135,7 +135,15 @@ function init3D() {
         
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);  // 使用自定義半徑或預設值
-        const height = isCymbal ? 0.05 : 0.5; // 鼓的高度
+        
+        let height;
+        if (isCymbal) {
+            height = 0.05;  // 鈸很薄
+        } else if (zone.name === "Tom_floor") {
+            height = 0.8;   // 落地通鼓較長
+        } else {
+            height = 0.5;   // 其他鼓的標準高度
+        }
         
         const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
         const material = new THREE.MeshStandardMaterial({ 
