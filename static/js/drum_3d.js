@@ -209,18 +209,18 @@ function mapAngleToXY(pitch, yaw) {
     let y = (pitch + 10) / 45 * 450;
     x = Math.max(0, Math.min(900, x));
     y = Math.max(0, Math.min(450, y));
-    return {x, y};
+    return {x, y, pitch, yaw};  // 同時返回原始角度
 }
 
 // 將 2D 坐標轉換為 3D 位置（用於顯示鼓棒）
-function mapXYto3D(x, y) {
-    let x3d = (x / 900 - 0.5) * 8;
-    let z3d = (y / 450 - 0.5) * 4;
-    const y3d = 2;
+function mapXYto3D(x, y, pitch) {
+    let x3d = (x / 900 - 0.5) * 8;              // yaw 控制左右
+    let y3d = 2 - (pitch / 45) * 1.5;           // pitch 控制上下：pitch增加→往下，pitch減少→往上
+    const z3d = 0.5;                             // 前後固定在中間位置
     
-    // 限制鼓棒不超出相機視角（根據相機位置和視野角度計算）
+    // 限制鼓棒不超出相機視角
     x3d = Math.max(-3.5, Math.min(3.5, x3d));   // X軸範圍: -3.5 到 3.5
-    z3d = Math.max(-1, Math.min(3, z3d));       // Z軸範圍: -1 到 3
+    y3d = Math.max(0.5, Math.min(3.5, y3d));    // Y軸範圍: 0.5 到 3.5
     
     return [x3d, y3d, z3d];
 }
@@ -262,9 +262,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     const rightPos2D = mapAngleToXY(rightPitch, rightYaw);
     const leftPos2D = mapAngleToXY(leftPitch, leftYaw);
     
-    // 轉換為 3D 位置
-    let rightPos3D = mapXYto3D(rightPos2D.x, rightPos2D.y);
-    let leftPos3D = mapXYto3D(leftPos2D.x, leftPos2D.y);
+    // 轉換為 3D 位置（pitch 控制上下）
+    let rightPos3D = mapXYto3D(rightPos2D.x, rightPos2D.y, rightPitch);
+    let leftPos3D = mapXYto3D(leftPos2D.x, leftPos2D.y, leftPitch);
     
     // 碰撞檢測：右手鼓棒
     const rightCollision = checkCollision(rightPos3D);
