@@ -296,7 +296,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightHandZ = -2.8;  
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 3 + 3;  // 左手在左側
+    const leftHandX = (leftYaw - 45) / 90 * 3 + 2.2;  // 左手在左側
     const leftHandY = 1.5;  // 握把高度
     const leftHandZ = -2.8;   
     
