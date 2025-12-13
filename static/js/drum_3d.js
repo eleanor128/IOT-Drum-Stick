@@ -293,12 +293,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 根據 yaw 控制左右位置，擴大移動範圍
     const rightHandX = (rightYaw - 45) / 90 * 3 + 1;  // 右手初始位置靠近 Snare
     const rightHandY = 1.5;  // 提高握把高度
-    const rightHandZ = -0.5;   // 更靠近鼓組
+    const rightHandZ = -0.8;   // 與 Snare 的 Z 座標對齊
     
     // 左手鼓棒的握把位置
     const leftHandX = (leftYaw - 45) / 90 * 3 - 1;  // 左手在左側
     const leftHandY = 1.5;  // 提高握把高度
-    const leftHandZ = -0.5;   // 更靠近鼓組
+    const leftHandZ = -0.8;   // 與 Snare 的 Z 座標對齊
     
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightHandX, rightHandY, rightHandZ);

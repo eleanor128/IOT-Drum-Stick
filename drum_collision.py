@@ -40,8 +40,8 @@ class DrumCollision:
         else:
             hand_x = (yaw - 45) / 90 * 3 - 1  # 左手在左側
         
-        hand_y = 1.5   # 手的高度（提高）
-        hand_z = -0.5  # 手的前後位置（更靠近鼓組）
+        hand_y = 1.5    # 手的高度（提高）
+        hand_z = -0.8   # 手的前後位置（與 Snare 的 Z 座標對齊）
         
         # 2. 計算鼓棒的旋轉角度（弧度）
         # 完全對應 drum_3d.js 的旋轉計算
@@ -88,7 +88,7 @@ class DrumCollision:
         else:
             hand_x = (yaw - 45) / 90 * 3 - 1
         hand_y = 1.5
-        hand_z = -0.5
+        hand_z = -0.8
         
         # 檢查是否碰撞到任何鼓（按順序檢查，優先偵測較高的鼓）
         for drum in self.drums:
