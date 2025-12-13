@@ -283,13 +283,13 @@ function checkCollision(stickPos) {
 // 繪製函數（3D版本）- 以握把端為圓心旋轉鼓棒
 function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 右手鼓棒的握把位置（手的位置）
-    // 根據 yaw 控制左右位置（反轉方向）
-    const rightHandX = (rightYaw - 45) / 90 * 4 + 2;  // yaw 增加→往左，yaw 減少→往右
+    // 根據 yaw 控制左右位置（降低靈敏度）
+    const rightHandX = (rightYaw - 45) / 90 * 2 + 1;  // 降低移動範圍，減少靈敏度
     const rightHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const rightHandZ = -2;   // 固定在靠近相機的位置
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 4 + 2;
+    const leftHandX = (leftYaw - 45) / 90 * 2 + 1;  // 降低移動範圍，減少靈敏度
     const leftHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const leftHandZ = -2;
     
