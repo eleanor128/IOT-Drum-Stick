@@ -148,11 +148,12 @@ function init3D() {
             height = 0.5;   // 其他鼓的標準高度
         }
         
+        // 鼓/鈸主體 - 統一使用深色
         const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
         const material = new THREE.MeshStandardMaterial({ 
-            color: zone.color,
-            metalness: isCymbal ? 0.8 : 0.3,
-            roughness: 0.4
+            color: 0x1a1a1a,        // 深灰色
+            metalness: isCymbal ? 0.7 : 0.2,
+            roughness: 0.3
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(...zone.pos3d);
@@ -163,6 +164,22 @@ function init3D() {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         scene.add(mesh);
+        
+        // 霓虹發光邊緣環
+        const edgeGeometry = new THREE.TorusGeometry(radius, 0.03, 8, 32);
+        const edgeMaterial = new THREE.MeshStandardMaterial({
+            color: zone.color,      // 使用原本的顏色作為發光色
+            emissive: zone.color,   // 自發光
+            emissiveIntensity: 1.5, // 發光強度
+            metalness: 0.8,
+            roughness: 0.2
+        });
+        const edgeMesh = new THREE.Mesh(edgeGeometry, edgeMaterial);
+        edgeMesh.position.copy(mesh.position);
+        edgeMesh.rotation.copy(mesh.rotation);
+        // 圓環默認在 XY 平面，需旋轉到水平
+        edgeMesh.rotation.x += Math.PI / 2;
+        scene.add(edgeMesh);
         
         drumMeshes[zone.name + zone.pos3d.join()] = mesh;
         
@@ -283,13 +300,13 @@ function checkCollision(stickPos) {
 // 繪製函數（3D版本）- 以握把端為圓心旋轉鼓棒
 function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 右手鼓棒的握把位置（手的位置）
-    // 根據 yaw 控制左右位置（反轉方向）
-    const rightHandX = (rightYaw - 45) / 90 * 4 + 2;  // yaw 增加→往左，yaw 減少→往右
+    // 根據 yaw 控制左右位置（降低靈敏度）
+    const rightHandX = (rightYaw - 45) / 90 * 2 + 1;  // 降低移動範圍，減少靈敏度
     const rightHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const rightHandZ = -2;   // 固定在靠近相機的位置
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 4 + 2;
+    const leftHandX = (leftYaw - 45) / 90 * 2 + 1;  // 降低移動範圍，減少靈敏度
     const leftHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const leftHandZ = -2;
     
