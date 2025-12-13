@@ -215,7 +215,7 @@ function mapAngleToXY(pitch, yaw) {
 // 將 2D 坐標轉換為 3D 位置（用於顯示鼓棒）
 function mapXYto3D(x, y, pitch) {
     let x3d = (x / 900 - 0.5) * 8;              // yaw 控制左右
-    let y3d = 2 - (pitch / 45) * 1.5;           // pitch 控制上下：pitch增加→往下，pitch減少→往上
+    let y3d = 2 + (pitch / 45) * 1.5;           // pitch 控制上下：pitch增加→往上，pitch減少→往下
     const z3d = 0.5;                             // 前後固定在中間位置
     
     // 限制鼓棒不超出相機視角
