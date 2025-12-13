@@ -166,21 +166,29 @@ function isValidHit(ax, ay, az, gx, gy, gz) {
 }
 
 // 鼓棒 3D 位置映射（根據加速度數據）
-function mapAccelTo3D(ax, ay, az) {
+function mapAccelTo3D(ax, ay, az, isLeft = false) {
+    // 調整初始位置到 Snare 上方 (Snare: x=0.5, y=0.4, z=-0.8)
+    // 鼓棒長度 1.2，握把在 z，尖端在 z+1.2
+    // 為了讓尖端在 Snare 上方 (z=-0.8)，握把應該在 z=-2.0 左右
+    
     // X軸（左右）：ax 正值=右側，負值=左側
-    const x3d = ax * 0.3;  // 縮放係數
+    // 基礎位置設為 0.5 (Snare 位置)，左右手稍微錯開
+    const baseX = isLeft ? 0.4 : 0.6;
+    const x3d = baseX + ax * 0.3;
     
     // Y軸（高度）：az 越小=越高，az 越大=越低
-    const y3d = 2.5 - (az * 0.15);  // 反向映射
+    // 調整基準值，讓平放時 (az~10) 高度約為 0.6 (Snare 0.4 上方)
+    const y3d = 2.1 - (az * 0.15);
     
     // Z軸（前後）：ay 控制深度
-    const z3d = 0.5 + ay * 0.1;
+    // 基礎位置設為 -2.0 (靠近相機)
+    const z3d = -2.0 + ay * 0.1;
     
     // 限制範圍
     return [
         Math.max(-3.5, Math.min(3.5, x3d)),
         Math.max(0.5, Math.min(3.5, y3d)),
-        Math.max(-1.5, Math.min(2.0, z3d))
+        Math.max(-3.0, Math.min(1.0, z3d))
     ];
 }
 
@@ -424,12 +432,12 @@ function checkCollision(stickPos) {
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     // 右手鼓棒位置（改用加速度數據）
     const [rightX, rightY, rightZ] = mapAccelTo3D(
-        rightData.ax, rightData.ay, rightData.az
+        rightData.ax, rightData.ay, rightData.az, false
     );
     
     // 左手鼓棒位置（改用加速度數據）
     const [leftX, leftY, leftZ] = mapAccelTo3D(
-        leftData.ax, leftData.ay, leftData.az
+        leftData.ax, leftData.ay, leftData.az, true
     );
     
     // 更新右手鼓棒位置和旋轉
