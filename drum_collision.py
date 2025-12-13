@@ -18,12 +18,13 @@ class DrumCollision:
             {"name": "Tom_floor", "pos3d": [-2.0, 0.3, -0.8],  "radius": 1.2},
         ]
     
-    def calculate_stick_tip_position(self, pitch, yaw, hand="right"):
+    def calculate_stick_tip_position(self, roll, pitch, yaw, hand="right"):
         """
         計算鼓棒前端（敲擊端）的 3D 位置
         完全對應 drum_3d.js 的計算邏輯
         
         參數說明：
+        - roll: X軸旋轉角度，控制鼓棒前後深淺
         - pitch: Y軸旋轉角度，控制鼓棒上下揮動
         - yaw: Z軸旋轉角度，控制鼓棒左右位置
         - hand: "right" 或 "left"
