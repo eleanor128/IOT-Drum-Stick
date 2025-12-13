@@ -140,7 +140,7 @@ function init3D() {
         if (isCymbal) {
             height = 0.05;  // 鈸很薄
         } else if (zone.name === "Tom_floor") {
-            height = 0.8;   // 落地通鼓較長
+            height = 1.5;   // 落地通鼓較長
         } else {
             height = 0.5;   // 其他鼓的標準高度
         }
