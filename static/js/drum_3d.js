@@ -224,15 +224,15 @@ function mapXYto3D(x, y, pitch) {
     let x3d = (0.5 - x / 900) * 8;
     
     // Y軸：pitch 舉起（增加）→ 往上，向下（減小）→ 往下
-    // 假設 pitch 範圍 0° ~ 90°，中點在 45°
-    let y3d = 0.5 + (pitch / 45) * 2.5;         // pitch=0→y=0.5, pitch=45→y=3.0
+    // 調整基準高度，讓 pitch=0 時鼓棒在較高的位置
+    let y3d = 1.5 + (pitch / 45) * 2.0;         // pitch=0→y=1.5, pitch=45→y=3.5
     
-    // Z軸：固定在靠近相機的位置
-    const z3d = -2.5;
+    // Z軸：固定在鼓組中間，不要太靠近相機
+    const z3d = 0.5;
     
     // 限制鼓棒不超出相機視角
     x3d = Math.max(-3.5, Math.min(3.5, x3d));   // X軸範圍: -3.5 到 3.5
-    y3d = Math.max(0.3, Math.min(3.5, y3d));    // Y軸範圍: 0.3 到 3.5
+    y3d = Math.max(0.5, Math.min(3.5, y3d));    // Y軸範圍: 0.5 到 3.5
     
     return [x3d, y3d, z3d];
 }
