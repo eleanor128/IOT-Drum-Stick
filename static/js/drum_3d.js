@@ -296,7 +296,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightHandZ = -0.8;   // 與 Snare 的 Z 座標對齊
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 3 + 1;  // 左手在左側
+    const leftHandX = (leftYaw - 45) / 90 * 3 + 3;  // 左手在左側
     const leftHandY = 1.5;  // 提高握把高度
     const leftHandZ = -0.8;   // 與 Snare 的 Z 座標對齊
     
