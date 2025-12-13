@@ -2,7 +2,7 @@
 let audioCtx;
 let audioBuffers = {};
 let audioEnabled = false;
-let activeSources = {};  // 記錄每個鼓正在播放的音效源
+let activeSources = [];  // 記錄所有正在播放的音效源（支援同時播放相同音效）
 
 // 鼓音效播放時長設定（秒）
 const DRUM_SOUND_DURATION = 0.3;
@@ -68,15 +68,7 @@ function playSound(name) {
             return;
         }
         
-        // 如果該鼓正在播放音效，先停止它
-        if (activeSources[name]) {
-            try {
-                activeSources[name].stop();
-            } catch (e) {
-                // 音效可能已經結束，忽略錯誤
-            }
-        }
-        
+        // 允許同時播放相同音效（不停止前一個）
         const source = audioCtx.createBufferSource();
         source.buffer = audioBuffers[name];
         const gainNode = audioCtx.createGain();
@@ -85,7 +77,7 @@ function playSound(name) {
         gainNode.connect(audioCtx.destination);
         
         // 記錄這個音效源
-        activeSources[name] = source;
+        activeSources.push(source);
         
         // 播放音效，並在指定時長後停止
         source.start(0);
@@ -93,8 +85,9 @@ function playSound(name) {
         
         // 清除記錄
         source.onended = () => {
-            if (activeSources[name] === source) {
-                delete activeSources[name];
+            const index = activeSources.indexOf(source);
+            if (index > -1) {
+                activeSources.splice(index, 1);
             }
         };
     } catch (err) {
