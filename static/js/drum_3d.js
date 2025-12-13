@@ -169,36 +169,39 @@ function init3D() {
     });
     
     // 創建真實鼓棒（圓柱體 + 球形頂端）
+    // 鼓棒從使用者位置（相機）握著，水平於地面
     function createDrumstick(color, emissiveColor) {
         const drumstick = new THREE.Group();
         
-        // 鼓棒主體（圓柱）
-        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.4, 8);
+        // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸
+        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.5, 8);
         const stickMaterial = new THREE.MeshStandardMaterial({ 
             color: color,
             emissive: emissiveColor,
-            roughness: 0.7
+            roughness: 0.7,
+            metalness: 0.1
         });
         const stickMesh = new THREE.Mesh(stickBody, stickMaterial);
         stickMesh.castShadow = true;
+        
+        // 旋轉鼓棒，讓它水平（沿著 Z 軸）
+        stickMesh.rotation.x = Math.PI / 2;
+        stickMesh.position.z = 0.25;  // 向前延伸
         drumstick.add(stickMesh);
         
-        // 鼓棒頂端（球形敲擊端）
-        const tipGeometry = new THREE.SphereGeometry(0.025, 12, 12);
+        // 鼓棒頂端（球形敲擊端）- 在前方
+        const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.y = 0.2;  // 放在棒子頂端
+        tipMesh.position.z = 0.5;  // 放在棒子前端
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
-        // 鼓棒底端（握把）
+        // 鼓棒底端（握把）- 在後方（靠近相機）
         const gripGeometry = new THREE.SphereGeometry(0.022, 12, 12);
         const gripMesh = new THREE.Mesh(gripGeometry, stickMaterial);
-        gripMesh.position.y = -0.2;  // 放在棒子底端
+        gripMesh.position.z = 0;  // 放在棒子後端（握把處）
         gripMesh.castShadow = true;
         drumstick.add(gripMesh);
-        
-        // 讓鼓棒傾斜，看起來像握在手中
-        drumstick.rotation.x = Math.PI / 6;  // 向前傾斜 30度
         
         return drumstick;
     }
