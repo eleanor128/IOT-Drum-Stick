@@ -218,9 +218,9 @@ function mapXYto3D(x, y) {
     let z3d = (y / 450 - 0.5) * 4;
     const y3d = 2;
     
-    // 限制鼓棒不超出畫面範圍
-    x3d = Math.max(-4, Math.min(4, x3d));   // X軸範圍: -4 到 4
-    z3d = Math.max(-2, Math.min(2, z3d));   // Z軸範圍: -2 到 2
+    // 限制鼓棒不超出相機視角（根據相機位置和視野角度計算）
+    x3d = Math.max(-3.5, Math.min(3.5, x3d));   // X軸範圍: -3.5 到 3.5
+    z3d = Math.max(-1, Math.min(3, z3d));       // Z軸範圍: -1 到 3
     
     return [x3d, y3d, z3d];
 }
