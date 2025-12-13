@@ -216,7 +216,7 @@ function mapAngleToXY(pitch, yaw) {
 function mapXYto3D(x, y, pitch) {
     let x3d = (x / 900 - 0.5) * 8;              // yaw 控制左右
     let y3d = 2 + (pitch / 45) * 1.5;           // pitch 控制上下：pitch增加→往上，pitch減少→往下
-    const z3d = 0.5;                             // 前後固定在中間位置
+    const z3d = -1;                             // 前後固定在中間位置
     
     // 限制鼓棒不超出相機視角
     x3d = Math.max(-3.5, Math.min(3.5, x3d));   // X軸範圍: -3.5 到 3.5
