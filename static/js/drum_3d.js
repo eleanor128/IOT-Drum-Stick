@@ -13,8 +13,6 @@ async function enableAudio() {
     }
 
     try {
-        // btn.textContent = "載入中...";
-        // btn.disabled = true;
         
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -41,9 +39,9 @@ async function enableAudio() {
         }
 
         audioEnabled = true;
-        // btn.textContent = "音效已啟動";
-        // btn.classList.add('enabled');
-        playSound("Success");
+        setTimeout(() => {
+            playSound("Success");
+        }, 500);  // 延遲 500 毫秒（0.5 秒）
         
     } catch (error) {
         console.error("Audio initialization failed:", error);
