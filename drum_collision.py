@@ -9,7 +9,7 @@ class DrumCollision:
     def __init__(self):
         # 定義每個鼓的 3D 位置和半徑（完全對應 drum_3d.js 中的 zones）
         # pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
-        # 鼓面高度：Hihat=1.025m, Snare=0.45m, Tom_high=1.45m, Tom_mid=1.45m, Symbal=2.525m, Ride=2.525m, Tom_floor=0.8m
+        # 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
         # self.drums = [
         #     {"name": "Hihat",     "pos3d": [2.5, 1.0, -0.8],   "radius": 1.0},   # 鼓面高度: 1.025m
         #     {"name": "Snare",     "pos3d": [1.0, 0.2, -0.8],   "radius": 1.0},   # 鼓面高度: 0.45m
@@ -20,13 +20,13 @@ class DrumCollision:
         #     {"name": "Tom_floor", "pos3d": [-2.0, 0.3, -0.8],  "radius": 1.2},   # 鼓面高度: 0.8m
         # ]
         self.drums = [
-            {"name": "Hihat",     "pos3d": [1.6, 1.0, -0.8],  "radius": 0.65},
-            {"name": "Snare",     "pos3d": [0.5, 0.4, -0.8],  "radius": 0.65},
-            {"name": "Tom_high",  "pos3d": [0.6, 1.0, 0.8],   "radius": 0.55},
-            {"name": "Tom_mid",   "pos3d": [-0.6, 1.0, 0.8],  "radius": 0.55},
-            {"name": "Symbal",    "pos3d": [1.6, 1.8, 1.2],   "radius": 0.80},
-            {"name": "Ride",      "pos3d": [-1.6, 1.7, 1.0],  "radius": 0.90},
-            {"name": "Tom_floor", "pos3d": [-1.2, 0.4, -0.6], "radius": 0.70}
+            {"name": "Hihat",     "pos3d": [1.6, 1.0, -0.8],  "radius": 0.65},   # 鼓面高度: 1.025m
+            {"name": "Snare",     "pos3d": [0.5, 0.4, -0.8],  "radius": 0.65},   # 鼓面高度: 0.65m
+            {"name": "Tom_high",  "pos3d": [0.6, 1.0, 0.8],   "radius": 0.55},   # 鼓面高度: 1.25m
+            {"name": "Tom_mid",   "pos3d": [-0.6, 1.0, 0.8],  "radius": 0.55},   # 鼓面高度: 1.25m
+            {"name": "Symbal",    "pos3d": [1.6, 1.8, 1.2],   "radius": 0.80},   # 鼓面高度: 1.825m
+            {"name": "Ride",      "pos3d": [-1.6, 1.7, 1.0],  "radius": 0.90},   # 鼓面高度: 1.725m
+            {"name": "Tom_floor", "pos3d": [-1.2, 0.4, -0.6], "radius": 0.70}    # 鼓面高度: 0.9m
         ]
     
     def calculate_stick_tip_position(self, roll, pitch, yaw, hand="right"):
