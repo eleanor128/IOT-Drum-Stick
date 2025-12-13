@@ -428,3 +428,12 @@ init3D();
 updateRight();
 updateLeft();
 render();
+
+// 點擊畫面任意處啟動音效
+let audioAutoEnabled = false;
+document.addEventListener('click', () => {
+    if (!audioAutoEnabled && !audioEnabled) {
+        audioAutoEnabled = true;
+        enableAudio();
+    }
+}, { once: false });
