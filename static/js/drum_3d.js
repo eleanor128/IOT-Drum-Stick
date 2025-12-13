@@ -174,7 +174,7 @@ function init3D() {
         const drumstick = new THREE.Group();
         
         // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸，加長
-        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.8, 8);
+        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 2, 8);
         const stickMaterial = new THREE.MeshStandardMaterial({ 
             color: color,
             emissive: emissiveColor,
