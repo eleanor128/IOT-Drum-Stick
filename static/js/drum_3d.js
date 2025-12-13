@@ -4,6 +4,9 @@ let audioBuffers = {};
 let audioEnabled = false;
 let activeSources = {};  // 記錄每個鼓正在播放的音效源
 
+// 鼓音效播放時長設定（秒）
+const DRUM_SOUND_DURATION = 0.5;
+
 async function enableAudio() {
     // const btn = document.getElementById('enableAudioBtn');
     const status = document.getElementById('statusText');
@@ -84,9 +87,9 @@ function playSound(name) {
         // 記錄這個音效源
         activeSources[name] = source;
         
-        // 播放音效，並在 0.8 秒後停止
+        // 播放音效，並在指定時長後停止
         source.start(0);
-        source.stop(audioCtx.currentTime + 0.8);
+        source.stop(audioCtx.currentTime + DRUM_SOUND_DURATION);
         
         // 清除記錄
         source.onended = () => {
