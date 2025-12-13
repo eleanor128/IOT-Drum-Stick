@@ -33,12 +33,12 @@ class DrumCollision:
         """
         
         # 1. 計算握把位置（手的位置）- 完全對應 drum_3d.js
-        # rightHandX = (rightYaw - 45) / 90 * 3 + 0.5;  // 右手偏右側，擴大範圍
-        # leftHandX = (leftYaw - 45) / 90 * 3 - 0.5;   // 左手偏左側，擴大範圍
+        # rightHandX = (rightYaw - 45) / 90 * 3 + 1;  // 右手初始位置靠近 Snare
+        # leftHandX = (leftYaw - 45) / 90 * 3 - 1;   // 左手在左側
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 3 + 0.5  # 右手偏右側，擴大範圍
+            hand_x = (yaw - 45) / 90 * 3 + 1  # 右手初始位置靠近 Snare
         else:
-            hand_x = (yaw - 45) / 90 * 3 - 0.5  # 左手偏左側，擴大範圍
+            hand_x = (yaw - 45) / 90 * 3 - 1  # 左手在左側
         
         hand_y = 1.5   # 手的高度（提高）
         hand_z = -0.5  # 手的前後位置（更靠近鼓組）
@@ -84,9 +84,9 @@ class DrumCollision:
         
         # 計算握把位置（與 drum_3d.js 完全一致）
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 3 + 0.5
+            hand_x = (yaw - 45) / 90 * 3 + 1
         else:
-            hand_x = (yaw - 45) / 90 * 3 - 0.5
+            hand_x = (yaw - 45) / 90 * 3 - 1
         hand_y = 1.5
         hand_z = -0.5
         
