@@ -8,14 +8,16 @@ import math
 class DrumCollision:
     def __init__(self):
         # 定義每個鼓的 3D 位置和半徑（完全對應 drum_3d.js 中的 zones）
+        # pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
+        # 鼓面高度：Hihat=1.025m, Snare=0.45m, Tom_high=1.45m, Tom_mid=1.45m, Symbal=2.525m, Ride=2.525m, Tom_floor=0.8m
         self.drums = [
-            {"name": "Hihat",     "pos3d": [2.5, 1.0, -0.8],   "radius": 1.0},
-            {"name": "Snare",     "pos3d": [1.0, 0.2, -0.8],   "radius": 1.0},
-            {"name": "Tom_high",  "pos3d": [1.0, 1.2, 1.5],    "radius": 1.0},
-            {"name": "Tom_mid",   "pos3d": [-1.0, 1.2, 1.5],   "radius": 1.0},
-            {"name": "Symbal",    "pos3d": [2.5, 2.5, 2.0],    "radius": 1.5},
-            {"name": "Ride",      "pos3d": [-2.8, 2.5, 1.0],   "radius": 1.5},
-            {"name": "Tom_floor", "pos3d": [-2.0, 0.3, -0.8],  "radius": 1.2},
+            {"name": "Hihat",     "pos3d": [2.5, 1.0, -0.8],   "radius": 1.0},   # 鼓面高度: 1.025m
+            {"name": "Snare",     "pos3d": [1.0, 0.2, -0.8],   "radius": 1.0},   # 鼓面高度: 0.45m
+            {"name": "Tom_high",  "pos3d": [1.0, 1.2, 1.5],    "radius": 1.0},   # 鼓面高度: 1.45m
+            {"name": "Tom_mid",   "pos3d": [-1.0, 1.2, 1.5],   "radius": 1.0},   # 鼓面高度: 1.45m
+            {"name": "Symbal",    "pos3d": [2.5, 2.5, 2.0],    "radius": 1.5},   # 鼓面高度: 2.525m
+            {"name": "Ride",      "pos3d": [-2.8, 2.5, 1.0],   "radius": 1.5},   # 鼓面高度: 2.525m
+            {"name": "Tom_floor", "pos3d": [-2.0, 0.3, -0.8],  "radius": 1.2},   # 鼓面高度: 0.8m
         ]
     
     def calculate_stick_tip_position(self, roll, pitch, yaw, hand="right"):
@@ -102,16 +104,28 @@ class DrumCollision:
             drum_x, drum_y, drum_z = drum["pos3d"]
             radius = drum["radius"]
             
+            # 計算鼓的高度（厚度）
+            is_cymbal = "Symbal" in drum["name"] or "Ride" in drum["name"] or "Hihat" in drum["name"]
+            if is_cymbal:
+                drum_height = 0.05  # 鈸很薄
+            elif drum["name"] == "Tom_floor":
+                drum_height = 1.0   # 落地鼓較長
+            else:
+                drum_height = 0.5   # 其他鼓的標準高度
+            
+            # 計算鼓面高度（中心點 + 半高度）
+            drum_top_y = drum_y + drum_height / 2
+            
             # 計算鼓棒尖端與鼓中心的水平距離（X-Z 平面）
             dx = tip_x - drum_x
             dz = tip_z - drum_z
             horizontal_dist = math.sqrt(dx * dx + dz * dz)
             
             # 只要鼓棒尖端在鼓的半徑範圍內，且高度接近或低於鼓面，就算打擊到
-            if horizontal_dist <= radius and tip_y <= drum_y + 0.05:
+            if horizontal_dist <= radius and tip_y <= drum_top_y + 0.03:
                 # 碰撞發生！計算調整後的 pitch 讓鼓棒尖端停在鼓面上
-                # 目標：讓鼓棒尖端的 Y 座標等於 drum_y + 0.03（緊貼鼓面）
-                target_tip_y = drum_y + 0.03
+                # 目標：讓鼓棒尖端的 Y 座標等於鼓面高度 + 0.03（緊貼鼓面）
+                target_tip_y = drum_top_y + 0.03
                 
                 # 計算需要的高度差
                 delta_y = target_tip_y - hand_y  # 從握把到目標高度的 Y 差

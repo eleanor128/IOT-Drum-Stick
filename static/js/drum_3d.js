@@ -101,14 +101,16 @@ let scene, camera, renderer;
 let drumMeshes = {};
 let rightStick, leftStick;
 
+// pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
+// 鼓面高度：Hihat=1.025m, Snare=0.45m, Tom_high=1.45m, Tom_mid=1.45m, Symbal=2.525m, Ride=2.525m, Tom_floor=0.8m
 const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [2.5, 1, -0.8], radius: 1.0, rotation: -Math.PI / 9, glowColor: "#3399ff"},
-    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [1, 0.2, -0.8], radius: 1, rotation: -Math.PI / 12, glowColor: "#ffffff" },
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 1.2, 1.5], radius: 1, rotation: -Math.PI / 7, glowColor: "#ff6600" },
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 1.2, 1.5], radius: 1, rotation: -Math.PI / 7, glowColor: "#ff6600" },
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 2.5, 2], radius: 1.5, rotation: -Math.PI / 6, glowColor: "#ff00ff" },
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.8, 2.5, 1], radius: 1.5, rotation: -Math.PI / 6, glowColor: "#00ffff" },
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.8], radius: 1.2, rotation: -Math.PI / 9, glowColor: "#aaaaaa" },
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [2.5, 1, -0.8], radius: 1.0, rotation: -Math.PI / 9, glowColor: "#3399ff"},      // 鼓面高度: 1.025m
+    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [1, 0.2, -0.8], radius: 1, rotation: -Math.PI / 12, glowColor: "#ffffff" },      // 鼓面高度: 0.45m
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 1.2, 1.5], radius: 1, rotation: -Math.PI / 7, glowColor: "#ff6600" },       // 鼓面高度: 1.45m
+    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 1.2, 1.5], radius: 1, rotation: -Math.PI / 7, glowColor: "#ff6600" },      // 鼓面高度: 1.45m
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 2.5, 2], radius: 1.5, rotation: -Math.PI / 6, glowColor: "#ff00ff" },      // 鼓面高度: 2.525m
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.8, 2.5, 1], radius: 1.5, rotation: -Math.PI / 6, glowColor: "#00ffff" },     // 鼓面高度: 2.525m
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.8], radius: 1.2, rotation: -Math.PI / 9, glowColor: "#aaaaaa" },   // 鼓面高度: 0.8m
 ];
 // 修改 glowColor 來自定義每個鼓的發光顏色 (格式: 0xRRGGBB)
 // Math.PI / 18	10°	微微傾斜
@@ -296,6 +298,16 @@ function checkCollision(stickPos) {
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
         
+        // 計算鼓的高度（厚度）
+        let drumHeight;
+        if (isCymbal) {
+            drumHeight = 0.05;  // 鈸很薄
+        } else if (zone.name === "Tom_floor") {
+            drumHeight = 1.0;   // 落地鼓較長
+        } else {
+            drumHeight = 0.5;   // 其他鼓的標準高度
+        }
+        
         // 計算鼓棒與鼓中心的水平距離
         const dx = stickPos[0] - drumPos[0];
         const dz = stickPos[2] - drumPos[2];
@@ -303,14 +315,15 @@ function checkCollision(stickPos) {
         
         // 如果鼓棒在鼓的半徑範圍內
         if (horizontalDist <= radius) {
-            const drumTopY = drumPos[1];  // 鼓面的高度
+            // 計算鼓面高度（中心點 + 半高度）
+            const drumTopY = drumPos[1] + drumHeight / 2;
             
-            // 如果鼓棒低於或接近鼓面（考慮鼓棒半徑 0.15）
-            if (stickPos[1] <= drumTopY + 0.15) {
+            // 如果鼓棒低於或接近鼓面（考慮鼓棒半徑 0.03）
+            if (stickPos[1] <= drumTopY + 0.03) {
                 collisionInfo.hit = true;
                 collisionInfo.drumName = zone.name;
                 // 將鼓棒位置調整到鼓面上方
-                collisionInfo.adjustedPos[1] = drumTopY + 0.15;
+                collisionInfo.adjustedPos[1] = drumTopY + 0.03;
             }
         }
     });
