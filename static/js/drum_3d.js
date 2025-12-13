@@ -140,7 +140,7 @@ function init3D() {
         if (isCymbal) {
             height = 0.05;  // 鈸很薄
         } else if (zone.name === "Tom_floor") {
-            height = 1.5;   // 落地通鼓較長
+            height = 1;   // 落地通鼓較長
         } else {
             height = 0.5;   // 其他鼓的標準高度
         }
@@ -163,8 +163,8 @@ function init3D() {
         
         drumMeshes[zone.name + zone.pos3d.join()] = mesh;
         
-        // 標籤
-        createLabel(zone.name, zone.pos3d);
+        // // 標籤
+        // createLabel(zone.name, zone.pos3d);
     });
     
     // 鼓棒（球體）
