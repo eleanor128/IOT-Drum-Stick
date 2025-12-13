@@ -31,14 +31,18 @@ def get_calibrated():
 
 
 def complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt):
+    # 正確的角度計算：
+    # pitch (俯仰) = 繞 Y 軸 = 前後傾斜 = 使用 ay
+    accel_pitch = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
+    # roll (翻滾) = 繞 X 軸 = 左右傾斜 = 使用 ax
+    accel_roll  = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
 
-    accel_pitch = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
-    accel_roll  = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
+    # 陀螺儀積分（對應正確的軸）
+    gyro_pitch = pitch + gy * dt  # pitch 使用 gy
+    gyro_roll  = roll  + gx * dt  # roll 使用 gx
+    gyro_yaw   = yaw   + gz * dt  # yaw 使用 gz
 
-    gyro_pitch = pitch + gx * dt
-    gyro_roll  = roll  + gy * dt
-    gyro_yaw   = yaw   + gz * dt  # 使用陀螺儀 Z 軸積分計算 yaw
-
+    # 互補濾波
     pitch = alpha * gyro_pitch + (1 - alpha) * accel_pitch
     roll  = alpha * gyro_roll  + (1 - alpha) * accel_roll
     # yaw 無法從加速度計算，只能使用陀螺儀積分
