@@ -220,8 +220,8 @@ function mapAngleToXY(pitch, yaw) {
 // Y軸（上下）: pitch 控制，舉起 pitch增加
 // Z軸（前後）: 固定位置
 function mapXYto3D(x, y, pitch) {
-    // X軸：yaw 左移（增加）→ 畫面左移
-    let x3d = (x / 900 - 0.5) * 8;
+    // X軸：yaw 左移（增加）→ 畫面左移，反轉 x 方向
+    let x3d = (0.5 - x / 900) * 8;
     
     // Y軸：pitch 舉起（增加）→ 往上，向下（減小）→ 往下
     // 假設 pitch 範圍 0° ~ 90°，中點在 45°
