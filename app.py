@@ -34,10 +34,10 @@ def right_data():
     # 綜合判斷為敲擊
     is_hit = is_downward_swing and is_sudden_stop
 
-    # 偵測打擊到哪個鼓
-    hit_drum = None
-    if is_hit:
-        hit_drum = drum_collision.detect_hit_drum(pitch, yaw, hand="right")
+    # 偵測打擊到哪個鼓，並取得調整後的 pitch
+    collision_info = drum_collision.detect_hit_drum(pitch, yaw, hand="right")
+    hit_drum = collision_info["drum_name"]
+    adjusted_pitch = collision_info["adjusted_pitch"]
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -50,7 +50,8 @@ def right_data():
         "gy": gy,
         "gz": gz,
         "is_hit": is_hit,
-        "hit_drum": hit_drum
+        "hit_drum": hit_drum,
+        "adjusted_pitch": adjusted_pitch
     })
 
 @app.route("/left_data")
@@ -63,10 +64,10 @@ def left_data():
     is_sudden_stop = az < -1.0
     is_hit = is_downward_swing and is_sudden_stop
 
-    # 偵測打擊到哪個鼓
-    hit_drum = None
-    if is_hit:
-        hit_drum = drum_collision.detect_hit_drum(pitch, yaw, hand="left")
+    # 偵測打擊到哪個鼓，並取得調整後的 pitch
+    collision_info = drum_collision.detect_hit_drum(pitch, yaw, hand="left")
+    hit_drum = collision_info["drum_name"]
+    adjusted_pitch = collision_info["adjusted_pitch"]
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -79,7 +80,8 @@ def left_data():
         "gy": gy,
         "gz": gz,
         "is_hit": is_hit,
-        "hit_drum": hit_drum
+        "hit_drum": hit_drum,
+        "adjusted_pitch": adjusted_pitch
     })
 
 if __name__ == "__main__":

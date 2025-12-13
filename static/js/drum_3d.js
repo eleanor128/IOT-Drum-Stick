@@ -295,32 +295,32 @@ function checkCollision(stickPos) {
 }
 
 // 繪製函數（3D版本）- 以握把端為圓心旋轉鼓棒
-function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
+function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     // 右手鼓棒的握把位置（手的位置）
     // 根據 yaw 控制左右位置（降低靈敏度）
-    const rightHandX = (rightYaw - 45) / 90 * 2 + 1;  // 降低移動範圍，減少靈敏度
+    const rightHandX = (rightYaw - 45) / 90 * 2 + 2;  // 右手偏右側
     const rightHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const rightHandZ = -2;   // 固定在靠近相機的位置
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 2 + 1.5;  // 降低移動範圍，減少靈敏度
+    const leftHandX = (leftYaw - 45) / 90 * 2 - 1;  // 左手偏左側
     const leftHandY = 1.2;  // 降低高度，稍微比 Snare 高一點
     const leftHandZ = -2;
     
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightHandX, rightHandY, rightHandZ);
-    // pitch 控制上下揮擊（繞 X 軸旋轉）- pitch增加→往下（反轉）
-    rightStick.rotation.x = (rightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
+    // 如果有碰撞，使用調整後的 pitch（讓鼓棒停在鼓面上）
+    const finalRightPitch = rightAdjustedPitch !== undefined ? rightAdjustedPitch : rightPitch;
+    rightStick.rotation.x = (finalRightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
     // yaw 控制左右擺動（繞 Y 軸旋轉）
     rightStick.rotation.y = (rightYaw / 45) * (Math.PI / 6);  // 小範圍旋轉
     
     // 更新左手鼓棒位置和旋轉
     leftStick.position.set(leftHandX, leftHandY, leftHandZ);
-    leftStick.rotation.x = (leftPitch / 45) * (Math.PI / 3);
+    // 如果有碰撞，使用調整後的 pitch（讓鼓棒停在鼓面上）
+    const finalLeftPitch = leftAdjustedPitch !== undefined ? leftAdjustedPitch : leftPitch;
+    leftStick.rotation.x = (finalLeftPitch / 45) * (Math.PI / 3);
     leftStick.rotation.y = (leftYaw / 45) * (Math.PI / 6);
-    
-    // TODO: 碰撞檢測需要重新設計，檢測鼓棒前端（敲擊端）的位置
-    // 可以通過計算鼓棒旋轉後的前端座標來實現
     
     // 渲染場景
     renderer.render(scene, camera);
@@ -420,7 +420,9 @@ function render() {
         rightData["pitch (y軸轉)"], 
         rightData["yaw (z軸轉)"],
         leftData["pitch (y軸轉)"], 
-        leftData["yaw (z軸轉)"]
+        leftData["yaw (z軸轉)"],
+        rightData.adjusted_pitch,
+        leftData.adjusted_pitch
     );
     updateSensorDisplay(rightData, leftData);
     requestAnimationFrame(render);

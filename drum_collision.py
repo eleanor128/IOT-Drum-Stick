@@ -65,13 +65,21 @@ class DrumCollision:
     
     def detect_hit_drum(self, pitch, yaw, hand="right"):
         """
-        偵測鼓棒是否打擊到某個鼓
+        偵測鼓棒是否打擊到某個鼓，並計算調整後的 pitch 角度
         
         返回：
-        drum_name: 打擊到的鼓名稱，如果沒打到則返回 None
+        {
+            "drum_name": 打擊到的鼓名稱，如果沒打到則為 None,
+            "adjusted_pitch": 調整後的 pitch 角度（讓鼓棒停在鼓面上）
+        }
         """
         # 計算鼓棒前端位置
         tip_x, tip_y, tip_z = self.calculate_stick_tip_position(pitch, yaw, hand)
+        
+        # 計算握把位置
+        hand_x = (yaw - 45) / 90 * 2 + (2 if hand == "right" else -1)
+        hand_y = 1.2
+        hand_z = -2
         
         # 檢查是否碰撞到任何鼓
         for drum in self.drums:
@@ -88,10 +96,34 @@ class DrumCollision:
                 # 檢查鼓棒的高度是否接近或低於鼓面
                 # 容差值 0.3 (考慮鼓棒的厚度和一些緩衝)
                 if tip_y <= drum_y + 0.3:
-                    return drum["name"]
+                    # 碰撞發生！計算調整後的 pitch 讓鼓棒停在鼓面上
+                    # 目標：讓鼓棒前端的 Y 座標等於 drum_y + 0.03（緊貼鼓面）
+                    target_tip_y = drum_y + 0.03
+                    
+                    # 計算需要的高度差
+                    delta_y = target_tip_y - hand_y  # 從握把到目標高度的 Y 差
+                    
+                    # 計算水平距離（X-Z 平面）
+                    dx_hand = tip_x - hand_x
+                    dz_hand = tip_z - hand_z
+                    horizontal_dist_hand = math.sqrt(dx_hand * dx_hand + dz_hand * dz_hand)
+                    
+                    # 使用反三角函數計算調整後的 pitch 角度
+                    # sin(rotation_x) = -delta_y / stick_length
+                    stick_length = 2.0
+                    if abs(delta_y) <= stick_length:
+                        rotation_x = math.asin(-delta_y / stick_length)
+                        adjusted_pitch = rotation_x / (math.pi / 3) * 45
+                    else:
+                        adjusted_pitch = pitch  # 如果算不出來，保持原角度
+                    
+                    return {
+                        "drum_name": drum["name"],
+                        "adjusted_pitch": adjusted_pitch
+                    }
         
         # 如果沒有碰撞到任何鼓，返回 None
-        return None
+        return {"drum_name": None, "adjusted_pitch": pitch}
 
 # 創建全局實例
 drum_collision = DrumCollision()
