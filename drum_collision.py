@@ -33,15 +33,15 @@ class DrumCollision:
         """
         
         # 1. 計算握把位置（手的位置）- 完全對應 drum_3d.js
-        # rightHandX = (rightYaw - 45) / 90 * 2 + 2;  // 右手偏右側
-        # leftHandX = (leftYaw - 45) / 90 * 2 - 1;   // 左手偏左側
+        # rightHandX = (rightYaw - 45) / 90 * 3 + 0.5;  // 右手偏右側，擴大範圍
+        # leftHandX = (leftYaw - 45) / 90 * 3 - 0.5;   // 左手偏左側，擴大範圍
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 2 + 2  # 右手偏右側
+            hand_x = (yaw - 45) / 90 * 3 + 0.5  # 右手偏右側，擴大範圍
         else:
-            hand_x = (yaw - 45) / 90 * 2 - 1  # 左手偏左側
+            hand_x = (yaw - 45) / 90 * 3 - 0.5  # 左手偏左側，擴大範圍
         
-        hand_y = 1.2  # 手的高度（固定）
-        hand_z = -2   # 手的前後位置（固定）
+        hand_y = 1.5   # 手的高度（提高）
+        hand_z = -0.5  # 手的前後位置（更靠近鼓組）
         
         # 2. 計算鼓棒的旋轉角度（弧度）
         # 完全對應 drum_3d.js 的旋轉計算
@@ -84,11 +84,11 @@ class DrumCollision:
         
         # 計算握把位置（與 drum_3d.js 完全一致）
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 2 + 2
+            hand_x = (yaw - 45) / 90 * 3 + 0.5
         else:
-            hand_x = (yaw - 45) / 90 * 2 - 1
-        hand_y = 1.2
-        hand_z = -2
+            hand_x = (yaw - 45) / 90 * 3 - 0.5
+        hand_y = 1.5
+        hand_z = -0.5
         
         # 檢查是否碰撞到任何鼓（按順序檢查，優先偵測較高的鼓）
         for drum in self.drums:
