@@ -174,15 +174,15 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     // X軸（左右）：ax 正值=右側，負值=左側
     // 基礎位置設為 0.5 (Snare 位置)，左右手稍微錯開
     const baseX = isLeft ? 0.4 : 0.6;
-    const x3d = baseX + ax * 0.3;
+    const x3d = baseX + ax * 0.2;
     
     // Y軸（高度）：az 越小=越高，az 越大=越低
     // 調整基準值，讓平放時 (az~10) 高度約為 0.6 (Snare 0.4 上方)
-    const y3d = 2.2 - (az * 0.15);
+    const y3d = 2.2 - (az * 0.1);
     
     // Z軸（前後）：ay 控制深度
     // 基礎位置設為 -2.0 (靠近相機)
-    const z3d = -2.0 + ay * 0.1;
+    const z3d = -2.0 + ay * 0.05;
     
     // 限制範圍
     return [
@@ -439,17 +439,34 @@ function solveStickCollision(gripPos, rotX, rotY) {
     return correctedRotX;
 }
 
+// 線性插值函數，用於平滑移動
+function lerp(start, end, factor) {
+    return start + (end - start) * factor;
+}
+
 // 繪製函數（3D版本）- 使用加速度數據控制鼓棒位置
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
+    const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
+
     // 右手鼓棒位置（改用加速度數據）
-    const [rightX, rightY, rightZ] = mapAccelTo3D(
+    const [targetRightX, targetRightY, targetRightZ] = mapAccelTo3D(
         rightData.ax, rightData.ay, rightData.az, false
     );
     
+    // 應用平滑處理
+    const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
+    const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
+    const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
+    
     // 左手鼓棒位置（改用加速度數據）
-    const [leftX, leftY, leftZ] = mapAccelTo3D(
+    const [targetLeftX, targetLeftY, targetLeftZ] = mapAccelTo3D(
         leftData.ax, leftData.ay, leftData.az, true
     );
+    
+    // 應用平滑處理
+    const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
+    const leftY = lerp(leftStick.position.y, targetLeftY, smoothFactor);
+    const leftZ = lerp(leftStick.position.z, targetLeftZ, smoothFactor);
     
     // 計算原始旋轉角度 (弧度)
     const rightRotX = (rightPitch / 45) * (Math.PI / 3);
