@@ -34,8 +34,8 @@ def right_data():
     # 綜合判斷為敲擊
     is_hit = is_downward_swing and is_sudden_stop
 
-    # 偵測打擊到哪個鼓，並取得調整後的 pitch
-    collision_info = drum_collision.detect_hit_drum(pitch, yaw, hand="right")
+    # 偵測打擊到哪個鼓，並取得調整後的 pitch（傳入 roll）
+    collision_info = drum_collision.detect_hit_drum(roll, pitch, yaw, hand="right")
     hit_drum = collision_info["drum_name"]
     adjusted_pitch = collision_info["adjusted_pitch"]
 
@@ -64,8 +64,8 @@ def left_data():
     is_sudden_stop = az < -1.0
     is_hit = is_downward_swing and is_sudden_stop
 
-    # 偵測打擊到哪個鼓，並取得調整後的 pitch
-    collision_info = drum_collision.detect_hit_drum(pitch, yaw, hand="left")
+    # 偵測打擊到哪個鼓，並取得調整後的 pitch（傳入 roll）
+    collision_info = drum_collision.detect_hit_drum(roll, pitch, yaw, hand="left")
     hit_drum = collision_info["drum_name"]
     adjusted_pitch = collision_info["adjusted_pitch"]
 
