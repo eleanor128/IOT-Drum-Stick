@@ -19,6 +19,7 @@ async function enableAudio() {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         const files = {
+            "Success": "/static/sounds/success.wav",
             "Symbal": "/static/sounds/symbal.wav",
             "Tom_high": "/static/sounds/tom_high.wav",
             "Tom_mid": "/static/sounds/tom_mid.wav",
@@ -42,8 +43,7 @@ async function enableAudio() {
         audioEnabled = true;
         btn.textContent = "音效已啟動";
         btn.classList.add('enabled');
-        status.textContent = `音效已就緒！已載入 ${Object.keys(audioBuffers).length} 個音效`;
-        playSound("Snare");
+        playSound("Success");
         
     } catch (error) {
         console.error("Audio initialization failed:", error);
