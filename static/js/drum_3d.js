@@ -67,33 +67,26 @@ function playSound(name) {
 }
 
 // --------------------- 3D 場景設置 ---------------------
-// --------------------- 3D 場景設置 ---------------------
 const container = document.getElementById("drumContainer");
 let scene, camera, renderer;
 let drumMeshes = {};
 let rightStick, leftStick;
 
-// 調整 zones 陣列，新增更逼真的顏色和材質設定
 const zones = [
-    // 鼓組部分
-    { name: "Snare",     pos3d: [0.8, 0.2, -0.5], radius: 0.8, height: 0.4, color: 0xDCDCDC, metalness: 0.1, roughness: 0.5 }, // 小鼓 (Snare Drum - 偏白)
-    { name: "Tom_high",  pos3d: [1, 0.3, 1.5],    radius: 0.7, height: 0.4, color: 0xBA4A00, metalness: 0.4, roughness: 0.4 }, // 高音Tom (偏暖棕色/紅木)
-    { name: "Tom_mid",   pos3d: [-1, 0.3, 1.5],   radius: 0.8, height: 0.45, color: 0xA04000, metalness: 0.4, roughness: 0.4 }, // 中音Tom
-    { name: "Tom_floor", pos3d: [-2, 0.3, -0.5],  radius: 1.1, height: 0.5, color: 0x8B4513, metalness: 0.5, roughness: 0.4 }, // 落地鼓 (深棕色)
-    
-    // 鈸組部分 (通常材質為金屬)
-    { name: "Hihat",     pos3d: [3, 0.8, -0.5],   radius: 0.6, height: 0.05, color: 0xC0C0C0, metalness: 0.9, roughness: 0.2 }, // Hi-Hat (銀色/高反射)
-    { name: "Symbal",    pos3d: [2.5, 1.5, 2],    radius: 1.1, height: 0.05, color: 0xD4AF37, metalness: 0.9, roughness: 0.3 }, // Crash 鈸 (金色/高反射)
-    { name: "Ride",      pos3d: [-2.5, 1.5, 2],   radius: 1.3, height: 0.05, color: 0xD4AF37, metalness: 0.9, roughness: 0.3 }, // Ride 鈸 (金色/高反射)
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [3, 0.8, -0.5] },
+    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.8, 0.2, -0.5] },
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 1.5, 2] },
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5] },
+    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 0.3, 1.5] },
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 1.5, 2] },
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5] },
 ];
-
 
 // 初始化 3D 場景
 function init3D() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a); // 背景調暗，突出鼓組
-
-    // 攝影機和渲染器保持不變
+    scene.background = new THREE.Color(0x222222);
+    
     camera = new THREE.PerspectiveCamera(60, 900 / 600, 0.1, 1000);
     camera.position.set(0, 4, -4);
     camera.lookAt(0, 0, 0);
@@ -101,51 +94,32 @@ function init3D() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(900, 600);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 軟陰影
     container.appendChild(renderer.domElement);
     
-    // --- 調整光照以更逼真 ---
-    // 1. 環境光 (AmbientLight): 提供整體亮度
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    // 光照
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
     
-    // 2. 半球光 (HemisphereLight): 模擬天空光，提供柔和的漸變光
-    const hemiLight = new THREE.HemisphereLight(0xb1e1ff, 0xb97a20, 0.4); 
-    scene.add(hemiLight);
+    const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    light1.position.set(5, 10, 5);
+    light1.castShadow = true;
+    scene.add(light1);
     
-    // 3. 主定向光 (DirectionalLight): 創造強烈陰影和高光
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(5, 10, 5);
-    directionalLight.castShadow = true;
+    const light2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    light2.position.set(-5, 5, -5);
+    scene.add(light2);
     
-    // 設置陰影參數以獲得更清晰的陰影
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
-    directionalLight.shadow.camera.top = 5;
-    directionalLight.shadow.camera.bottom = -5;
-    directionalLight.shadow.camera.left = -5;
-    directionalLight.shadow.camera.right = 5;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 20;
-    
-    scene.add(directionalLight);
-    
-    // 4. 背光/邊緣光 (DirectionalLight): 增加物體邊緣的立體感
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
-    rimLight.position.set(-5, 5, -5);
-    scene.add(rimLight);
-
-
-    // 地板 (保持不變)
+    // 地板
     const floorGeometry = new THREE.PlaneGeometry(15, 15);
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 }); // 增加粗糙度
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.5;
     floor.receiveShadow = true;
     scene.add(floor);
     
-    // 添加xyz三軸坐標系 (保持不變)
+    // 添加xyz三軸坐標系
+    // 軸長度為5，紅色=X軸，綠色=Y軸，藍色=Z軸
     const axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
     
@@ -155,25 +129,21 @@ function init3D() {
         if (createdDrums.has(zone.name + zone.pos3d.join())) return;
         createdDrums.add(zone.name + zone.pos3d.join());
         
-        // 使用 zones 中定義的半徑和高度
-        const radius = zone.radius; 
-        const height = zone.height;
+        const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
+        const radius = isCymbal ? 1.2 : 0.9;  // 鼓的半徑
+        const height = isCymbal ? 0.05 : 0.5; // 鼓的高度
         
         const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
-        
-        // --- 逼真的材質設置 ---
         const material = new THREE.MeshStandardMaterial({ 
             color: zone.color,
-            metalness: zone.metalness,   // 金屬感
-            roughness: zone.roughness,   // 粗糙度
-            side: THREE.DoubleSide       // 確保鈸兩面都可見
+            metalness: isCymbal ? 0.8 : 0.3,
+            roughness: 0.4
         });
-        
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(...zone.pos3d);
         
         // 讓鼓面傾斜朝向相機（向前傾斜約20度）
-        mesh.rotation.x = -Math.PI / 9; 
+        mesh.rotation.x = -Math.PI / 9;  // 約20度
         
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -181,20 +151,19 @@ function init3D() {
         
         drumMeshes[zone.name + zone.pos3d.join()] = mesh;
         
-        // 標籤 (保持不變)
+        // 標籤
         createLabel(zone.name, zone.pos3d);
     });
     
     // 鼓棒（球體）
     const stickGeometry = new THREE.SphereGeometry(0.15, 16, 16);
     
-    // 調整鼓棒材質，使其具有發光效果 (Emissive)
-    const rightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x880000, roughness: 0.3 });
+    const rightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x660000 });
     rightStick = new THREE.Mesh(stickGeometry, rightMaterial);
     rightStick.castShadow = true;
     scene.add(rightStick);
     
-    const leftMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x000088, roughness: 0.3 });
+    const leftMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff, emissive: 0x000066 });
     leftStick = new THREE.Mesh(stickGeometry, leftMaterial);
     leftStick.castShadow = true;
     scene.add(leftStick);
