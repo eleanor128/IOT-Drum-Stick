@@ -174,21 +174,21 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     // X軸（左右）：ax 正值=右側，負值=左側
     // 基礎位置設為 0.5 (Snare 位置)，左右手稍微錯開
     const baseX = isLeft ? 0.4 : 0.6;
-    const x3d = baseX + ax * 0.2;
+    const x3d = baseX + ax * 0.1;
     
     // Y軸（高度）：az 越小=越高，az 越大=越低
     // 調整基準值，讓平放時 (az~10) 高度約為 0.6 (Snare 0.4 上方)
-    const y3d = 2.2 - (az * 0.1);
+    const y3d = 1.5 - (az * 0.08);
     
     // Z軸（前後）：ay 控制深度
     // 基礎位置設為 -2.0 (靠近相機)
-    const z3d = -2.0 + ay * 0.05;
+    const z3d = -2.0 + ay * 0.03;
     
     // 限制範圍
     return [
-        Math.max(-3.5, Math.min(3.5, x3d)),
-        Math.max(0.5, Math.min(3.5, y3d)),
-        Math.max(-3.0, Math.min(1.0, z3d))
+        Math.max(-1.5, Math.min(1.5, x3d)),
+        Math.max(0.3, Math.min(2.5, y3d)),
+        Math.max(-2.5, Math.min(-1.0, z3d))
     ];
 }
 
