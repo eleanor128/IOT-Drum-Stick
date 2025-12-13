@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D IOT 鼓組視覺化</title>
+    <title>3D IOT Drum Set</title>
     <style>
         * {
             margin: 0;
@@ -110,51 +110,51 @@
 </head>
 <body>
     <div class="header">
-        <div id="statusText">點擊畫面啟用音效</div>
+        <div id="statusText">Click anywhere to enable audio</div>
     </div>
     
     <div class="main-container">
         <!-- 左手數據面板 -->
         <div class="sensor-panel left">
-            <h3>🔵 左手數據</h3>
+            <h3>🔵 Left Drum Stick</h3>
             <div class="sensor-item">
-                <div class="sensor-label">Pitch (Y軸轉)</div>
+                <div class="sensor-label">Pitch (Y axis rotation)</div>
                 <div class="sensor-value" id="left-pitch-value">0.0°</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">Roll (X軸轉)</div>
+                <div class="sensor-label">Roll (X axis rotation)</div>
                 <div class="sensor-value" id="left-roll-value">0.0°</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">Yaw (Z軸轉)</div>
+                <div class="sensor-label">Yaw (Z axis rotation)</div>
                 <div class="sensor-value" id="left-yaw-value">0.0°</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度 X</div>
+                <div class="sensor-label">Acceleration X</div>
                 <div class="sensor-value" id="left-accel-x-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度 Y</div>
+                <div class="sensor-label">Acceleration Y</div>
                 <div class="sensor-value" id="left-accel-y-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度 Z</div>
+                <div class="sensor-label">Acceleration Z</div>
                 <div class="sensor-value" id="left-accel-z-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度總量</div>
+                <div class="sensor-label">Acceleration Magnitude</div>
                 <div class="sensor-value" id="left-magnitude-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">陀螺儀 X</div>
+                <div class="sensor-label">Gyroscope X</div>
                 <div class="sensor-value" id="left-gyro-x-value">0.0°/s</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">陀螺儀 Y</div>
+                <div class="sensor-label">Gyroscope Y</div>
                 <div class="sensor-value" id="left-gyro-y-value">0.0°/s</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">陀螺儀 Z</div>
+                <div class="sensor-label">Gyroscope Z</div>
                 <div class="sensor-value" id="left-gyro-z-value">0.0°/s</div>
             </div>
         </div>
@@ -164,45 +164,45 @@
 
         <!-- 右手數據面板 -->
         <div class="sensor-panel right">
-            <h3>🔴 右手數據</h3>
+            <h3>🔴 Right Drum Stick</h3>
             <div class="sensor-item">
-                <div class="sensor-label">Pitch (Y軸轉)</div>
+                <div class="sensor-label">Pitch (Y axis rotation)</div>
                 <div class="sensor-value" id="pitch-value">0.0°</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">Roll (X軸轉)</div>
+                <div class="sensor-label">Roll (X axis rotation)</div>
                 <div class="sensor-value" id="roll-value">0.0°</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">Yaw (Z軸轉)</div>
+                <div class="sensor-label">Yaw (Z axis rotation)</div>
                 <div class="sensor-value" id="yaw-value">0.0°</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度 X</div>
+                <div class="sensor-label">Acceleration X</div>
                 <div class="sensor-value" id="accel-x-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度 Y</div>
+                <div class="sensor-label">Acceleration Y</div>
                 <div class="sensor-value" id="accel-y-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度 Z</div>
+                <div class="sensor-label">Acceleration Z</div>
                 <div class="sensor-value" id="accel-z-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">加速度總量</div>
+                <div class="sensor-label">Acceleration Magnitude</div>
                 <div class="sensor-value" id="magnitude-value">0.00 g</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">陀螺儀 X</div>
+                <div class="sensor-label">Gyroscope X</div>
                 <div class="sensor-value" id="gyro-x-value">0.0°/s</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">陀螺儀 Y</div>
+                <div class="sensor-label">Gyroscope Y</div>
                 <div class="sensor-value" id="gyro-y-value">0.0°/s</div>
             </div>
             <div class="sensor-item">
-                <div class="sensor-label">陀螺儀 Z</div>
+                <div class="sensor-label">Gyroscope Z</div>
                 <div class="sensor-value" id="gyro-z-value">0.0°/s</div>
             </div>
         </div>
