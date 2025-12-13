@@ -203,24 +203,36 @@ function init3D() {
 //     scene.add(sprite);
 // }
 
-// 保持原有的 mapAngleToXY 邏輯（用於敲擊偵測）
+// 感測器角度轉 2D 座標（用於敲擊偵測）
+// yaw: 左移增大、右移減小
+// pitch: 鼓棒舉起增大、向下減小
+// roll: 不影響位置（僅鼓棒自轉）
 function mapAngleToXY(pitch, yaw) {
-    let x = (yaw + 45) / 90 * 900;      // yaw 減少 → 鼓棒往左，yaw 增加 → 鼓棒往右
-    let y = (pitch + 10) / 45 * 450;
+    let x = (45 - yaw) / 90 * 900;      // yaw 增加（左移）→ x減小（往左）
+    let y = (pitch + 10) / 45 * 450;    // pitch 用於 2D 偵測
     x = Math.max(0, Math.min(900, x));
     y = Math.max(0, Math.min(450, y));
-    return {x, y, pitch, yaw};  // 同時返回原始角度
+    return {x, y, pitch, yaw};
 }
 
-// 將 2D 坐標轉換為 3D 位置（用於顯示鼓棒）
+// 將 2D 座標 + pitch 轉換為 3D 位置
+// X軸（左右）: yaw 控制，左移 yaw增加
+// Y軸（上下）: pitch 控制，舉起 pitch增加
+// Z軸（前後）: 固定位置
 function mapXYto3D(x, y, pitch) {
-    let x3d = (x / 900 - 0.5) * 8;              // yaw 控制左右
-    let y3d = 2 + (pitch / 45) * 1.5;           // pitch 控制上下：pitch增加→往上，pitch減少→往下
-    const z3d = -2.5;                             // 前後固定在中間位置
+    // X軸：yaw 左移（增加）→ 畫面左移
+    let x3d = (x / 900 - 0.5) * 8;
+    
+    // Y軸：pitch 舉起（增加）→ 往上，向下（減小）→ 往下
+    // 假設 pitch 範圍 0° ~ 90°，中點在 45°
+    let y3d = 0.5 + (pitch / 45) * 2.5;         // pitch=0→y=0.5, pitch=45→y=3.0
+    
+    // Z軸：固定在靠近相機的位置
+    const z3d = -2.5;
     
     // 限制鼓棒不超出相機視角
     x3d = Math.max(-3.5, Math.min(3.5, x3d));   // X軸範圍: -3.5 到 3.5
-    y3d = Math.max(0.5, Math.min(3.5, y3d));    // Y軸範圍: 0.5 到 3.5
+    y3d = Math.max(0.3, Math.min(3.5, y3d));    // Y軸範圍: 0.3 到 3.5
     
     return [x3d, y3d, z3d];
 }
