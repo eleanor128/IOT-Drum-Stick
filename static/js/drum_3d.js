@@ -4,7 +4,7 @@ let audioBuffers = {};
 let audioEnabled = false;
 
 async function enableAudio() {
-    const btn = document.getElementById('enableAudioBtn');
+    // const btn = document.getElementById('enableAudioBtn');
     const status = document.getElementById('statusText');
     
     if (audioEnabled) {
@@ -13,8 +13,8 @@ async function enableAudio() {
     }
 
     try {
-        btn.textContent = "載入中...";
-        btn.disabled = true;
+        // btn.textContent = "載入中...";
+        // btn.disabled = true;
         
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -41,8 +41,8 @@ async function enableAudio() {
         }
 
         audioEnabled = true;
-        btn.textContent = "音效已啟動";
-        btn.classList.add('enabled');
+        // btn.textContent = "音效已啟動";
+        // btn.classList.add('enabled');
         playSound("Success");
         
     } catch (error) {
