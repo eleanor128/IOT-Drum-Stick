@@ -141,6 +141,10 @@ function init3D() {
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(...zone.pos3d);
+        
+        // 讓鼓面傾斜朝向相機（向後傾斜約20度）
+        mesh.rotation.x = Math.PI / 9;  // 約20度
+        
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         scene.add(mesh);
