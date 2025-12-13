@@ -64,33 +64,6 @@
             color: #ff6b6b;
         }
 
-        #enableAudioBtn {
-            padding: 15px 40px;
-            font-size: 18px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 30px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        #enableAudioBtn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-
-        #enableAudioBtn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        #enableAudioBtn.enabled {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-
         #statusText {
             margin-bottom: 20px;
             font-size: 16px;
@@ -137,8 +110,7 @@
 </head>
 <body>
     <div class="header">
-        <button id="enableAudioBtn" onclick="enableAudio()">點擊啟用音效</button>
-        <div id="statusText">請先啟用音效</div>
+        <div id="statusText">點擊畫面啟用音效</div>
     </div>
     
     <div class="main-container">
