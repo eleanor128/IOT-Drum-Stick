@@ -5,7 +5,7 @@ let audioEnabled = false;
 let activeSources = {};  // 記錄每個鼓正在播放的音效源
 
 // 鼓音效播放時長設定（秒）
-const DRUM_SOUND_DURATION = 0.2;
+const DRUM_SOUND_DURATION = 0.3;
 
 async function enableAudio() {
     // const btn = document.getElementById('enableAudioBtn');
@@ -219,7 +219,7 @@ function init3D() {
         const drumstick = new THREE.Group();
         
         // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸，加長
-        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 2, 8);
+        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 1.2, 8);
         const stickMaterial = new THREE.MeshStandardMaterial({ 
             color: color,
             emissive: emissiveColor,
@@ -231,13 +231,13 @@ function init3D() {
         
         // 旋轉鼓棒，讓它水平（沿著 Z 軸）
         stickMesh.rotation.x = Math.PI / 2;
-        stickMesh.position.z = 1;  // 中心在 z=1，範圍從 0 到 2
+        stickMesh.position.z = 0.6;  // 中心在 z=0.6，範圍從 0 到 1.2
         drumstick.add(stickMesh);
         
         // 鼓棒頂端（球形敲擊端）- 在前方
         const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.z = 2;  // 放在棒子前端（緊貼鼓棒主體）
+        tipMesh.position.z = 1.2;  // 放在棒子前端（緊貼鼓棒主體）
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
@@ -331,12 +331,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 根據 yaw 控制左右位置，擴大移動範圍
     const rightHandX = (rightYaw - 45) / 90 * 3 + 2;  // 右手初始位置靠近 Snare
     const rightHandY = 1.5;  // 握把高度
-    const rightHandZ = -2.8 + (rightData["roll (x軸轉)"] / 45) * 1.5;  // roll 控制前後深淺
+    const rightHandZ = -0.6 + (rightData["roll (x軸轉)"] / 45) * 1.5;  // roll 控制前後深淺
     
     // 左手鼓棒的握把位置
     const leftHandX = (leftYaw - 45) / 90 * 3 + 2.2;  // 左手在左側
     const leftHandY = 1.5;  // 握把高度
-    const leftHandZ = -2.8 + (leftData["roll (x軸轉)"] / 45) * 1.5;  // roll 控制前後深淺   
+    const leftHandZ = -0.6 + (leftData["roll (x軸轉)"] / 45) * 1.5;  // roll 控制前後深淺   
     
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightHandX, rightHandY, rightHandZ);
