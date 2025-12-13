@@ -122,11 +122,6 @@ function init3D() {
     floor.receiveShadow = true;
     scene.add(floor);
     
-    // 添加xyz三軸坐標系
-    // 軸長度為5，紅色=X軸，綠色=Y軸，藍色=Z軸
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
-    
     // 創建鼓組
     const createdDrums = new Set();
     zones.forEach(zone => {
@@ -200,13 +195,13 @@ function init3D() {
         
         // 旋轉鼓棒，讓它水平（沿著 Z 軸）
         stickMesh.rotation.x = Math.PI / 2;
-        stickMesh.position.z = 0.4;  // 向前延伸（長度的一半）
+        stickMesh.position.z = 1;  // 中心在 z=1，範圍從 0 到 2
         drumstick.add(stickMesh);
         
         // 鼓棒頂端（球形敲擊端）- 在前方
         const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.z = 2;  // 放在棒子前端
+        tipMesh.position.z = 2;  // 放在棒子前端（緊貼鼓棒主體）
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
