@@ -205,7 +205,7 @@ function createLabel(text, position) {
 
 // 保持原有的 mapAngleToXY 邏輯（用於敲擊偵測）
 function mapAngleToXY(pitch, yaw) {
-    let x = (45 - yaw) / 90 * 900;
+    let x = (yaw + 45) / 90 * 900;      // yaw 減少 → 鼓棒往左，yaw 增加 → 鼓棒往右
     let y = (pitch + 10) / 45 * 450;
     x = Math.max(0, Math.min(900, x));
     y = Math.max(0, Math.min(450, y));
