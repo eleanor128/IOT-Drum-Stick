@@ -95,6 +95,88 @@ function playSound(name) {
     }
 }
 
+// --------------------- 加速度數據判斷功能 ---------------------
+// 根據加速度數據判斷鼓棒位置和打擊目標
+function detectDrumFromAccel(ax, ay, az) {
+    // 計算高度（Z軸加速度反映鼓棒垂直位置）
+    // az 越大表示鼓棒越向下（打低的鼓）
+    const height = 20 - az;  // 轉換：az大→height小
+    
+    // 計算左右位置（X軸加速度）
+    const horizontal = ax;  // 正值=右側，負值=左側
+    
+    // 計算前後位置（Y軸加速度）
+    const depth = ay;
+    
+    // 判斷邏輯（根據數據分析）
+    
+    // 1. Symbal & Ride（最高位置，height > 10）
+    if (height > 10) {
+        if (horizontal > 4) return "Symbal";  // 右側
+        if (horizontal < 0) return "Ride";    // 左側
+    }
+    
+    // 2. Tom_high & Tom_mid（中高位置，height 8-10）
+    if (height >= 8 && height <= 10) {
+        if (horizontal > 2) return "Tom_high";   // 偏右
+        if (horizontal < 2) return "Tom_mid";    // 偏左
+    }
+    
+    // 3. Hihat（中等位置，height 6-8，右前方）
+    if (height >= 6 && height <= 8 && horizontal > 4) {
+        return "Hihat";
+    }
+    
+    // 4. Snare（中等位置，height 5-7，中央）
+    if (height >= 5 && height <= 7 && Math.abs(horizontal) < 3) {
+        return "Snare";
+    }
+    
+    // 5. Tom_floor（最低位置，height < 5）
+    if (height < 5) {
+        return "Tom_floor";
+    }
+    
+    // 預設回 Snare
+    return "Snare";
+}
+
+// 判斷是否為有效打擊
+function isValidHit(ax, ay, az, gx, gy, gz) {
+    // 1. 加速度幅度檢測（打擊力道）
+    const magnitude = Math.sqrt(ax * ax + ay * ay + az * az);
+    const magnitudeThreshold = 12;  // 最小打擊力道
+    
+    // 2. 陀螺儀檢測（快速揮動）
+    const gyroMagnitude = Math.sqrt(gx * gx + gy * gy + gz * gz);
+    const gyroThreshold = 80;  // 最小旋轉速度（從數據觀察）
+    
+    // 3. 向下加速度檢測（Z軸加速度變化）
+    const zAccelThreshold = 8;  // 向下打擊
+    
+    return (magnitude > magnitudeThreshold || gyroMagnitude > gyroThreshold) 
+           && az > zAccelThreshold;
+}
+
+// 鼓棒 3D 位置映射（根據加速度數據）
+function mapAccelTo3D(ax, ay, az) {
+    // X軸（左右）：ax 正值=右側，負值=左側
+    const x3d = ax * 0.3;  // 縮放係數
+    
+    // Y軸（高度）：az 越小=越高，az 越大=越低
+    const y3d = 2.5 - (az * 0.15);  // 反向映射
+    
+    // Z軸（前後）：ay 控制深度
+    const z3d = 0.5 + ay * 0.1;
+    
+    // 限制範圍
+    return [
+        Math.max(-3.5, Math.min(3.5, x3d)),
+        Math.max(0.5, Math.min(3.5, y3d)),
+        Math.max(-1.5, Math.min(2.0, z3d))
+    ];
+}
+
 // --------------------- 3D 場景設置 ---------------------
 const container = document.getElementById("drumContainer");
 let scene, camera, renderer;
@@ -331,21 +413,20 @@ function checkCollision(stickPos) {
     return collisionInfo;
 }
 
-// 繪製函數（3D版本）- 以握把端為圓心旋轉鼓棒
+// 繪製函數（3D版本）- 使用加速度數據控制鼓棒位置
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
-    // 右手鼓棒的握把位置（手的位置）
-    // 根據 yaw 控制左右位置，擴大移動範圍
-    const rightHandX = (rightYaw - 45) / 90 * 3 + 0.5;  // 右手起始位置在 Snare 上方 (x=0.5)
-    const rightHandY = 1.5;  // 握把高度
-    const rightHandZ = -0.8 + rightData.ax * 0.5;  // X軸加速度控制前後深淺 (ax: -2g~2g)
+    // 右手鼓棒位置（改用加速度數據）
+    const [rightX, rightY, rightZ] = mapAccelTo3D(
+        rightData.ax, rightData.ay, rightData.az
+    );
     
-    // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 3 + 0.3;  // 左手起始位置在 Snare 左側 (x=0.3)
-    const leftHandY = 1.5;  // 握把高度
-    const leftHandZ = -0.8 + leftData.ax * 0.5;  // X軸加速度控制前後深淺 (ax: -2g~2g)   
+    // 左手鼓棒位置（改用加速度數據）
+    const [leftX, leftY, leftZ] = mapAccelTo3D(
+        leftData.ax, leftData.ay, leftData.az
+    );
     
     // 更新右手鼓棒位置和旋轉
-    rightStick.position.set(rightHandX, rightHandY, rightHandZ);
+    rightStick.position.set(rightX, rightY, rightZ);
     // 如果有碰撞，使用調整後的 pitch（讓鼓棒停在鼓面上）
     const finalRightPitch = rightAdjustedPitch !== undefined ? rightAdjustedPitch : rightPitch;
     rightStick.rotation.x = (finalRightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
@@ -353,7 +434,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     rightStick.rotation.y = (rightYaw / 45) * (Math.PI / 6);  // 小範圍旋轉
     
     // 更新左手鼓棒位置和旋轉
-    leftStick.position.set(leftHandX, leftHandY, leftHandZ);
+    leftStick.position.set(leftX, leftY, leftZ);
     // 如果有碰撞，使用調整後的 pitch（讓鼓棒停在鼓面上）
     const finalLeftPitch = leftAdjustedPitch !== undefined ? leftAdjustedPitch : leftPitch;
     leftStick.rotation.x = (finalLeftPitch / 45) * (Math.PI / 3);
@@ -423,10 +504,24 @@ function updateRight() {
         .then(res => res.json())
         .then(data => {
             rightData = data;
+            
+            // 優先使用加速度數據判斷打擊
+            const isHit = isValidHit(
+                data.ax, data.ay, data.az,
+                data.gx, data.gy, data.gz
+            );
+            
             if (rightHitCooldown > 0) {
                 rightHitCooldown--;
+            } else if (isHit) {
+                // 根據加速度數據判斷打擊哪個鼓
+                const targetDrum = detectDrumFromAccel(data.ax, data.ay, data.az);
+                console.log(`🥁 Right Hit: ${targetDrum} (ax=${data.ax.toFixed(1)}, ay=${data.ay.toFixed(1)}, az=${data.az.toFixed(1)}, height=${(20-data.az).toFixed(1)})`);
+                playSound(targetDrum);
+                rightHitCooldown = 8;
             } else if (data.is_hit && data.hit_drum) {
-                console.log(`🥁 Right Hit: ${data.hit_drum}`);
+                // 後備方案：使用後端判斷
+                console.log(`🥁 Right Hit (backend): ${data.hit_drum}`);
                 playSound(data.hit_drum);
                 rightHitCooldown = 8;
             }
@@ -440,10 +535,24 @@ function updateLeft() {
         .then(res => res.json())
         .then(data => {
             leftData = data;
+            
+            // 優先使用加速度數據判斷打擊
+            const isHit = isValidHit(
+                data.ax, data.ay, data.az,
+                data.gx, data.gy, data.gz
+            );
+            
             if (leftHitCooldown > 0) {
                 leftHitCooldown--;
+            } else if (isHit) {
+                // 根據加速度數據判斷打擊哪個鼓
+                const targetDrum = detectDrumFromAccel(data.ax, data.ay, data.az);
+                console.log(`🥁 Left Hit: ${targetDrum} (ax=${data.ax.toFixed(1)}, ay=${data.ay.toFixed(1)}, az=${data.az.toFixed(1)}, height=${(20-data.az).toFixed(1)})`);
+                playSound(targetDrum);
+                leftHitCooldown = 8;
             } else if (data.is_hit && data.hit_drum) {
-                console.log(`🥁 Left Hit: ${data.hit_drum}`);
+                // 後備方案：使用後端判斷
+                console.log(`🥁 Left Hit (backend): ${data.hit_drum}`);
                 playSound(data.hit_drum);
                 leftHitCooldown = 8;
             }
