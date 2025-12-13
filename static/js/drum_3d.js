@@ -115,7 +115,7 @@ function init3D() {
     
     // 地板
     const floorGeometry = new THREE.PlaneGeometry(15, 15);
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.5;
