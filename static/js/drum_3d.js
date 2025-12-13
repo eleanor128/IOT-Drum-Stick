@@ -78,7 +78,7 @@ const zones = [
     { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 1, 1.5], radius: 1, rotation: -Math.PI / 7 },
     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 1, 1.5], radius: 1, rotation: -Math.PI / 7 },
     { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 2.5, 2], radius: 1.5, rotation: -Math.PI / 6 },
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 2.5, 2], radius: 1.5, rotation: -Math.PI / 6 },
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-3, 2.5, 1.8], radius: 1.5, rotation: -Math.PI / 6 },
     { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.8], radius: 1.2, rotation: 0 },
 ];
 // Math.PI / 18	10°	微微傾斜
