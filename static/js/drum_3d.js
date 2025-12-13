@@ -2,6 +2,7 @@
 let audioCtx;
 let audioBuffers = {};
 let audioEnabled = false;
+let activeSources = {};  // 記錄每個鼓正在播放的音效源
 
 async function enableAudio() {
     // const btn = document.getElementById('enableAudioBtn');
@@ -52,13 +53,35 @@ function playSound(name) {
     if (!audioEnabled || !audioCtx || !audioBuffers[name]) return;
     
     try {
+        // 如果該鼓正在播放音效，先停止它
+        if (activeSources[name]) {
+            try {
+                activeSources[name].stop();
+            } catch (e) {
+                // 音效可能已經結束，忽略錯誤
+            }
+        }
+        
         const source = audioCtx.createBufferSource();
         source.buffer = audioBuffers[name];
         const gainNode = audioCtx.createGain();
         gainNode.gain.value = 0.8;
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
+        
+        // 記錄這個音效源
+        activeSources[name] = source;
+        
+        // 播放音效，並在 0.8 秒後停止
         source.start(0);
+        source.stop(audioCtx.currentTime + 0.8);
+        
+        // 清除記錄
+        source.onended = () => {
+            if (activeSources[name] === source) {
+                delete activeSources[name];
+            }
+        };
     } catch (err) {
         console.error(`Playback error:`, err);
     }
