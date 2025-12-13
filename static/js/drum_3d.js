@@ -283,26 +283,26 @@ function checkCollision(stickPos) {
 // 繪製函數（3D版本）- 以握把端為圓心旋轉鼓棒
 function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 右手鼓棒的握把位置（手的位置）
-    // 根據 yaw 控制左右位置
-    const rightHandX = (45 - rightYaw) / 90 * 4 - 2;  // yaw 控制左右，範圍 -2 到 2
+    // 根據 yaw 控制左右位置（反轉方向）
+    const rightHandX = (rightYaw - 45) / 90 * 4 + 2;  // yaw 增加→往左，yaw 減少→往右
     const rightHandY = 2.5;  // 固定高度
     const rightHandZ = -2;   // 固定在靠近相機的位置
     
     // 左手鼓棒的握把位置
-    const leftHandX = (45 - leftYaw) / 90 * 4 - 2;
+    const leftHandX = (leftYaw - 45) / 90 * 4 + 2;
     const leftHandY = 2.5;
     const leftHandZ = -2;
     
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightHandX, rightHandY, rightHandZ);
-    // pitch 控制上下揮擊（繞 X 軸旋轉）- pitch增加→往上
-    rightStick.rotation.x = -(rightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
+    // pitch 控制上下揮擊（繞 X 軸旋轉）- pitch增加→往下（反轉）
+    rightStick.rotation.x = (rightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
     // yaw 控制左右擺動（繞 Y 軸旋轉）
     rightStick.rotation.y = (rightYaw / 45) * (Math.PI / 6);  // 小範圍旋轉
     
     // 更新左手鼓棒位置和旋轉
     leftStick.position.set(leftHandX, leftHandY, leftHandZ);
-    leftStick.rotation.x = -(leftPitch / 45) * (Math.PI / 3);
+    leftStick.rotation.x = (leftPitch / 45) * (Math.PI / 3);
     leftStick.rotation.y = (leftYaw / 45) * (Math.PI / 6);
     
     // TODO: 碰撞檢測需要重新設計，檢測鼓棒前端（敲擊端）的位置
