@@ -73,13 +73,13 @@ let drumMeshes = {};
 let rightStick, leftStick;
 
 const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [3, 0.8, -0.5] },
-    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.8, 0.2, -0.5] },
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 1.5, 2] },
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5] },
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 0.3, 1.5] },
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 1.5, 2] },
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5] },
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [3, 0.8, -0.5], radius: 1.0 },
+    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.8, 0.2, -0.5], radius: 0.8 },
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [2.5, 1.5, 2], radius: 1.2 },
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [1, 0.3, 1.5], radius: 0.7 },
+    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-1, 0.3, 1.5], radius: 0.8 },
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-2.5, 1.5, 2], radius: 1.3 },
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-2, 0.3, -0.5], radius: 0.9 },
 ];
 
 // 初始化 3D 場景
@@ -130,7 +130,7 @@ function init3D() {
         createdDrums.add(zone.name + zone.pos3d.join());
         
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
-        const radius = isCymbal ? 1.2 : 0.9;  // 鼓的半徑
+        const radius = zone.radius || (isCymbal ? 1.2 : 0.9);  // 使用自定義半徑或預設值
         const height = isCymbal ? 0.05 : 0.5; // 鼓的高度
         
         const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
