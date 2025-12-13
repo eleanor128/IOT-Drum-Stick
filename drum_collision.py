@@ -29,13 +29,13 @@ class DrumCollision:
             {"name": "Tom_floor", "pos3d": [-1.2, 0.4, -0.6], "radius": 0.70}    # 鼓面高度: 0.9m
         ]
     
-    def calculate_stick_tip_position(self, roll, pitch, yaw, hand="right"):
+    def calculate_stick_tip_position(self, ax, pitch, yaw, hand="right"):
         """
         計算鼓棒前端（敲擊端）的 3D 位置
         完全對應 drum_3d.js 的計算邏輯
         
         參數說明：
-        - roll: X軸旋轉角度，控制鼓棒前後深淺
+        - ax: X軸加速度，控制鼓棒前後深淺
         - pitch: Y軸旋轉角度，控制鼓棒上下揮動
         - yaw: Z軸旋轉角度，控制鼓棒左右位置
         - hand: "right" 或 "left"
@@ -80,13 +80,13 @@ class DrumCollision:
         
         return tip_x, tip_y, tip_z
     
-    def detect_hit_drum(self, roll, pitch, yaw, hand="right"):
+    def detect_hit_drum(self, ax, pitch, yaw, hand="right"):
         """
         偵測鼓棒尖端是否打擊到某個鼓，並計算調整後的 pitch 角度
         只要鼓棒尖端碰到鼓面就算打擊到
         
         參數說明：
-        - roll: X軸旋轉角度，控制鼓棒前後深淺
+        - ax: X軸加速度，控制鼓棒前後深涺
         - pitch: Y軸旋轉角度，控制鼓棒上下揮動
         - yaw: Z軸旋轉角度，控制鼓棒左右位置
         - hand: "right" 或 "left"
@@ -98,7 +98,7 @@ class DrumCollision:
         }
         """
         # 計算鼓棒尖端位置
-        tip_x, tip_y, tip_z = self.calculate_stick_tip_position(roll, pitch, yaw, hand)
+        tip_x, tip_y, tip_z = self.calculate_stick_tip_position(ax, pitch, yaw, hand)
         
         # 計算握把位置（與 drum_3d.js 完全一致）
         if hand == "right":
@@ -106,7 +106,7 @@ class DrumCollision:
         else:
             hand_x = (yaw - 45) / 90 * 3 + 0.3  # 左手起始位置在 Snare 左側
         hand_y = 1.5
-        hand_z = -2.8 + (roll / 45) * 1.5
+        hand_z = -0.8 + ax * 0.5  # X軸加速度控制前後深淺
         
         # 檢查是否碰撞到任何鼓（按順序檢查，優先偵測較高的鼓）
         for drum in self.drums:
