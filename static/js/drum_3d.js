@@ -118,6 +118,11 @@ function init3D() {
     floor.receiveShadow = true;
     scene.add(floor);
     
+    // 添加xyz三軸坐標系
+    // 軸長度為5，紅色=X軸，綠色=Y軸，藍色=Z軸
+    const axesHelper = new THREE.AxesHelper(5);
+    scene.add(axesHelper);
+    
     // 創建鼓組
     const createdDrums = new Set();
     zones.forEach(zone => {
