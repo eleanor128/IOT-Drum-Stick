@@ -173,8 +173,8 @@ function init3D() {
     function createDrumstick(color, emissiveColor) {
         const drumstick = new THREE.Group();
         
-        // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸
-        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.5, 8);
+        // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸，加長
+        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.8, 8);
         const stickMaterial = new THREE.MeshStandardMaterial({ 
             color: color,
             emissive: emissiveColor,
@@ -186,13 +186,13 @@ function init3D() {
         
         // 旋轉鼓棒，讓它水平（沿著 Z 軸）
         stickMesh.rotation.x = Math.PI / 2;
-        stickMesh.position.z = 0.25;  // 向前延伸
+        stickMesh.position.z = 0.4;  // 向前延伸（長度的一半）
         drumstick.add(stickMesh);
         
         // 鼓棒頂端（球形敲擊端）- 在前方
         const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.z = 0.5;  // 放在棒子前端
+        tipMesh.position.z = 0.8;  // 放在棒子前端
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
