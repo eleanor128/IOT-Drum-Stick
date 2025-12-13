@@ -178,7 +178,7 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     
     // Y軸（高度）：az 越小=越高，az 越大=越低
     // 調整基準值，讓平放時 (az~10) 高度約為 0.6 (Snare 0.4 上方)
-    const y3d = 2.1 - (az * 0.15);
+    const y3d = 2.2 - (az * 0.15);
     
     // Z軸（前後）：ay 控制深度
     // 基礎位置設為 -2.0 (靠近相機)
@@ -386,16 +386,16 @@ function mapXYto3D(x, y, pitch) {
     return [x3d, y3d, z3d];
 }
 
-// 碰撞檢測：檢查鼓棒是否碰到鼓或鈸
-function checkCollision(stickPos) {
-    let collisionInfo = { hit: false, drumName: null, adjustedPos: [...stickPos] };
+// 碰撞檢測與修正：計算鼓棒是否穿入鼓面，並返回修正後的 Pitch 角度 (弧度)
+function solveStickCollision(gripPos, rotX, rotY) {
+    const stickLength = 1.2;
+    let correctedRotX = rotX;
     
     zones.forEach(zone => {
         const drumPos = zone.pos3d;
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
         
-        // 計算鼓的高度（厚度）
         let drumHeight;
         if (isCymbal) {
             drumHeight = 0.05;  // 鈸很薄
@@ -405,27 +405,38 @@ function checkCollision(stickPos) {
             drumHeight = 0.5;   // 其他鼓的標準高度
         }
         
-        // 計算鼓棒與鼓中心的水平距離
-        const dx = stickPos[0] - drumPos[0];
-        const dz = stickPos[2] - drumPos[2];
-        const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+        const drumTopY = drumPos[1] + drumHeight / 2;
         
-        // 如果鼓棒在鼓的半徑範圍內
-        if (horizontalDist <= radius) {
-            // 計算鼓面高度（中心點 + 半高度）
-            const drumTopY = drumPos[1] + drumHeight / 2;
+        // 計算鼓棒尖端位置 (Tip)
+        // 鼓棒握把在 gripPos，長度 1.2
+        // 旋轉：X軸為 Pitch (正值向下), Y軸為 Yaw
+        const tipX = gripPos[0] + stickLength * Math.cos(rotX) * Math.sin(rotY);
+        const tipZ = gripPos[2] + stickLength * Math.cos(rotX) * Math.cos(rotY);
+        
+        // 檢查水平距離 (XZ平面)
+        const dx = tipX - drumPos[0];
+        const dz = tipZ - drumPos[2];
+        
+        if (dx * dx + dz * dz < radius * radius) {
+            // 檢查垂直穿透
+            // 尖端 Y = gripY - L * sin(rotX)
+            const currentTipY = gripPos[1] - stickLength * Math.sin(rotX);
             
-            // 如果鼓棒低於或接近鼓面（考慮鼓棒半徑 0.03）
-            if (stickPos[1] <= drumTopY + 0.03) {
-                collisionInfo.hit = true;
-                collisionInfo.drumName = zone.name;
-                // 將鼓棒位置調整到鼓面上方
-                collisionInfo.adjustedPos[1] = drumTopY + 0.03;
+            // 如果尖端低於鼓面 (加一點緩衝 0.02)
+            if (currentTipY < drumTopY + 0.02) {
+                // 計算限制角度：sin(rotX) <= (gripY - drumTopY) / L
+                const maxSin = (gripPos[1] - (drumTopY + 0.02)) / stickLength;
+                // 限制範圍避免錯誤
+                if (maxSin >= -1 && maxSin <= 1) {
+                    const maxRotX = Math.asin(maxSin);
+                    // 因為 rotX 越大越向下，所以取最小值
+                    correctedRotX = Math.min(correctedRotX, maxRotX);
+                }
             }
         }
     });
     
-    return collisionInfo;
+    return correctedRotX;
 }
 
 // 繪製函數（3D版本）- 使用加速度數據控制鼓棒位置
@@ -440,20 +451,28 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         leftData.ax, leftData.ay, leftData.az, true
     );
     
+    // 計算原始旋轉角度 (弧度)
+    const rightRotX = (rightPitch / 45) * (Math.PI / 3);
+    const rightRotY = (rightYaw / 45) * (Math.PI / 6);
+    
+    // 應用碰撞修正 (防止穿模)
+    const finalRightRotX = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
+    
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightX, rightY, rightZ);
-    // 如果有碰撞，使用調整後的 pitch（讓鼓棒停在鼓面上）
-    const finalRightPitch = rightAdjustedPitch !== undefined ? rightAdjustedPitch : rightPitch;
-    rightStick.rotation.x = (finalRightPitch / 45) * (Math.PI / 3);  // 轉換為弧度，範圍 0-60°
+    rightStick.rotation.x = finalRightRotX;
     // yaw 控制左右擺動（繞 Y 軸旋轉）
-    rightStick.rotation.y = (rightYaw / 45) * (Math.PI / 6);  // 小範圍旋轉
+    rightStick.rotation.y = rightRotY;
+    
+    // 左手同理
+    const leftRotX = (leftPitch / 45) * (Math.PI / 3);
+    const leftRotY = (leftYaw / 45) * (Math.PI / 6);
+    const finalLeftRotX = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
     
     // 更新左手鼓棒位置和旋轉
     leftStick.position.set(leftX, leftY, leftZ);
-    // 如果有碰撞，使用調整後的 pitch（讓鼓棒停在鼓面上）
-    const finalLeftPitch = leftAdjustedPitch !== undefined ? leftAdjustedPitch : leftPitch;
-    leftStick.rotation.x = (finalLeftPitch / 45) * (Math.PI / 3);
-    leftStick.rotation.y = (leftYaw / 45) * (Math.PI / 6);
+    leftStick.rotation.x = finalLeftRotX;
+    leftStick.rotation.y = leftRotY;
     
     // 渲染場景
     renderer.render(scene, camera);
