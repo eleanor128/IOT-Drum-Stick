@@ -390,6 +390,7 @@ function mapXYto3D(x, y, pitch) {
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = 1.2;
     let correctedRotX = rotX;
+    let hitDrum = null;
     
     zones.forEach(zone => {
         const drumPos = zone.pos3d;
@@ -430,19 +431,26 @@ function solveStickCollision(gripPos, rotX, rotY) {
                 if (maxSin >= -1 && maxSin <= 1) {
                     const maxRotX = Math.asin(maxSin);
                     // 因為 rotX 越大越向下，所以取最小值
-                    correctedRotX = Math.min(correctedRotX, maxRotX);
+                    if (maxRotX < correctedRotX) {
+                        correctedRotX = maxRotX;
+                        hitDrum = zone.name;
+                    }
                 }
             }
         }
     });
     
-    return correctedRotX;
+    return { correctedRotX, hitDrum };
 }
 
 // 線性插值函數，用於平滑移動
 function lerp(start, end, factor) {
     return start + (end - start) * factor;
 }
+
+// 碰撞狀態追蹤（防止按住不放時連續觸發）
+let rightWasColliding = false;
+let leftWasColliding = false;
 
 // 繪製函數（3D版本）- 使用加速度數據控制鼓棒位置
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
@@ -473,22 +481,48 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightRotY = (rightYaw / 45) * (Math.PI / 6);
     
     // 應用碰撞修正 (防止穿模)
-    const finalRightRotX = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
+    const rightResult = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
+    
+    // 檢測右手打擊
+    if (rightResult.hitDrum) {
+        if (!rightWasColliding && rightHitCooldown <= 0) {
+            playSound(rightResult.hitDrum);
+            rightHitCooldown = 10; // 冷卻時間 (幀數)
+            console.log(`🥁 Right Hit (3D): ${rightResult.hitDrum}`);
+        }
+        rightWasColliding = true;
+    } else {
+        rightWasColliding = false;
+    }
+    if (rightHitCooldown > 0) rightHitCooldown--;
     
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightX, rightY, rightZ);
-    rightStick.rotation.x = finalRightRotX;
+    rightStick.rotation.x = rightResult.correctedRotX;
     // yaw 控制左右擺動（繞 Y 軸旋轉）
     rightStick.rotation.y = rightRotY;
     
     // 左手同理
     const leftRotX = (leftPitch / 45) * (Math.PI / 3);
     const leftRotY = (leftYaw / 45) * (Math.PI / 6);
-    const finalLeftRotX = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
+    const leftResult = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
+    
+    // 檢測左手打擊
+    if (leftResult.hitDrum) {
+        if (!leftWasColliding && leftHitCooldown <= 0) {
+            playSound(leftResult.hitDrum);
+            leftHitCooldown = 10;
+            console.log(`🥁 Left Hit (3D): ${leftResult.hitDrum}`);
+        }
+        leftWasColliding = true;
+    } else {
+        leftWasColliding = false;
+    }
+    if (leftHitCooldown > 0) leftHitCooldown--;
     
     // 更新左手鼓棒位置和旋轉
     leftStick.position.set(leftX, leftY, leftZ);
-    leftStick.rotation.x = finalLeftRotX;
+    leftStick.rotation.x = leftResult.correctedRotX;
     leftStick.rotation.y = leftRotY;
     
     // 渲染場景
@@ -555,27 +589,6 @@ function updateRight() {
         .then(res => res.json())
         .then(data => {
             rightData = data;
-            
-            // 優先使用加速度數據判斷打擊
-            const isHit = isValidHit(
-                data.ax, data.ay, data.az,
-                data.gx, data.gy, data.gz
-            );
-            
-            if (rightHitCooldown > 0) {
-                rightHitCooldown--;
-            } else if (isHit) {
-                // 根據加速度數據判斷打擊哪個鼓
-                const targetDrum = detectDrumFromAccel(data.ax, data.ay, data.az);
-                console.log(`🥁 Right Hit: ${targetDrum} (ax=${data.ax.toFixed(1)}, ay=${data.ay.toFixed(1)}, az=${data.az.toFixed(1)}, height=${(20-data.az).toFixed(1)})`);
-                playSound(targetDrum);
-                rightHitCooldown = 8;
-            } else if (data.is_hit && data.hit_drum) {
-                // 後備方案：使用後端判斷
-                console.log(`🥁 Right Hit (backend): ${data.hit_drum}`);
-                playSound(data.hit_drum);
-                rightHitCooldown = 8;
-            }
         })
         .catch(err => console.log("Right fetch error:", err))
         .finally(() => setTimeout(updateRight, 0));
@@ -586,27 +599,6 @@ function updateLeft() {
         .then(res => res.json())
         .then(data => {
             leftData = data;
-            
-            // 優先使用加速度數據判斷打擊
-            const isHit = isValidHit(
-                data.ax, data.ay, data.az,
-                data.gx, data.gy, data.gz
-            );
-            
-            if (leftHitCooldown > 0) {
-                leftHitCooldown--;
-            } else if (isHit) {
-                // 根據加速度數據判斷打擊哪個鼓
-                const targetDrum = detectDrumFromAccel(data.ax, data.ay, data.az);
-                console.log(`🥁 Left Hit: ${targetDrum} (ax=${data.ax.toFixed(1)}, ay=${data.ay.toFixed(1)}, az=${data.az.toFixed(1)}, height=${(20-data.az).toFixed(1)})`);
-                playSound(targetDrum);
-                leftHitCooldown = 8;
-            } else if (data.is_hit && data.hit_drum) {
-                // 後備方案：使用後端判斷
-                console.log(`🥁 Left Hit (backend): ${data.hit_drum}`);
-                playSound(data.hit_drum);
-                leftHitCooldown = 8;
-            }
         })
         .catch(err => console.log("Left fetch error:", err))
         .finally(() => setTimeout(updateLeft, 0));
