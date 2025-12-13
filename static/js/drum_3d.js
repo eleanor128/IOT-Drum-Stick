@@ -101,18 +101,14 @@ function init3D() {
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
     
-    // 光照
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    // 光照 - 從頂端照下來
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
     
-    const light1 = new THREE.DirectionalLight(0xffffff, 0.3);
-    light1.position.set(5, 10, 5);
-    light1.castShadow = true;
-    scene.add(light1);
-    
-    const light2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    light2.position.set(-5, 5, -5);
-    scene.add(light2);
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    topLight.position.set(0, 10, 0);  // 從正上方照下來
+    topLight.castShadow = true;
+    scene.add(topLight);
     
     // 地板
     const floorGeometry = new THREE.PlaneGeometry(15, 15);
