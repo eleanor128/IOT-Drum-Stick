@@ -53,6 +53,18 @@ function playSound(name) {
     if (!audioEnabled || !audioCtx || !audioBuffers[name]) return;
     
     try {
+        // Success 音效不受限制，完整播放
+        if (name === "Success") {
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffers[name];
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.8;
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+            return;
+        }
+        
         // 如果該鼓正在播放音效，先停止它
         if (activeSources[name]) {
             try {
