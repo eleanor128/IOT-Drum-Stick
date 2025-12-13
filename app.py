@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template
 from calibration_right import update_right_angle
 from calibration_left import update_left_angle
+from drum_collision import drum_collision
 import threading
 
 # I2C 總線鎖，防止左右手感測器同時讀取造成衝突
@@ -33,6 +34,11 @@ def right_data():
     # 綜合判斷為敲擊
     is_hit = is_downward_swing and is_sudden_stop
 
+    # 偵測打擊到哪個鼓
+    hit_drum = None
+    if is_hit:
+        hit_drum = drum_collision.detect_hit_drum(pitch, yaw, hand="right")
+
     return jsonify({
         "roll (x軸轉)": roll,
         "pitch (y軸轉)": pitch,
@@ -43,7 +49,8 @@ def right_data():
         "gx": gx,
         "gy": gy,
         "gz": gz,
-        "is_hit": is_hit
+        "is_hit": is_hit,
+        "hit_drum": hit_drum
     })
 
 @app.route("/left_data")
@@ -56,6 +63,11 @@ def left_data():
     is_sudden_stop = az < -1.0
     is_hit = is_downward_swing and is_sudden_stop
 
+    # 偵測打擊到哪個鼓
+    hit_drum = None
+    if is_hit:
+        hit_drum = drum_collision.detect_hit_drum(pitch, yaw, hand="left")
+
     return jsonify({
         "roll (x軸轉)": roll,
         "pitch (y軸轉)": pitch,
@@ -66,7 +78,8 @@ def left_data():
         "gx": gx,
         "gy": gy,
         "gz": gz,
-        "is_hit": is_hit
+        "is_hit": is_hit,
+        "hit_drum": hit_drum
     })
 
 if __name__ == "__main__":

@@ -388,10 +388,9 @@ function updateRight() {
             rightData = data;
             if (rightHitCooldown > 0) {
                 rightHitCooldown--;
-            } else if (data.is_hit) {
-                const zone = detectZone(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
-                console.log(`🥁 Right Hit: ${zone}`);
-                playSound(zone);
+            } else if (data.is_hit && data.hit_drum) {
+                console.log(`🥁 Right Hit: ${data.hit_drum}`);
+                playSound(data.hit_drum);
                 rightHitCooldown = 8;
             }
         })
@@ -406,10 +405,9 @@ function updateLeft() {
             leftData = data;
             if (leftHitCooldown > 0) {
                 leftHitCooldown--;
-            } else if (data.is_hit) {
-                const zone = detectZone(data["pitch (y軸轉)"], data["yaw (z軸轉)"]);
-                console.log(`🥁 Left Hit: ${zone}`);
-                playSound(zone);
+            } else if (data.is_hit && data.hit_drum) {
+                console.log(`🥁 Left Hit: ${data.hit_drum}`);
+                playSound(data.hit_drum);
                 leftHitCooldown = 8;
             }
         })
