@@ -173,7 +173,7 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     
     // X軸（左右）：ax 正值=右側，負值=左側
     // 基礎位置設為 0.5 (Snare 位置)，左右手稍微錯開
-    const baseX = isLeft ? 0.4 : 0.6;
+    const baseX = isLeft ? 0.2 : 0.8;
     const x3d = baseX + ax * 0.1;
     
     // Y軸（高度）：az 越小=越高，az 越大=越低
@@ -188,7 +188,7 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     
     // 限制範圍
     return [
-        Math.max(-1.5, Math.min(1.5, x3d)),
+        Math.max(-2.0, Math.min(2.0, x3d)),
         Math.max(0.3, Math.min(2.5, y3d)),
         Math.max(-2.5, Math.min(0.5, z3d)) // 放寬 Z 軸上限，從 -1.0 改為 0.5，讓鼓棒能伸到後排
     ];
