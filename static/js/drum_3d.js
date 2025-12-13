@@ -225,6 +225,37 @@ function mapXYto3D(x, y) {
     return [x3d, y3d, z3d];
 }
 
+// 碰撞檢測：檢查鼓棒是否碰到鼓或鈸
+function checkCollision(stickPos) {
+    let collisionInfo = { hit: false, drumName: null, adjustedPos: [...stickPos] };
+    
+    zones.forEach(zone => {
+        const drumPos = zone.pos3d;
+        const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
+        const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
+        
+        // 計算鼓棒與鼓中心的水平距離
+        const dx = stickPos[0] - drumPos[0];
+        const dz = stickPos[2] - drumPos[2];
+        const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+        
+        // 如果鼓棒在鼓的半徑範圍內
+        if (horizontalDist <= radius) {
+            const drumTopY = drumPos[1];  // 鼓面的高度
+            
+            // 如果鼓棒低於或接近鼓面（考慮鼓棒半徑 0.15）
+            if (stickPos[1] <= drumTopY + 0.15) {
+                collisionInfo.hit = true;
+                collisionInfo.drumName = zone.name;
+                // 將鼓棒位置調整到鼓面上方
+                collisionInfo.adjustedPos[1] = drumTopY + 0.15;
+            }
+        }
+    });
+    
+    return collisionInfo;
+}
+
 // 繪製函數（3D版本）
 function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 計算 2D 坐標（用於敲擊偵測）
@@ -232,8 +263,22 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     const leftPos2D = mapAngleToXY(leftPitch, leftYaw);
     
     // 轉換為 3D 位置
-    const rightPos3D = mapXYto3D(rightPos2D.x, rightPos2D.y);
-    const leftPos3D = mapXYto3D(leftPos2D.x, leftPos2D.y);
+    let rightPos3D = mapXYto3D(rightPos2D.x, rightPos2D.y);
+    let leftPos3D = mapXYto3D(leftPos2D.x, leftPos2D.y);
+    
+    // 碰撞檢測：右手鼓棒
+    const rightCollision = checkCollision(rightPos3D);
+    if (rightCollision.hit) {
+        rightPos3D = rightCollision.adjustedPos;
+        // console.log('🔴 右手碰到:', rightCollision.drumName);
+    }
+    
+    // 碰撞檢測：左手鼓棒
+    const leftCollision = checkCollision(leftPos3D);
+    if (leftCollision.hit) {
+        leftPos3D = leftCollision.adjustedPos;
+        // console.log('🔵 左手碰到:', leftCollision.drumName);
+    }
     
     // 更新鼓棒位置
     rightStick.position.set(...rightPos3D);
