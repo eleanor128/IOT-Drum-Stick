@@ -335,12 +335,12 @@ function checkCollision(stickPos) {
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     // 右手鼓棒的握把位置（手的位置）
     // 根據 yaw 控制左右位置，擴大移動範圍
-    const rightHandX = (rightYaw - 45) / 90 * 3 + 2;  // 右手初始位置靠近 Snare
+    const rightHandX = (rightYaw - 45) / 90 * 3 + 0.5;  // 右手起始位置在 Snare 上方 (x=0.5)
     const rightHandY = 1.5;  // 握把高度
     const rightHandZ = -0.6 + (rightData["roll (x軸轉)"] / 45) * 1.5;  // roll 控制前後深淺
     
     // 左手鼓棒的握把位置
-    const leftHandX = (leftYaw - 45) / 90 * 3 + 2.2;  // 左手在左側
+    const leftHandX = (leftYaw - 45) / 90 * 3 + 0.3;  // 左手起始位置在 Snare 左側 (x=0.3)
     const leftHandY = 1.5;  // 握把高度
     const leftHandZ = -0.6 + (leftData["roll (x軸轉)"] / 45) * 1.5;  // roll 控制前後深淺   
     

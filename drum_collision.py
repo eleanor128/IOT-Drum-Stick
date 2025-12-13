@@ -102,9 +102,9 @@ class DrumCollision:
         
         # 計算握把位置（與 drum_3d.js 完全一致）
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 3 + 2
+            hand_x = (yaw - 45) / 90 * 3 + 0.5  # 右手起始位置在 Snare 上方
         else:
-            hand_x = (yaw - 45) / 90 * 3 + 2.2
+            hand_x = (yaw - 45) / 90 * 3 + 0.3  # 左手起始位置在 Snare 左側
         hand_y = 1.5
         hand_z = -2.8 + (roll / 45) * 1.5
         
