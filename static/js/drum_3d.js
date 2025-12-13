@@ -238,21 +238,40 @@ function detectZone(pitch, yaw) {
     return "Snare";
 }
 
-// 保持原有的數據顯示邏輯
+// 更新感測器數據顯示（左右手分開顯示）
 function updateSensorDisplay(rightData, leftData) {
-    document.getElementById('pitch-value').textContent = rightData["pitch (y軸轉)"].toFixed(1) + '° (R)';
-    document.getElementById('roll-value').textContent = rightData["roll (x軸轉)"].toFixed(1) + '° (R)';
-    document.getElementById('yaw-value').textContent = rightData["yaw (z軸轉)"].toFixed(1) + '° (R)';
-    document.getElementById('accel-x-value').textContent = rightData.ax.toFixed(2) + ' g (R)';
-    document.getElementById('accel-y-value').textContent = rightData.ay.toFixed(2) + ' g (R)';
-    document.getElementById('accel-z-value').textContent = rightData.az.toFixed(2) + ' g (R)';
+    // 除錯：檢查數據
+    // console.log('Right:', rightData["pitch (y軸轉)"], 'Left:', leftData["pitch (y軸轉)"]);
+    
+    // 右手數據
+    document.getElementById('pitch-value').textContent = rightData["pitch (y軸轉)"].toFixed(1) + '°';
+    document.getElementById('roll-value').textContent = rightData["roll (x軸轉)"].toFixed(1) + '°';
+    document.getElementById('yaw-value').textContent = rightData["yaw (z軸轉)"].toFixed(1) + '°';
+    document.getElementById('accel-x-value').textContent = rightData.ax.toFixed(2) + ' g';
+    document.getElementById('accel-y-value').textContent = rightData.ay.toFixed(2) + ' g';
+    document.getElementById('accel-z-value').textContent = rightData.az.toFixed(2) + ' g';
     
     const rightMagnitude = Math.sqrt(rightData.ax ** 2 + rightData.ay ** 2 + rightData.az ** 2);
-    document.getElementById('magnitude-value').textContent = rightMagnitude.toFixed(2) + ' g (R)';
+    document.getElementById('magnitude-value').textContent = rightMagnitude.toFixed(2) + ' g';
     
-    document.getElementById('gyro-x-value').textContent = rightData.gx.toFixed(1) + '°/s (R)';
-    document.getElementById('gyro-y-value').textContent = rightData.gy.toFixed(1) + '°/s (R)';
-    document.getElementById('gyro-z-value').textContent = rightData.gz.toFixed(1) + '°/s (R)';
+    document.getElementById('gyro-x-value').textContent = rightData.gx.toFixed(1) + '°/s';
+    document.getElementById('gyro-y-value').textContent = rightData.gy.toFixed(1) + '°/s';
+    document.getElementById('gyro-z-value').textContent = rightData.gz.toFixed(1) + '°/s';
+    
+    // 左手數據
+    document.getElementById('left-pitch-value').textContent = leftData["pitch (y軸轉)"].toFixed(1) + '°';
+    document.getElementById('left-roll-value').textContent = leftData["roll (x軸轉)"].toFixed(1) + '°';
+    document.getElementById('left-yaw-value').textContent = leftData["yaw (z軸轉)"].toFixed(1) + '°';
+    document.getElementById('left-accel-x-value').textContent = leftData.ax.toFixed(2) + ' g';
+    document.getElementById('left-accel-y-value').textContent = leftData.ay.toFixed(2) + ' g';
+    document.getElementById('left-accel-z-value').textContent = leftData.az.toFixed(2) + ' g';
+    
+    const leftMagnitude = Math.sqrt(leftData.ax ** 2 + leftData.ay ** 2 + leftData.az ** 2);
+    document.getElementById('left-magnitude-value').textContent = leftMagnitude.toFixed(2) + ' g';
+    
+    document.getElementById('left-gyro-x-value').textContent = leftData.gx.toFixed(1) + '°/s';
+    document.getElementById('left-gyro-y-value').textContent = leftData.gy.toFixed(1) + '°/s';
+    document.getElementById('left-gyro-z-value').textContent = leftData.gz.toFixed(1) + '°/s';
 }
 
 // 保持原有的數據更新邏輯
