@@ -5,7 +5,7 @@ let audioEnabled = false;
 let activeSources = {};  // 記錄每個鼓正在播放的音效源
 
 // 鼓音效播放時長設定（秒）
-const DRUM_SOUND_DURATION = 0.5;
+const DRUM_SOUND_DURATION = 0.2;
 
 async function enableAudio() {
     // const btn = document.getElementById('enableAudioBtn');
