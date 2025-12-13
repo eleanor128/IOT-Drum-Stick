@@ -192,7 +192,7 @@ function init3D() {
         // 鼓棒頂端（球形敲擊端）- 在前方
         const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.z = 0.8;  // 放在棒子前端
+        tipMesh.position.z = 2;  // 放在棒子前端
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
