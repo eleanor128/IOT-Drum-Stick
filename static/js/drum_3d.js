@@ -401,6 +401,9 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
         
+        // 增加碰撞檢測半徑，確保打到邊緣也能觸發，並防止邊緣穿模
+        const hitRadius = radius + 0.15;
+        
         let drumHeight;
         if (isCymbal) {
             drumHeight = 0.05;  // 鈸很薄
@@ -422,23 +425,25 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const dx = tipX - drumPos[0];
         const dz = tipZ - drumPos[2];
         
-        if (dx * dx + dz * dz < radius * radius) {
+        if (dx * dx + dz * dz < hitRadius * hitRadius) {
             // 檢查垂直穿透
             // 尖端 Y = gripY - L * sin(rotX)
             const currentTipY = gripPos[1] - stickLength * Math.sin(rotX);
             
-            // 如果尖端低於鼓面 (加一點緩衝 0.02)
-            if (currentTipY < drumTopY + 0.02) {
+            // 如果尖端低於鼓面 (增加緩衝到 0.05，確保視覺上不穿模)
+            const buffer = 0.05;
+            if (currentTipY < drumTopY + buffer) {
                 // 計算限制角度：sin(rotX) <= (gripY - drumTopY) / L
-                const maxSin = (gripPos[1] - (drumTopY + 0.02)) / stickLength;
-                // 限制範圍避免錯誤
-                if (maxSin >= -1 && maxSin <= 1) {
-                    const maxRotX = Math.asin(maxSin);
-                    // 因為 rotX 越大越向下，所以取最小值
-                    if (maxRotX < correctedRotX) {
-                        correctedRotX = maxRotX;
-                        hitDrum = zone.name;
-                    }
+                let maxSin = (gripPos[1] - (drumTopY + buffer)) / stickLength;
+                
+                // 限制 maxSin 在 [-1, 1] 範圍內，防止 NaN (當握把過低或過高時)
+                maxSin = Math.max(-1, Math.min(1, maxSin));
+                
+                const maxRotX = Math.asin(maxSin);
+                // 因為 rotX 越大越向下，所以取最小值
+                if (maxRotX < correctedRotX) {
+                    correctedRotX = maxRotX;
+                    hitDrum = zone.name;
                 }
             }
         }
