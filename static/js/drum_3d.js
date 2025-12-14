@@ -321,17 +321,17 @@ function init3D() {
     
     // 創建右手鼓棒（紅色）
     rightStick = createDrumstick(RIGHT_STICK_COLOR, RIGHT_STICK_EMISSIVE);
-    // 初始位置：尖端指向z軸正向，棒身水平於xz平面
-    rightStick.position.set(0, 1.5, GRIP_BASE_Z);  // 初始位置
+    // 初始位置：尖端對準 Snare 鼓面中心
+    rightStick.position.set(GRIP_RIGHT_X, GRIP_BASE_Y, GRIP_BASE_Z);  // 初始位置使用配置值
     rightStick.rotation.x = 0;  // Pitch = 0 (水平)
     rightStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
     rightStick.rotation.z = 0;  // Roll = 0
     scene.add(rightStick);
-    
+
     // 創建左手鼓棒（藍色）
     leftStick = createDrumstick(LEFT_STICK_COLOR, LEFT_STICK_EMISSIVE);
-    // 初始位置：尖端指向z軸正向，棒身水平於xz平面
-    leftStick.position.set(0, 1.5, GRIP_BASE_Z);  // 初始位置
+    // 初始位置：尖端對準 Snare 鼓面中心
+    leftStick.position.set(GRIP_LEFT_X, GRIP_BASE_Y, GRIP_BASE_Z);  // 初始位置使用配置值
     leftStick.rotation.x = 0;  // Pitch = 0 (水平)
     leftStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
     leftStick.rotation.z = 0;  // Roll = 0
