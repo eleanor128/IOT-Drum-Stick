@@ -774,9 +774,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 限制手部Z軸範圍：後方（Hihat）到前方（Symbal）
     targetRightZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetRightZ));
     
-    // 根據 Pitch 調整手部 Y 位置（敲擊時手部上下移動，呈現hitting動畫）
-    // pitch增加（舉起）→手部微幅上升，pitch減少（向下）→手部微幅下降
-    targetRightY += clampedRightPitch * PITCH_Y_FACTOR * 10;  // 適度放大讓動畫可見但不誇張
+    // 手部Y位置固定在基礎高度（不受pitch影響）
+    targetRightY = GRIP_BASE_Y;
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -822,8 +821,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 限制手部Z軸範圍
     targetLeftZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetLeftZ));
     
-    // 根據 Pitch 調整手部 Y 位置（敲擊時手部上下移動，呈現hitting動畫）
-    targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR * 10;  // 適度放大讓動畫可見但不誇張
+    // 手部Y位置固定在基礎高度（不受pitch影響）
+    targetLeftY = GRIP_BASE_Y;
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);

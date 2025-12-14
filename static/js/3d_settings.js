@@ -172,7 +172,7 @@ const maxDrumZ = Math.max(...drumZPositions);  // 最前方鼓 (Symbal: 0.5)
 
 // Z軸範圍限制（根據鼓的位置和鼓棒長度自動計算）
 // 手部位置 = 鼓面位置 - 鼓棒長度 * 係數
-const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 1.2;  // 握把最後方位置（打後方鼓時手可以更後方）
+const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 0.8;  // 握把最後方位置（確保鼓棒能打到後方鼓）
 const GRIP_Z_MAX = maxDrumZ + STICK_LENGTH * 0.5;  // 握把最前方位置（打前方鼓時手可以更前方）
 
 // X軸範圍限制（左右手分開設定，根據鼓的位置和鼓棒長度計算）

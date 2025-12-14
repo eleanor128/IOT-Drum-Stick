@@ -238,13 +238,15 @@ class DrumCollisionDetector:
         # 限制範圍
         hand_z = max(GRIP_Z_MIN, min(GRIP_Z_MAX, hand_z))
         
-        # 加入 Pitch 對手部 Y 位置的影響（hitting 動畫）
+        # 手部 Y 位置固定在基礎高度（不受 pitch 影響）
+        hand_y = GRIP_BASE_Y
+        
+        # 2. 限制 Pitch 角度範圍並計算旋轉
         PITCH_MIN = cfg.get("PITCH_MIN", -30)
         PITCH_MAX = cfg.get("PITCH_MAX", 45)
         clamped_pitch = max(PITCH_MIN, min(PITCH_MAX, pitch))
-        hand_y += clamped_pitch * PITCH_Y_FACTOR * 10  # 與前端一致
         
-        # 2. 計算鼓棒的旋轉角度（弧度）- 完全對應 drum_3d.js 的 hitting 狀態
+        # 3. 計算鼓棒的旋轉角度（弧度）- 完全對應 drum_3d.js 的 hitting 狀態
         # 前端 hitting 時: rightRotX = -(clampedRightPitch / 20) * (Math.PI / 2)
         # 前端 hitting 時: rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3)
         # 碰撞檢測主要在 hitting 時觸發，所以使用 hitting 的旋轉公式
@@ -312,11 +314,8 @@ class DrumCollisionDetector:
         else:
             hand_x = GRIP_LEFT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         
-        # 加入 Pitch 對手部 Y 位置的影響
-        PITCH_MIN = cfg.get("PITCH_MIN", -30)
-        PITCH_MAX = cfg.get("PITCH_MAX", 45)
-        clamped_pitch = max(PITCH_MIN, min(PITCH_MAX, pitch))
-        hand_y = GRIP_BASE_Y + clamped_pitch * PITCH_Y_FACTOR * 10
+        # 手部 Y 位置固定在基礎高度
+        hand_y = GRIP_BASE_Y
         
         # 計算 Z 位置
         hand_z = GRIP_BASE_Z
