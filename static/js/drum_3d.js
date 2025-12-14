@@ -392,50 +392,65 @@ function solveStickCollision(gripPos, rotX, rotY) {
     const checkPoints = [1.0, 0.7];
     let correctedRotX = rotX;
     let hitDrum = null;
-    
+
     zones.forEach(zone => {
         const drumPos = zone.pos3d;
+        const drumRot = zone.rotation;
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
-        
-        // 增加碰撞檢測半徑，確保打到邊緣也能觸發，並防止邊緣穿模
-        const hitRadius = radius + 0.2;
-        
+        const hitRadius = radius + 0.2; // 增加碰撞檢測半徑
+
         let drumHeight;
         if (isCymbal) {
-            drumHeight = 0.1;  // 鈸很薄
+            drumHeight = 0.05;
         } else if (zone.name === "Tom_floor") {
-            drumHeight = 1.2;   // 落地鼓較長
+            drumHeight = 1.0;
         } else {
-            drumHeight = 0.8;   // 其他鼓的標準高度
+            drumHeight = 0.5;
         }
-        
-        const drumTopY = drumPos[1] + drumHeight / 2;
-        const buffer = 0.1; // 緩衝距離
-        
+
+        const buffer = 0.05; // 緩衝距離
+
+        // 計算鼓面中心點 (考慮旋轉)
+        const headCenterY = drumPos[1] + (drumHeight / 2) * Math.cos(drumRot);
+        const headCenterZ = drumPos[2] + (drumHeight / 2) * Math.sin(drumRot);
+
+        // 計算鼓面法線向量
+        const normalY = Math.cos(drumRot);
+        const normalZ = Math.sin(drumRot);
+
         // 檢查每個關鍵點
         checkPoints.forEach(fraction => {
             const dist = stickLength * fraction;
-            
-            // 計算該點的 3D 位置
+
+            // 計算該點的 3D 位置 (當前幀)
             const pX = gripPos[0] + dist * Math.cos(rotX) * Math.sin(rotY);
+            const pY = gripPos[1] - dist * Math.sin(rotX);
             const pZ = gripPos[2] + dist * Math.cos(rotX) * Math.cos(rotY);
-            
-            // 檢查水平距離
+
+            // 1. 檢查水平距離 (近似於圓形)
             const dx = pX - drumPos[0];
-            const dz = pZ - drumPos[2];
-            
+            const dz = pZ - headCenterZ; // 使用鼓面中心Z做判斷
             if (dx * dx + dz * dz < hitRadius * hitRadius) {
-                // 檢查垂直高度
-                const currentPY = gripPos[1] - dist * Math.sin(rotX);
-                
-                if (currentPY < drumTopY + buffer) {
-                    // 計算限制角度
-                    let maxSin = (gripPos[1] - (drumTopY + buffer)) / dist;
+
+                // 2. 檢查是否穿過鼓面平面
+                // 點到平面的距離 = (點 - 平面上一點) dot 法線
+                const distToPlane = (pY - headCenterY) * normalY + (pZ - headCenterZ) * normalZ;
+
+                if (distToPlane < buffer) {
+                    // 發生碰撞，計算修正角度
+                    // 我們需要找到一個 new_rotX，使得點剛好在平面上
+                    // y_surface = head_center_y - tan(rot) * (pZ(new_rotX) - head_center_z)
+                    // sin(new_rotX) = (grip_y - y_surface) / dist
+                    // 這是一個隱式方程，我們用當前的 pZ 作為近似值來求解
+                    
+                    const y_surface_at_pZ = headCenterY - (normalZ / normalY) * (pZ - headCenterZ);
+                    
+                    let maxSin = (gripPos[1] - (y_surface_at_pZ + buffer)) / dist;
                     maxSin = Math.max(-1, Math.min(1, maxSin));
                     
                     const maxRotX = Math.asin(maxSin);
-                    
+
                     // 取最小的角度（限制向下揮動）
                     if (maxRotX < correctedRotX) {
                         correctedRotX = maxRotX;
@@ -445,7 +460,7 @@ function solveStickCollision(gripPos, rotX, rotY) {
             }
         });
     });
-    
+
     return { correctedRotX, hitDrum };
 }
 
@@ -516,8 +531,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     targetRightX = Math.max(-0.8, Math.min(0.8, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
-    // Pitch 變大 (向上舉) -> 手部向前伸 (Z值變大) 以打擊後方鼓 (如鈸、通鼓)
-    targetRightZ += rightPitch * 0.020; // Pitch 越大，手伸得越深
+    // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
+    // 增加 Pitch 對 Z 軸的影響，讓手抬高時能伸得更深，打到中鼓
+    targetRightZ -= rightPitch * 0.012; // 從 0.005 增加到 0.012，讓 pitch 大時手伸得更深
     targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
@@ -538,8 +554,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         let targetLeftZ = -2.5;
     targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
 
-    // Pitch 變大 (向上舉) -> 手部向前伸 (Z值變大) 以打擊後方鼓 (如鈸、通鼓)
-    targetLeftZ += leftPitch * 0.020; // Pitch 越大，手伸得越深
+    // 增加 Pitch 對 Z 軸的影響，讓手抬高時能伸得更深，打到中鼓
+    targetLeftZ -= leftPitch * 0.012; // 從 0.005 增加到 0.012，讓 pitch 大時手伸得更深
     targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
