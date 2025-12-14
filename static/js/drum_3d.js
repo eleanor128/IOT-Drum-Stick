@@ -395,10 +395,20 @@ function init3D() {
     
     // 創建右手鼓棒（紅色）
     rightStick = createDrumstick(0xff0000, 0x660000);
+    // 初始位置：尖端指向z軸正向，棒身水平於xz平面
+    rightStick.position.set(0, 1.5, -2.0);  // 初始位置
+    rightStick.rotation.x = 0;  // Pitch = 0 (水平)
+    rightStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
+    rightStick.rotation.z = 0;  // Roll = 0
     scene.add(rightStick);
     
     // 創建左手鼓棒（藍色）
     leftStick = createDrumstick(0x0000ff, 0x000066);
+    // 初始位置：尖端指向z軸正向，棒身水平於xz平面
+    leftStick.position.set(0, 1.5, -2.0);  // 初始位置
+    leftStick.rotation.x = 0;  // Pitch = 0 (水平)
+    leftStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
+    leftStick.rotation.z = 0;  // Roll = 0
     scene.add(leftStick);
 }
 
