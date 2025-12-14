@@ -373,7 +373,6 @@ function mapXYto3D(x, y, pitch) {
 }
 
 // 碰撞檢測與修正：基於 XZ 平面投影，防止鼓棒穿透鼓面
-// 只要鼓棒尖端的 XZ 投影在鼓的範圍內，就修正角度讓尖端停在鼓面上
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = STICK_LENGTH;
     let correctedRotX = rotX;
@@ -404,28 +403,20 @@ function solveStickCollision(gripPos, rotX, rotY) {
         }
 
         // 計算鼓面中心位置（考慮旋轉）
-        // 鼓面在鼓的頂部，需要沿著法線方向偏移
         const drumSurfaceY = drumY + (drumHeight / 2) * Math.cos(drumRot);
-        const drumSurfaceZ = drumZ + (drumHeight / 2) * Math.sin(drumRot);
 
-        // XZ 平面距離檢測（俯視圖）- 使用鼓的中心 XZ 位置，不是鼓面位置
+        // XZ 平面距離檢測（俯視圖）
         const dx = tipX - drumX;
         const dz = tipZ - drumZ;
         const distanceXZ = Math.sqrt(dx * dx + dz * dz);
 
         // 如果尖端在鼓的 XZ 投影範圍內
-        if (distanceXZ <= radius) {
-            // 計算鼓面法線向量
-            const normalY = Math.cos(drumRot);
-            const normalZ = Math.sin(drumRot);
-
-            // 計算尖端到鼓面的垂直距離（沿法線方向）
-            const distToSurface = (tipY - drumSurfaceY) * normalY + (tipZ - drumSurfaceZ) * normalZ;
-
-            // 如果尖端在鼓面下方（穿透了）
-            if (distToSurface < 0.05) {  // 0.05 是緩衝距離
-                // 計算目標尖端位置（鼓面上方 0.05）
-                const targetTipY = drumSurfaceY + 0.05 * normalY;
+        if (distanceXZ <= radius + 0.15) {  // 增加邊緣緩衝
+            // 計算尖端是否低於鼓面（簡化：只看 Y 軸）
+            const buffer = 0.1;  // 增加緩衝距離
+            if (tipY < drumSurfaceY + buffer) {
+                // 需要修正角度，讓尖端停在鼓面上方
+                const targetTipY = drumSurfaceY + buffer;
                 const deltaY = gripPos[1] - targetTipY;
 
                 // 計算需要的 rotX（pitch）角度
@@ -433,7 +424,7 @@ function solveStickCollision(gripPos, rotX, rotY) {
                 sinRotX = Math.max(-1, Math.min(1, sinRotX));
                 const newRotX = Math.asin(sinRotX);
 
-                // 只在新角度比當前角度更水平時才修正（防止向下穿透）
+                // 修正角度（讓鼓棒更水平，防止向下穿透）
                 if (newRotX > correctedRotX) {
                     correctedRotX = newRotX;
                 }
