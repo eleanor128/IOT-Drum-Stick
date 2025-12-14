@@ -1,11 +1,12 @@
+// ==================== 設定檔引用 ====================
+// 所有配置參數已移至 3d_settings.js 統一管理
+// 請在 HTML 中先載入: <script src="/static/js/3d_settings.js"></script>
+
 // 複製音效系統（保持不變）
 let audioCtx;
 let audioBuffers = {};
 let audioEnabled = false;
 let activeSources = [];  // 記錄所有正在播放的音效源（支援同時播放相同音效）
-
-// 鼓音效播放時長設定（秒）
-const DRUM_SOUND_DURATION = 0.3;
 
 async function enableAudio() {
     // const btn = document.getElementById('enableAudioBtn');
@@ -20,18 +21,8 @@ async function enableAudio() {
         
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        const files = {
-            "Success": "/static/sounds/success.wav",
-            "Symbal": "/static/sounds/symbal.wav",
-            "Tom_high": "/static/sounds/tom_high.wav",
-            "Tom_mid": "/static/sounds/tom_mid.wav",
-            "Ride": "/static/sounds/ride.wav",
-            "Hihat": "/static/sounds/hihat.wav",
-            "Snare": "/static/sounds/snare.wav",
-            "Tom_floor": "/static/sounds/tom_floor.wav",
-        };
-
-        for (const key in files) {
+        // 使用 3d_settings.js 中的 SOUND_FILES 配置
+        for (const key in SOUND_FILES) {
             try {
                 const response = await fetch(files[key]);
                 if (!response.ok) continue;
@@ -195,82 +186,17 @@ let scene, camera, renderer;
 let drumMeshes = {};
 let rightStick, leftStick;
 
-// pos3d: [x, y中心點, z], 鼓/鈸的完整幾何位置（傾斜圓柱體）：
-// 
-// 【每個鼓/鈸的幾何範圍】(鼓面=頂部, 鼓底=底部)
-// 1. Hihat (鈸):
-//    - 中心點 [1.8, 0.8, -1], 半徑=0.65, 高度=0.05, 傾斜=-20°
-//    - 鼓面(頂) Y=0.824, Z=-1.009 | 鼓底 Y=0.776, Z=-0.991
-//    - 範圍: Y=[0.776~0.824], Z=[-1.009~-0.991], X=[1.15~2.45]
-// 
-// 2. Snare (鼓):
-//    - 中心點 [0.5, 0.4, -0.8], 半徑=0.65, 高度=0.5, 傾斜=-15°
-//    - 鼓面(頂) Y=0.642, Z=-0.865 | 鼓底 Y=0.158, Z=-0.735
-//    - 範圍: Y=[0.158~0.642], Z=[-0.865~-0.735], X=[-0.15~1.15]
-// 
-// 3. Tom_high (鼓):
-//    - 中心點 [0.6, 0.8, 0.7], 半徑=0.55, 高度=0.5, 傾斜=-26°
-//    - 鼓面(頂) Y=1.025, Z=0.592 | 鼓底 Y=0.575, Z=0.808
-//    - 範圍: Y=[0.575~1.025], Z=[0.592~0.808], X=[0.05~1.15]
-// 
-// 4. Tom_mid (鼓):
-//    - 中心點 [-0.6, 0.8, 0.7], 半徑=0.55, 高度=0.5, 傾斜=-26°
-//    - 鼓面(頂) Y=1.025, Z=0.592 | 鼓底 Y=0.575, Z=0.808
-//    - 範圍: Y=[0.575~1.025], Z=[0.592~0.808], X=[-1.15~-0.05]
-// 
-// 5. Symbal (鈸):
-//    - 中心點 [1.6, 1.4, 0.7], 半徑=0.80, 高度=0.05, 傾斜=-30°
-//    - 鼓面(頂) Y=1.422, Z=0.688 | 鼓底 Y=1.378, Z=0.713
-//    - 範圍: Y=[1.378~1.422], Z=[0.688~0.713], X=[0.8~2.4]
-// 
-// 6. Ride (鈸):
-//    - 中心點 [-1.8, 1.4, -0.1], 半徑=0.90, 高度=0.05, 傾斜=-30°
-//    - 鼓面(頂) Y=1.422, Z=-0.113 | 鼓底 Y=1.378, Z=-0.088
-//    - 範圍: Y=[1.378~1.422], Z=[-0.113~-0.088], X=[-2.7~-0.9]
-// 
-// 7. Tom_floor (鼓):
-//    - 中心點 [-1.4, 0.2, -0.8], 半徑=0.80, 高度=1.0, 傾斜=-20°
-//    - 鼓面(頂) Y=0.670, Z=-0.971 | 鼓底 Y=-0.270, Z=-0.629
-//    - 範圍: Y=[-0.270~0.670], Z=[-0.971~-0.629], X=[-2.2~-0.6]
-// 
-// 【鼓棒尖端移動範圍】
-// X軸: -1.8 (Ride) ～ 1.8 (Hihat)     範圍: 3.6m
-// Y軸:  0.642 (Snare) ～ 1.422 (鈸)   範圍: 0.78m
-// Z軸: -1.009 (Hihat最近) ～ 0.688 (Symbal最遠)   範圍: 1.697m
-// 
-// 【推算合理參數】(鼓棒長度 1.2m)
-// 鼓棒尖端最近: Z=-1.009 (Hihat/Snare/Tom_floor)
-// 鼓棒尖端最遠: Z=0.688 (Tom_high/Tom_mid/Symbal/Ride)
-// 
-// 手部Z軸位置必須 < 鼓棒尖端Z值:
-// 握把最後方: -1.009 - 1.2 = -2.209 (打Hihat時)
-// 握把最前方:  0.688 - 1.2 = -0.512 (打Symbal時)
-// 握把位置Z軸範圍: -2.2 ～ -0.5  => 移動幅度: 1.7m ✅
-// 握把Y軸範圍: 約 0.5 ～ 1.2m (考慮手臂自然高度)
-// 握把X軸: 左右手分別固定在 ±0.2/0.8 附近，主要靠Yaw轉動覆蓋左右範圍
-const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   
-    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, 
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.4, 0.7], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.8, 1.4, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1.4, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, 
-];
-// 修改 glowColor 來自定義每個鼓的發光顏色 (格式: 0xRRGGBB)
-// Math.PI / 18	10°	微微傾斜
-// Math.PI / 9	20°	中度傾斜
-// Math.PI / 6	30°	明顯傾斜
+// zones 配置已移至 3d_settings.js
 
 
 // 初始化 3D 場景
 function init3D() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x222222);
+    scene.background = new THREE.Color(SCENE_BG_COLOR);
     
-    camera = new THREE.PerspectiveCamera(60, 900 / 600, 0.1, 1000);
-    camera.position.set(0, 3.5, -4);
-    camera.lookAt(0, 0, 2);
+    camera = new THREE.PerspectiveCamera(CAMERA_FOV, CAMERA_ASPECT, CAMERA_NEAR, CAMERA_FAR);
+    camera.position.set(...CAMERA_POSITION);
+    camera.lookAt(...CAMERA_LOOKAT);
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(900, 600);
@@ -278,23 +204,23 @@ function init3D() {
     container.appendChild(renderer.domElement);
     
     // 光照 - 從頂端照下來
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(AMBIENT_LIGHT_COLOR, AMBIENT_LIGHT_INTENSITY);
     scene.add(ambientLight);
     
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    topLight.position.set(0, 10, 0);  // 從正上方照下來
+    const topLight = new THREE.DirectionalLight(DIRECTIONAL_LIGHT_COLOR, DIRECTIONAL_LIGHT_INTENSITY);
+    topLight.position.set(...DIRECTIONAL_LIGHT_POSITION);  // 從正上方照下來
     topLight.castShadow = true;
     scene.add(topLight);
     
     // 地板
-    const floorGeometry = new THREE.PlaneGeometry(15, 15);
-        const floorMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x2d2d2d,  // 從 0x444444 改為 0x2d2d2d
-        roughness: 0.8 
+    const floorGeometry = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE);
+    const floorMaterial = new THREE.MeshStandardMaterial({ 
+        color: FLOOR_COLOR,
+        roughness: FLOOR_ROUGHNESS 
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.5;
+    floor.position.y = FLOOR_Y;
     floor.receiveShadow = true;
     scene.add(floor);
     
@@ -305,21 +231,21 @@ function init3D() {
         createdDrums.add(zone.name + zone.pos3d.join());
         
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
-        const radius = zone.radius || (isCymbal ? 1.2 : 0.9);  // 使用自定義半徑或預設值
+        const radius = zone.radius || (isCymbal ? DEFAULT_CYMBAL_RADIUS : DEFAULT_DRUM_RADIUS);
         
         let height;
         if (isCymbal) {
-            height = 0.05;  // 鈸很薄
+            height = CYMBAL_HEIGHT;
         } else if (zone.name === "Tom_floor") {
-            height = 1;   // 落地通鼓較長
+            height = TOM_FLOOR_HEIGHT;
         } else {
-            height = 0.5;   // 其他鼓的標準高度
+            height = STANDARD_DRUM_HEIGHT;
         }
         
         // 鼓/鈸主體 - 統一使用深色
-        const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
+        const geometry = new THREE.CylinderGeometry(radius, radius, height, DRUM_SEGMENTS);
         const material = new THREE.MeshStandardMaterial({ 
-            color: 0x1a1a1a,        // 深灰色
+            color: DRUM_COLOR,
             metalness: isCymbal ? 0.7 : 0.2,
             roughness: 0.3,
             emissive: 0x000000,     // 初始不發光
@@ -336,13 +262,13 @@ function init3D() {
         scene.add(mesh);
         
         // 霓虹發光邊緣環
-        const edgeGeometry = new THREE.TorusGeometry(radius, 0.03, 8, 32);
+        const edgeGeometry = new THREE.TorusGeometry(radius, DRUM_EDGE_TORUS_RADIUS, DRUM_EDGE_TORUS_TUBE, DRUM_SEGMENTS);
         const edgeMaterial = new THREE.MeshStandardMaterial({
-            color: zone.color,      // 使用原本的顏色作為發光色
-            emissive: zone.color,   // 自發光
-            emissiveIntensity: 1.5, // 發光強度
-            metalness: 0.8,
-            roughness: 0.2
+            color: zone.color,
+            emissive: zone.color,
+            emissiveIntensity: DRUM_EDGE_EMISSIVE_INTENSITY,
+            metalness: DRUM_EDGE_METALNESS,
+            roughness: DRUM_EDGE_ROUGHNESS
         });
         const edgeMesh = new THREE.Mesh(edgeGeometry, edgeMaterial);
         edgeMesh.position.copy(mesh.position);
@@ -361,7 +287,7 @@ function init3D() {
         const drumstick = new THREE.Group();
         
         // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸，加長
-        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 1.2, 8);
+        const stickBody = new THREE.CylinderGeometry(STICK_RADIUS_TIP, STICK_RADIUS_BASE, STICK_LENGTH, STICK_SEGMENTS);
         const stickMaterial = new THREE.MeshStandardMaterial({ 
             color: color,
             emissive: emissiveColor,
@@ -377,14 +303,14 @@ function init3D() {
         drumstick.add(stickMesh);
         
         // 鼓棒頂端（球形敲擊端）- 在前方
-        const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
+        const tipGeometry = new THREE.SphereGeometry(STICK_TIP_SPHERE_RADIUS, STICK_SPHERE_SEGMENTS, STICK_SPHERE_SEGMENTS);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.z = 1.2;  // 放在棒子前端（緊貼鼓棒主體）
+        tipMesh.position.z = STICK_LENGTH;  // 放在棒子前端（緊貼鼓棒主體）
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
         // 鼓棒底端（握把）- 在後方（靠近相機）
-        const gripGeometry = new THREE.SphereGeometry(0.022, 12, 12);
+        const gripGeometry = new THREE.SphereGeometry(STICK_GRIP_SPHERE_RADIUS, STICK_SPHERE_SEGMENTS, STICK_SPHERE_SEGMENTS);
         const gripMesh = new THREE.Mesh(gripGeometry, stickMaterial);
         gripMesh.position.z = 0;  // 放在棒子後端（握把處）
         gripMesh.castShadow = true;
@@ -394,18 +320,18 @@ function init3D() {
     }
     
     // 創建右手鼓棒（紅色）
-    rightStick = createDrumstick(0xff0000, 0x660000);
+    rightStick = createDrumstick(RIGHT_STICK_COLOR, RIGHT_STICK_EMISSIVE);
     // 初始位置：尖端指向z軸正向，棒身水平於xz平面
-    rightStick.position.set(0, 1.5, -2.0);  // 初始位置
+    rightStick.position.set(0, 1.5, GRIP_BASE_Z);  // 初始位置
     rightStick.rotation.x = 0;  // Pitch = 0 (水平)
     rightStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
     rightStick.rotation.z = 0;  // Roll = 0
     scene.add(rightStick);
     
     // 創建左手鼓棒（藍色）
-    leftStick = createDrumstick(0x0000ff, 0x000066);
+    leftStick = createDrumstick(LEFT_STICK_COLOR, LEFT_STICK_EMISSIVE);
     // 初始位置：尖端指向z軸正向，棒身水平於xz平面
-    leftStick.position.set(0, 1.5, -2.0);  // 初始位置
+    leftStick.position.set(0, 1.5, GRIP_BASE_Z);  // 初始位置
     leftStick.rotation.x = 0;  // Pitch = 0 (水平)
     leftStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
     leftStick.rotation.z = 0;  // Roll = 0
