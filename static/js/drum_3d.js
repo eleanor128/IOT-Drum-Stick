@@ -496,12 +496,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetRightZ = -2.0;
 
     // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
-    targetRightX += rightYaw * 0.03;
+    targetRightX += rightYaw * 0.01;
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
-    targetRightZ -= rightPitch * 0.03; 
-    targetRightY -= rightPitch * 0.01;
+    targetRightZ -= rightPitch * 0.01; 
+    targetRightY -= rightPitch * 0.005;
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -516,9 +516,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetLeftY = 0.8;
     let targetLeftZ = -2.0;
 
-    targetLeftX += leftYaw * 0.03;
-    targetLeftZ -= leftPitch * 0.03;
-    targetLeftY -= leftPitch * 0.01;
+    targetLeftX += leftYaw * 0.01;
+    targetLeftZ -= leftPitch * 0.01;
+    targetLeftY -= leftPitch * 0.005;
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
