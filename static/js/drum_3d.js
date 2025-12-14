@@ -281,6 +281,19 @@ function init3D() {
         
     });
     
+    // 輔助函數：根據鼓的名稱獲取鼓面中心位置
+    function getDrumCenter(drumName) {
+        const zone = zones.find(z => z.name === drumName);
+        if (zone && zone.pos3d) {
+            return {
+                x: zone.pos3d[0],
+                y: zone.pos3d[1],
+                z: zone.pos3d[2]
+            };
+        }
+        return null;
+    }
+    
     // 創建真實鼓棒（圓柱體 + 球形頂端）
     // 鼓棒從使用者位置（相機）握著，水平於地面
     function createDrumstick(color, emissiveColor) {
@@ -685,49 +698,89 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const leftY = lerp(leftStick.position.y, targetLeftY, smoothFactor);
     const leftZ = lerp(leftStick.position.z, targetLeftZ, smoothFactor);
     
-    // 應用碰撞修正 (防止穿模)
-    const rightResult = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
+    // 右手感測器敲擊偵測 (從後端取得)
+    const rightHitDrum = rightData.is_hit ? rightData.hit_drum : null;
     
     // 檢測右手打擊
-    if (rightResult.hitDrum) {
+    if (rightHitDrum) {
         if (!rightWasColliding && rightHitCooldown <= 0) {
-            playSound(rightResult.hitDrum);
-            triggerDrumGlow(rightResult.hitDrum); // 觸發發光
+            playSound(rightHitDrum);
+            triggerDrumGlow(rightHitDrum); // 觸發發光
             rightHitCooldown = 10; // 冷卻時間 (幀數)
-            console.log(`🥁 Right Hit (3D): ${rightResult.hitDrum}`);
+            console.log(`🥁 Right Hit (Sensor): ${rightHitDrum}`);
         }
         rightWasColliding = true;
+        
+        // 當敲擊時，計算該鼓的中心位置並對齊
+        const drumCenter = getDrumCenter(rightHitDrum);
+        if (drumCenter) {
+            // 計算從握把到鼓中心的角度
+            const dx = drumCenter.x - rightX;
+            const dz = drumCenter.z - rightZ;
+            const dy = drumCenter.y - rightY;
+            
+            // 計算目標 Yaw (左右角度)
+            const targetYaw = Math.atan2(dx, dz);
+            // 計算目標 Pitch (上下角度)
+            const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+            const targetPitch = Math.atan2(dy, horizontalDist);
+            
+            // 混合當前角度和目標角度 (80% 對齊鼓面)
+            rightStick.rotation.y = lerp(rightRotY, targetYaw, DRUM_CENTER_BLEND_FACTOR);
+            rightStick.rotation.x = lerp(rightRotX, targetPitch, DRUM_CENTER_BLEND_FACTOR);
+        }
     } else {
         rightWasColliding = false;
+        // 正常狀態：使用感測器角度
+        rightStick.rotation.x = rightRotX;
+        rightStick.rotation.y = rightRotY;
     }
     if (rightHitCooldown > 0) rightHitCooldown--;
     
-    // 更新右手鼓棒位置和旋轉
+    // 更新右手鼓棒位置
     rightStick.position.set(rightX, rightY, rightZ);
-    rightStick.rotation.x = rightResult.correctedRotX;
-    rightStick.rotation.y = rightResult.correctedRotY; // Yaw 控制左右，擊打時自動對齊鼓面中心
     
-    // 左手同理
-    const leftResult = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
+    // 左手感測器敲擊偵測 (從後端取得)
+    const leftHitDrum = leftData.is_hit ? leftData.hit_drum : null;
     
     // 檢測左手打擊
-    if (leftResult.hitDrum) {
+    if (leftHitDrum) {
         if (!leftWasColliding && leftHitCooldown <= 0) {
-            playSound(leftResult.hitDrum);
-            triggerDrumGlow(leftResult.hitDrum); // 觸發發光
+            playSound(leftHitDrum);
+            triggerDrumGlow(leftHitDrum); // 觸發發光
             leftHitCooldown = 10;
-            console.log(`🥁 Left Hit (3D): ${leftResult.hitDrum}`);
+            console.log(`🥁 Left Hit (Sensor): ${leftHitDrum}`);
         }
         leftWasColliding = true;
+        
+        // 當敲擊時，計算該鼓的中心位置並對齊
+        const drumCenter = getDrumCenter(leftHitDrum);
+        if (drumCenter) {
+            // 計算從握把到鼓中心的角度
+            const dx = drumCenter.x - leftX;
+            const dz = drumCenter.z - leftZ;
+            const dy = drumCenter.y - leftY;
+            
+            // 計算目標 Yaw (左右角度)
+            const targetYaw = Math.atan2(dx, dz);
+            // 計算目標 Pitch (上下角度)
+            const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+            const targetPitch = Math.atan2(dy, horizontalDist);
+            
+            // 混合當前角度和目標角度 (80% 對齊鼓面)
+            leftStick.rotation.y = lerp(leftRotY, targetYaw, DRUM_CENTER_BLEND_FACTOR);
+            leftStick.rotation.x = lerp(leftRotX, targetPitch, DRUM_CENTER_BLEND_FACTOR);
+        }
     } else {
         leftWasColliding = false;
+        // 正常狀態：使用感測器角度
+        leftStick.rotation.x = leftRotX;
+        leftStick.rotation.y = leftRotY;
     }
     if (leftHitCooldown > 0) leftHitCooldown--;
     
-    // 更新左手鼓棒位置和旋轉
+    // 更新左手鼓棒位置
     leftStick.position.set(leftX, leftY, leftZ);
-    leftStick.rotation.x = leftResult.correctedRotX;
-    leftStick.rotation.y = leftResult.correctedRotY; // Yaw 控制左右，擊打時自動對齊鼓面中心
     
     // 渲染場景
     renderer.render(scene, camera);
