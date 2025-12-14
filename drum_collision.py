@@ -247,25 +247,24 @@ class DrumCollisionDetector:
         clamped_pitch = max(PITCH_MIN, min(PITCH_MAX, pitch))
         
         # 3. 簡化的鼓棒尖端位置計算
-        # 不使用複雜的 3D 旋轉，直接基於手部位置和鼓棒長度計算
-        # 確保 tip_z >= hand_z（尖端始終在手的前方或同一位置）
+        # 使用與前端一致的 3D 旋轉計算
+        # 確保視覺上的鼓棒尖端與碰撞檢測的尖端位置完全一致
         stick_length = cfg["STICK_LENGTH"]
         
-        # X 方向：yaw 控制左右偏移
-        # yaw 正值 = 向左（鼓棒尖端往左轉），yaw 負值 = 向右
-        # 使用負號讓旋轉方向與手部移動一致
-        # 使用 0.5 縮放係數平衡手部移動和鼓棒旋轉的影響
-        yaw_radians = (yaw / 30) * (math.pi / 3)
-        dx = -stick_length * math.sin(yaw_radians) * 0.5  # 0.5: 平衡手部和鼓棒的 X 位移
+        # 將角度轉換為弧度
+        # pitch: 上下旋轉角度（度），正值向上
+        # yaw: 左右旋轉角度（度），正值向左
+        pitch_radians = math.radians(pitch)
+        yaw_radians = math.radians(yaw)
         
-        # Y 方向：pitch 控制上下
-        # pitch 正值 = 舉高（尖端向上），pitch 負值 = 向下
-        # 使用較小的係數，因為主要移動是手部的 Y 位置變化
-        dy = pitch * 0.02
-        
-        # Z 方向：鼓棒始終向前延伸，完全不受 yaw 影響
-        # 這樣可以確保左右旋轉時仍然能打到前方的鼓
-        dz = stick_length
+        # 3D 旋轉公式（與 drum_3d.js 完全一致）：
+        # - rotation.x (pitch) 控制 Y-Z 平面的旋轉（上下擺動）
+        # - rotation.y (yaw) 控制 X-Z 平面的旋轉（左右擺動）
+        # 
+        # 鼓棒尖端相對於握把的偏移量：
+        dx = stick_length * math.sin(yaw_radians) * math.cos(pitch_radians)  # X: 左右
+        dy = -stick_length * math.sin(pitch_radians)                         # Y: 上下（負號因為向上旋轉時Y減少）
+        dz = stick_length * math.cos(yaw_radians) * math.cos(pitch_radians)  # Z: 前後
         
         # 確保 dz > 0（尖端始終在手的前方）
         dz = max(0.1, dz)
