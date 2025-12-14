@@ -27,8 +27,10 @@ class DrumCollisionDetector:
             "PITCH_Z_FLAT_FACTOR": 0.005,
             "ACCEL_Z_FACTOR": 0.02,
             "ACCEL_Z_MAX": 0.3,
-            "GRIP_Z_MIN": -3.0,
-            "GRIP_Z_MAX": 1.0,
+            "GRIP_Z_MIN": -2.0,
+            "GRIP_Z_MAX": -0.3,
+            "GRIP_X_MIN": -1.1,
+            "GRIP_X_MAX": 1.1,
             "COLLISION_BUFFER": 0.05,
             "STICK_LENGTH": 1.2,
         }
