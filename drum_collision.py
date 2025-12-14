@@ -223,13 +223,13 @@ class DrumCollisionDetector:
         # 3. 計算握把 Z 位置（與前端完全一致）
         hand_z = GRIP_BASE_Z
         
-        if pitch < PITCH_THRESHOLD:
-            # 打擊前方的鼓（舉起）
-            depth_factor = (PITCH_THRESHOLD - pitch) / 20
+        if pitch > PITCH_THRESHOLD:
+            # 打擊前方的鼓（舉起）- pitch 大於閾值時代表舉高打前方鼓
+            depth_factor = (pitch - PITCH_THRESHOLD) / 20
             hand_z += min(PITCH_Z_TILTED_MAX, depth_factor * PITCH_Z_TILTED_FACTOR)
         else:
-            # 打擊平面鼓（向下）
-            hand_z += pitch * PITCH_Z_FLAT_FACTOR
+            # 打擊後方的鼓（向下）- pitch 小於閾值時打後方鼓
+            hand_z += abs(pitch) * PITCH_Z_FLAT_FACTOR
         
         # 加入加速度影響
         az_contribution = max(-ACCEL_Z_MAX, min(ACCEL_Z_MAX, abs(ax) * ACCEL_Z_FACTOR))
@@ -317,13 +317,15 @@ class DrumCollisionDetector:
         # 手部 Y 位置固定在基礎高度
         hand_y = GRIP_BASE_Y
         
-        # 計算 Z 位置
+        # 計算 Z 位置（與前端和 calculate_stick_tip_position 完全一致）
         hand_z = GRIP_BASE_Z
-        if pitch < PITCH_THRESHOLD:
-            depth_factor = (PITCH_THRESHOLD - pitch) / 20
+        if pitch > PITCH_THRESHOLD:
+            # 打擊前方的鼓（舉起）- pitch 大於閾值時代表舉高打前方鼓
+            depth_factor = (pitch - PITCH_THRESHOLD) / 20
             hand_z += min(PITCH_Z_TILTED_MAX, depth_factor * PITCH_Z_TILTED_FACTOR)
         else:
-            hand_z += pitch * PITCH_Z_FLAT_FACTOR
+            # 打擊後方的鼓（向下）- pitch 小於閾值時打後方鼓
+            hand_z += abs(pitch) * PITCH_Z_FLAT_FACTOR
         
         az_contribution = max(-ACCEL_Z_MAX, min(ACCEL_Z_MAX, abs(ax) * ACCEL_Z_FACTOR))
         hand_z += az_contribution
