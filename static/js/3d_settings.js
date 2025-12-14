@@ -109,7 +109,7 @@ const zones = [
         name: "Snare", 
         x: 450, y: 225, w: 225, h: 225, 
         color: "#d9d9d9", 
-        pos3d: [0.5, 0.4, -0.9], 
+        pos3d: [0.5, 0.4, -0.8], 
         radius: 0.65, 
         rotation: -Math.PI / 12,  // -15°
         glowColor: "#ffffff" 
@@ -119,8 +119,8 @@ const zones = [
         x: 450, y: 0, w: 225, h: 225, 
         color: "#ff7f2a", 
         pos3d: [0.6, 0.8, 0.3], 
-        radius: 0.55, 
-        rotation: -Math.PI / 7,  // -26°
+        radius: 0.5, 
+        rotation: -Math.PI / 5,  // -36°
         glowColor: "#ff6600" 
     },   
     { 
@@ -128,8 +128,8 @@ const zones = [
         x: 450, y: 0, w: 225, h: 225, 
         color: "#ff7f2a", 
         pos3d: [-0.6, 0.8, 0.3], 
-        radius: 0.55, 
-        rotation: -Math.PI / 7,  // -26°
+        radius: 0.5, 
+        rotation: -Math.PI / 5,  // -36°
         glowColor: "#ff6600" 
     },  
     { 
