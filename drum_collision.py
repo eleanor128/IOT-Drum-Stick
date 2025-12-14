@@ -211,11 +211,11 @@ class DrumCollisionDetector:
         GRIP_Z_MIN = cfg["GRIP_Z_MIN"]
         GRIP_Z_MAX = cfg["GRIP_Z_MAX"]
         
-        # 1. 計算握把 X 位置
+        # 1. 計算握把 X 位置（yaw增加→手往X負向/左側移動）
         if hand == "right":
-            hand_x = GRIP_RIGHT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+            hand_x = GRIP_RIGHT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         else:
-            hand_x = GRIP_LEFT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+            hand_x = GRIP_LEFT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         
         # 2. 計算握把 Y 位置
         hand_y = GRIP_BASE_Y + pitch * PITCH_Y_FACTOR
@@ -302,9 +302,9 @@ class DrumCollisionDetector:
         GRIP_Z_MAX = cfg["GRIP_Z_MAX"]
         
         if hand == "right":
-            hand_x = GRIP_RIGHT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+            hand_x = GRIP_RIGHT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         else:
-            hand_x = GRIP_LEFT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+            hand_x = GRIP_LEFT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         
         hand_y = GRIP_BASE_Y + pitch * PITCH_Y_FACTOR
         
