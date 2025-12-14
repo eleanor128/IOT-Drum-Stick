@@ -748,9 +748,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 以手為圓心、鼓棒為半徑，在XZ平面上旋轉
     const rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3);
     
-    // 右手握把位置計算 - 手在 XZ 平面移動，鼓棒旋轉控制尖端
+    // 右手握把位置計算 - 手在 XYZ 空間移動，鼓棒旋轉控制尖端
     let targetRightX = GRIP_RIGHT_X;  // 手部X位置基礎值
-    let targetRightY = GRIP_BASE_Y;   // 手部Y位置固定（高度）
+    let targetRightY = GRIP_BASE_Y;   // 手部Y位置基礎值
     let targetRightZ = GRIP_BASE_Z;   // 手部Z位置基礎值
 
     // 根據 Yaw 調整手部 X 位置（yaw增加→手往X負向/左側移動）
@@ -774,6 +774,10 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 限制手部Z軸範圍：後方（Hihat）到前方（Symbal）
     targetRightZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetRightZ));
     
+    // 根據 Pitch 調整手部 Y 位置（敲擊時手部上下移動，呈現hitting動畫）
+    // pitch增加（舉起）→手部微幅上升，pitch減少（向下）→手部微幅下降
+    targetRightY += clampedRightPitch * PITCH_Y_FACTOR * 50;  // 放大5倍讓動畫更明顯
+    
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
@@ -794,15 +798,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 左手握把位置計算
     let targetLeftX = GRIP_LEFT_X;  // 左手基礎位置（對準左側鼓）
-    let targetLeftY = GRIP_BASE_Y;
+    let targetLeftY = GRIP_BASE_Y;  // 左手基礎高度
     let targetLeftZ = GRIP_BASE_Z;  // 基礎位置與右手相同深度
     
     // 根據 Yaw 調整握把 X 位置（yaw增加→手往X負向/左側移動）
     targetLeftX -= (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
     targetLeftX = Math.max(GRIP_LEFT_X_MIN, Math.min(GRIP_LEFT_X_MAX, targetLeftX));
-
-    // 握把 Y 保持在基礎高度（手不上下移動，只有鼓棒旋轉）
-    targetLeftY = GRIP_BASE_Y;
 
     // 根據 Pitch 調整 Z 位置（前後伸展）
     // 動態深度調整（與右手相同邏輯）
@@ -820,6 +821,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 限制手部Z軸範圍
     targetLeftZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetLeftZ));
+    
+    // 根據 Pitch 調整手部 Y 位置（敲擊時手部上下移動，呈現hitting動畫）
+    targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR * 50;  // 放大5倍讓動畫更明顯
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
