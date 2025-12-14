@@ -28,7 +28,7 @@ const GRIP_RIGHT_X = 0.4;   // 右手握把基礎 X 位置（右側，靠近 Hih
 const GRIP_LEFT_X = 0.6;   // 左手握把基礎 X 位置（左側鼓的中心位置）
 
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
-const PITCH_THRESHOLD = 5;  // Pitch 閾值（度），小於此值代表舉起打前方的鼓
+const PITCH_THRESHOLD = 10;  // Pitch 閾值（度），小於此值代表舉起打前方的鼓
 const PITCH_Y_FACTOR = 0.003;  // Pitch 對 Y 軸影響係數
 const PITCH_Z_TILTED_MAX = 2.0;  // 打擊傾斜鼓時最大 Z 偏移（增加以達到前方鼓）
 const PITCH_Z_TILTED_FACTOR = 1.5;  // 打擊傾斜鼓時 Z 偏移係數（增加靈敏度）
