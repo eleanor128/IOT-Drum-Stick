@@ -30,11 +30,11 @@ const GRIP_LEFT_X = 0.6;    // 左手握把基礎 X 位置（對稱於 Snare 中
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
 const PITCH_THRESHOLD = 10;  // Pitch 閾值（度），大於此值（舉高）代表打前方的鼓，接近0時保持Snare位置
 const PITCH_Y_FACTOR = 0.003;  // Pitch 對 Y 軸影響係數
-const PITCH_Z_TILTED_MAX = 3.0;  // 打擊傾斜鼓時最大 Z 偏移（增加以達到前方鼓，因為起始位置後移了）
-const PITCH_Z_TILTED_FACTOR = 2.2;  // 打擊傾斜鼓時 Z 偏移係數（增加靈敏度以補償後移）
+const PITCH_Z_TILTED_MAX = 2.0;  // 打擊傾斜鼓時最大 Z 偏移（手部 -2.8 + 2.0 = -0.8，加鼓棒 1.2 = 0.4，可以打到 Tom Z=0.3）
+const PITCH_Z_TILTED_FACTOR = 2.0;  // 打擊傾斜鼓時 Z 偏移係數（控制手部前移速度）
 const PITCH_Z_FLAT_FACTOR = 0.040;  // 打擊後方鼓時 Z 偏移係數（向下打時手稍微前移，補償鼓棒旋轉）
-const ACCEL_Z_MAX = 0.35;  // 加速度對 Z 軸最大影響（增加以配合更大的運動範圍）
-const ACCEL_Z_FACTOR = 0.025;  // 加速度對 Z 軸影響係數（增加以配合更大的運動範圍）
+const ACCEL_Z_MAX = 0.40;  // 加速度對 Z 軸最大影響（增加以配合更大的運動範圍）
+const ACCEL_Z_FACTOR = 0.030;  // 加速度對 Z 軸影響係數（增加以配合更大的運動範圍）
 
 // 碰撞檢測設定
 const COLLISION_BUFFER = 0.05;  // 碰撞緩衝距離
@@ -116,7 +116,7 @@ const zones = [
         x: 450, y: 0, w: 225, h: 225, 
         color: "#ff7f2a", 
         pos3d: [0.6, 0.8, 0.3], 
-        radius: 0.5, 
+        radius: 0.65,  // 增加半徑以提高可打擊性
         rotation: -Math.PI / 5,  // -36°
         glowColor: "#ff6600" 
     },   
@@ -125,7 +125,7 @@ const zones = [
         x: 450, y: 0, w: 225, h: 225, 
         color: "#ff7f2a", 
         pos3d: [-0.6, 0.8, 0.3], 
-        radius: 0.5, 
+        radius: 0.65,  // 增加半徑以提高可打擊性
         rotation: -Math.PI / 5,  // -36°
         glowColor: "#ff6600" 
     },  

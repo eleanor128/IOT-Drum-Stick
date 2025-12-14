@@ -246,24 +246,29 @@ class DrumCollisionDetector:
         PITCH_MAX = cfg.get("PITCH_MAX", 45)
         clamped_pitch = max(PITCH_MIN, min(PITCH_MAX, pitch))
         
-        # 3. 計算鼓棒的旋轉角度（弧度）- 完全對應 drum_3d.js 的 hitting 狀態
-        # 前端 hitting 時: rightRotX = -(clampedRightPitch / 20) * (Math.PI / 2)
-        # 前端 hitting 時: rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3)
-        # 碰撞檢測主要在 hitting 時觸發，所以使用 hitting 的旋轉公式
-        rotation_x = -(clamped_pitch / 20) * (math.pi / 2)  # pitch 控制上下揮擊
-        rotation_y = -(yaw / 30) * (math.pi / 3)             # yaw 控制左右旋轉
-        
-        # 3. 鼓棒長度（從配置檔讀取）
+        # 3. 簡化的鼓棒尖端位置計算
+        # 不使用複雜的 3D 旋轉，直接基於手部位置和鼓棒長度計算
+        # 確保 tip_z >= hand_z（尖端始終在手的前方或同一位置）
         stick_length = cfg["STICK_LENGTH"]
         
-        # 4. 計算鼓棒前端相對於握把的偏移量
-        # 鼓棒初始方向是沿著 Z 軸正向（向前）
-        # 經過 X 軸和 Y 軸旋轉後的位置
-        dx = stick_length * math.sin(rotation_y) * math.cos(rotation_x)
-        dy = -stick_length * math.sin(rotation_x)  # 負號：pitch 增加時鼓棒往下
-        dz = stick_length * math.cos(rotation_y) * math.cos(rotation_x)
+        # X 方向：yaw 控制左右偏移
+        # yaw 正值 = 向左，yaw 負值 = 向右
+        yaw_radians = (yaw / 30) * (math.pi / 3)
+        dx = stick_length * math.sin(yaw_radians)
         
-        # 5. 計算鼓棒前端的絕對位置
+        # Y 方向：pitch 控制上下
+        # pitch 正值 = 舉高（尖端向上），pitch 負值 = 向下
+        # 使用較小的係數，因為主要移動是手部的 Y 位置變化
+        dy = pitch * 0.02
+        
+        # Z 方向：鼓棒始終向前延伸，完全不受 yaw 影響
+        # 這樣可以確保左右旋轉時仍然能打到前方的鼓
+        dz = stick_length
+        
+        # 確保 dz > 0（尖端始終在手的前方）
+        dz = max(0.1, dz)
+        
+        # 4. 計算鼓棒前端的絕對位置
         tip_x = hand_x + dx
         tip_y = hand_y + dy
         tip_z = hand_z + dz
