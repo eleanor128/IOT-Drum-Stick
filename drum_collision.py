@@ -1,33 +1,73 @@
-"""
-鼓棒碰撞偵測模組
-根據鼓棒的 pitch/yaw 角度計算鼓棒前端的 3D 位置，並判斷是否打擊到特定的鼓
-"""
-
 import math
+import json
+import os
 
-class DrumCollision:
-    def __init__(self):
-        # 定義每個鼓的 3D 位置和半徑（完全對應 drum_3d.js 中的 zones）
-        # pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
-        # 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
-        # self.drums = [
-        #     {"name": "Hihat",     "pos3d": [2.5, 1.0, -0.8],   "radius": 1.0},   # 鼓面高度: 1.025m
-        #     {"name": "Snare",     "pos3d": [1.0, 0.2, -0.8],   "radius": 1.0},   # 鼓面高度: 0.45m
-        #     {"name": "Tom_high",  "pos3d": [1.0, 1.2, 1.5],    "radius": 1.0},   # 鼓面高度: 1.45m
-        #     {"name": "Tom_mid",   "pos3d": [-1.0, 1.2, 1.5],   "radius": 1.0},   # 鼓面高度: 1.45m
-        #     {"name": "Symbal",    "pos3d": [2.5, 2.5, 2.0],    "radius": 1.5},   # 鼓面高度: 2.525m
-        #     {"name": "Ride",      "pos3d": [-2.8, 2.5, 1.0],   "radius": 1.5},   # 鼓面高度: 2.525m
-        #     {"name": "Tom_floor", "pos3d": [-2.0, 0.3, -0.8],  "radius": 1.2},   # 鼓面高度: 0.8m
-        # ]
-        self.drums = [
-            {"name": "Hihat",     "pos3d": [1.6, 1.0, -0.8],  "radius": 0.65},   # 鼓面高度: 1.025m
-            {"name": "Snare",     "pos3d": [0.5, 0.4, -0.8],  "radius": 0.65},   # 鼓面高度: 0.65m
-            {"name": "Tom_high",  "pos3d": [0.6, 1.0, 0.8],   "radius": 0.55},   # 鼓面高度: 1.25m
-            {"name": "Tom_mid",   "pos3d": [-0.6, 1.0, 0.8],  "radius": 0.55},   # 鼓面高度: 1.25m
-            {"name": "Symbal",    "pos3d": [1.6, 1.8, 1.2],   "radius": 0.80},   # 鼓面高度: 1.825m
-            {"name": "Ride",      "pos3d": [-1.6, 1.7, 1.0],  "radius": 0.90},   # 鼓面高度: 1.725m
-            {"name": "Tom_floor", "pos3d": [-1.2, 0.4, -0.6], "radius": 0.70}    # 鼓面高度: 0.9m
-        ]
+class DrumCollisionDetector:
+    def __init__(self, config_path="static/js/3d_settings.js"):
+        """從 3d_settings.js 載入鼓的配置"""
+        self.drums = self._load_drums_from_js(config_path)
+        self.collision_buffer = 0.05  # 從 3d_settings.js 的 COLLISION_BUFFER
+        
+    def _load_drums_from_js(self, config_path):
+        """解析 3d_settings.js 中的 zones 陣列"""
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            # 找到 zones 陣列定義
+            start = content.find('const zones = [')
+            if start == -1:
+                raise ValueError("找不到 zones 定義")
+            
+            end = content.find('];', start)
+            if end == -1:
+                raise ValueError("找不到 zones 結束標記")
+            
+            # 提取 zones 陣列內容
+            zones_str = content[start:end+2]
+            
+            # 移除 JavaScript 註解
+            lines = []
+            for line in zones_str.split('\n'):
+                # 移除單行註解
+                if '//' in line:
+                    line = line[:line.index('//')]
+                lines.append(line)
+            zones_str = '\n'.join(lines)
+            
+            # 替換 JavaScript 語法為 JSON
+            zones_str = zones_str.replace('const zones = ', '')
+            zones_str = zones_str.replace('Math.PI', str(math.pi))
+            
+            # 解析 JSON
+            zones = eval(zones_str)  # 使用 eval 因為包含數學運算
+            
+            # 轉換為後端格式
+            drums = []
+            for zone in zones:
+                drums.append({
+                    "name": zone["name"],
+                    "x": zone["pos3d"][0],
+                    "y": zone["pos3d"][1],
+                    "z": zone["pos3d"][2],
+                    "radius": zone["radius"]
+                })
+            
+            print(f"✅ 成功從 {config_path} 載入 {len(drums)} 個鼓的配置")
+            return drums
+            
+        except Exception as e:
+            print(f"⚠️ 無法載入 {config_path}，使用預設配置: {e}")
+            # 備用硬編碼配置（以防載入失敗）
+            return [
+                {"name": "Hihat", "x": 1.8, "y": 0.8, "z": -1, "radius": 0.65},
+                {"name": "Snare", "x": 0.5, "y": 0.4, "z": -1, "radius": 0.65},
+                {"name": "Tom_high", "x": 0.6, "y": 0.8, "z": 0.3, "radius": 0.5},
+                {"name": "Tom_mid", "x": -0.6, "y": 0.8, "z": 0.3, "radius": 0.5},
+                {"name": "Symbal", "x": 1.7, "y": 1.4, "z": 0.5, "radius": 0.80},
+                {"name": "Ride", "x": -1.8, "y": 1.4, "z": -0.1, "radius": 0.90},
+                {"name": "Tom_floor", "x": -1.2, "y": 0.2, "z": -1, "radius": 0.80},
+            ]
     
     def calculate_stick_tip_position(self, ax, pitch, yaw, hand="right"):
         """
