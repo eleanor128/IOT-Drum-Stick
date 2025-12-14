@@ -15,7 +15,7 @@ const PITCH_SENSITIVITY = 30;  // Pitch 角度靈敏度
 const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
 const YAW_SENSITIVITY = 30;  // Yaw 角度靈敏度（降低以增加旋轉幅度）
 const YAW_ANGLE_FACTOR = Math.PI / 3;  // Yaw 角度轉換係數
-const YAW_POSITION_FACTOR = 2.5;  // Yaw 對 X 位置的影響係數（增加移動幅度，讓手部能左右移動更多）
+const YAW_POSITION_FACTOR = 0.8;  // Yaw 對 X 位置的影響係數（控制手部左右移動幅度）
 
 // Pitch 角度範圍限制（度）
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
@@ -181,12 +181,12 @@ const GRIP_Z_MAX = maxDrumZ + STICK_LENGTH * 0.5;  // 握把最前方位置（�
 
 // 右手範圍：能打到最左側（Ride -1.8）到最右側（Hihat 1.8）的鼓
 // 握把位置範圍需要包含所有鼓 ± 鼓棒長度的延伸
-const GRIP_RIGHT_X_MIN = minDrumX - STICK_LENGTH * 0.3;  // 最左側鼓左方（打Ride時手的左側極限）
-const GRIP_RIGHT_X_MAX = maxDrumX + STICK_LENGTH * 0.3;  // 最右側鼓右方（打Hihat時手的右側極限）
+const GRIP_RIGHT_X_MIN = minDrumX - STICK_LENGTH * 0.15;  // 最左側鼓左方（打Ride時手的左側極限）
+const GRIP_RIGHT_X_MAX = maxDrumX + STICK_LENGTH * 0.15;  // 最右側鼓右方（打Hihat時手的右側極限）
 
 // 左手範圍：與右手相同，兩隻手都能打到所有的鼓
-const GRIP_LEFT_X_MIN = minDrumX - STICK_LENGTH * 0.3;  // 最左側鼓左方
-const GRIP_LEFT_X_MAX = maxDrumX + STICK_LENGTH * 0.3;  // 最右側鼓右方
+const GRIP_LEFT_X_MIN = minDrumX - STICK_LENGTH * 0.15;  // 最左側鼓左方
+const GRIP_LEFT_X_MAX = maxDrumX + STICK_LENGTH * 0.15;  // 最右側鼓右方
 
 // 鼓的高度設定
 const CYMBAL_HEIGHT = 0.05;  // 鈸高度

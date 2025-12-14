@@ -776,7 +776,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 根據 Pitch 調整手部 Y 位置（敲擊時手部上下移動，呈現hitting動畫）
     // pitch增加（舉起）→手部微幅上升，pitch減少（向下）→手部微幅下降
-    targetRightY += clampedRightPitch * PITCH_Y_FACTOR * 50;  // 放大5倍讓動畫更明顯
+    targetRightY += clampedRightPitch * PITCH_Y_FACTOR * 10;  // 適度放大讓動畫可見但不誇張
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -823,7 +823,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     targetLeftZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetLeftZ));
     
     // 根據 Pitch 調整手部 Y 位置（敲擊時手部上下移動，呈現hitting動畫）
-    targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR * 50;  // 放大5倍讓動畫更明顯
+    targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR * 10;  // 適度放大讓動畫可見但不誇張
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
