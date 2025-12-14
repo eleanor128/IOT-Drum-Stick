@@ -510,9 +510,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     );
     
     const leftRotX = (leftPitch / 45) * (Math.PI / 3);
-    const leftRotY = (leftYaw / 45) * (Math.PI / 2);
+    const leftRotY = (leftYaw / 45) * (Math.PI / 4);
     
-    const leftYawOffsetX = Math.sin(leftRotY) * 0.6;
+    const leftYawOffsetX = Math.sin(leftRotY) * 0.35;
     
     const targetLeftX = baseLeftX + leftYawOffsetX;
     const targetLeftY = baseLeftY;
