@@ -8,6 +8,7 @@ class DrumCollisionDetector:
         self.config = self._load_config_from_js(config_path)
         self.drums = self.config["drums"]
         self.collision_buffer = self.config.get("COLLISION_BUFFER", 0.05)
+        self.camera_projection_mode = self.config.get("USE_CAMERA_PROJECTION", True)
         
     def _load_config_from_js(self, config_path):
         """解析 3d_settings.js 中的所有配置參數"""
@@ -35,6 +36,7 @@ class DrumCollisionDetector:
             "GRIP_LEFT_X_MAX": 1.5,
             "COLLISION_BUFFER": 0.05,
             "STICK_LENGTH": 1.2,
+            "USE_CAMERA_PROJECTION": True,
         }
         
         try:
@@ -55,19 +57,27 @@ class DrumCollisionDetector:
                 
                 # 解析數值
                 try:
-                    # 替換 Math.PI
-                    value = value.replace('Math.PI', str(math.pi))
-                    
-                    # 嘗試計算表達式
-                    if any(op in value for op in ['+', '-', '*', '/']):
-                        parsed_value = eval(value)
+                    # 處理布林值
+                    if value.lower() == 'true':
+                        if name in config:
+                            config[name] = True
+                    elif value.lower() == 'false':
+                        if name in config:
+                            config[name] = False
                     else:
-                        # 嘗試轉換為浮點數
-                        parsed_value = float(value)
-                    
-                    if name in config:
-                        config[name] = parsed_value
-                        
+                        # 替換 Math.PI
+                        value = value.replace('Math.PI', str(math.pi))
+
+                        # 嘗試計算表達式
+                        if any(op in value for op in ['+', '-', '*', '/']):
+                            parsed_value = eval(value)
+                        else:
+                            # 嘗試轉換為浮點數
+                            parsed_value = float(value)
+
+                        if name in config:
+                            config[name] = parsed_value
+
                 except (ValueError, SyntaxError):
                     pass  # 無法解析的值跳過
             
@@ -367,10 +377,14 @@ class DrumCollisionDetector:
             dx = tip_x - drum_x
             dz = tip_z - drum_z
             distance_2d = math.sqrt(dx * dx + dz * dz)
-            
+
+            # 根據相機投影模式調整檢測閾值
+            # 相機投影模式下，前端已經做了精確的螢幕空間檢測，後端只需做寬鬆的驗證
+            distance_threshold = radius * 1.5 if self.camera_projection_mode else radius
+
             # 只要鼓棒尖端在鼓的 XZ 投影範圍內，就算打擊到
             # 不考慮 Y 軸高度，讓擊中更容易
-            if distance_2d <= radius:
+            if distance_2d <= distance_threshold:
                 # 碰撞發生！計算調整後的 pitch 讓鼓棒尖端停在鼓面上
                 
                 # 計算鼓面高度

@@ -372,7 +372,7 @@ function mapXYto3D(x, y, pitch) {
     return [x3d, y3d, z3d];
 }
 
-// 碰撞檢測與修正：基於 XZ 平面投影，防止鼓棒穿透鼓面
+// 碰撞檢測與修正：基於相機視角投影或 XZ 平面投影，防止鼓棒穿透鼓面
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = STICK_LENGTH;
     let correctedRotX = rotX;
@@ -383,7 +383,11 @@ function solveStickCollision(gripPos, rotX, rotY) {
     const tipY = gripPos[1] - stickLength * Math.sin(rotX);
     const tipZ = gripPos[2] + stickLength * Math.cos(rotY) * Math.cos(rotX);
 
-    // 遍歷所有鼓，檢查是否在 XZ 平面範圍內
+    // 建立尖端向量（用於相機投影）
+    const tipVector = new THREE.Vector3(tipX, tipY, tipZ);
+    const tipScreen = USE_CAMERA_PROJECTION ? tipVector.clone().project(camera) : null;
+
+    // 遍歷所有鼓，檢查是否在範圍內
     zones.forEach(zone => {
         const drumX = zone.pos3d[0];
         const drumY = zone.pos3d[1];
@@ -405,13 +409,40 @@ function solveStickCollision(gripPos, rotX, rotY) {
         // 計算鼓面中心位置（考慮旋轉）
         const drumSurfaceY = drumY + (drumHeight / 2) * Math.cos(drumRot);
 
-        // XZ 平面距離檢測（俯視圖）
-        const dx = tipX - drumX;
-        const dz = tipZ - drumZ;
-        const distanceXZ = Math.sqrt(dx * dx + dz * dz);
+        let isInRange = false;
 
-        // 如果尖端在鼓的 XZ 投影範圍內
-        if (distanceXZ <= radius + 0.15) {  // 增加邊緣緩衝
+        if (USE_CAMERA_PROJECTION) {
+            // 使用相機視角投影進行碰撞檢測（螢幕空間）
+            const drumVector = new THREE.Vector3(drumX, drumY, drumZ);
+            const drumScreen = drumVector.clone().project(camera);
+
+            // 檢查鼓是否在螢幕可見範圍內（跳過螢幕外的鼓）
+            if (drumScreen.z > 1 || drumScreen.z < -1) {
+                return; // 跳過不可見的鼓
+            }
+
+            // 計算螢幕空間的 2D 距離
+            const dx = tipScreen.x - drumScreen.x;
+            const dy = tipScreen.y - drumScreen.y;
+            const screenDistance = Math.sqrt(dx * dx + dy * dy);
+
+            // 將鼓的半徑投影到螢幕空間
+            const drumEdgeWorld = new THREE.Vector3(drumX + radius, drumY, drumZ);
+            const drumEdgeScreen = drumEdgeWorld.clone().project(camera);
+            const screenRadius = Math.abs(drumEdgeScreen.x - drumScreen.x);
+
+            // 螢幕空間碰撞檢測
+            isInRange = screenDistance <= screenRadius + SCREEN_HIT_RADIUS_OFFSET;
+        } else {
+            // 使用 XZ 平面投影進行碰撞檢測（俯視圖）
+            const dx = tipX - drumX;
+            const dz = tipZ - drumZ;
+            const distanceXZ = Math.sqrt(dx * dx + dz * dz);
+            isInRange = distanceXZ <= radius + 0.15;  // 增加邊緣緩衝
+        }
+
+        // 如果尖端在鼓的範圍內
+        if (isInRange) {
             // 計算尖端是否低於鼓面（簡化：只看 Y 軸）
             const buffer = 0.1;  // 增加緩衝距離
             if (tipY < drumSurfaceY + buffer) {

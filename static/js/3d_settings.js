@@ -40,6 +40,10 @@ const ACCEL_Z_FACTOR = 0.030;  // 加速度對 Z 軸影響係數（增加以配�
 const COLLISION_BUFFER = 0.05;  // 碰撞緩衝距離
 const HIT_RADIUS_OFFSET = 0.1;  // 碰撞檢測半徑偏移
 
+// 相機視角投影碰撞檢測設定
+const USE_CAMERA_PROJECTION = true;  // 使用相機視角投影進行碰撞檢測（true: 螢幕空間，false: XZ平面）
+const SCREEN_HIT_RADIUS_OFFSET = 0.05;  // 螢幕空間碰撞檢測額外容差
+
 // 擊打冷卻設定
 const HIT_COOLDOWN_FRAMES = 10;  // 擊打冷卻時間（幀數）
 
