@@ -592,6 +592,128 @@ function getDrumCenter(drumName) {
     return null;
 }
 
+// 全局變量：存儲所有鼓面的幾何數據
+let drumSurfaces = {};
+
+// 計算所有鼓面的幾何數據（在應用啟動時執行一次）
+function get_drum_surface() {
+    drumSurfaces = {};
+    
+    zones.forEach(zone => {
+        const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
+        const radius = zone.radius || (isCymbal ? DEFAULT_CYMBAL_RADIUS : DEFAULT_DRUM_RADIUS);
+        
+        let height;
+        if (isCymbal) {
+            height = CYMBAL_HEIGHT;
+        } else if (zone.name === "Tom_floor") {
+            height = TOM_FLOOR_HEIGHT;
+        } else {
+            height = STANDARD_DRUM_HEIGHT;
+        }
+        
+        const centerPos = zone.pos3d;
+        const rotation = zone.rotation !== undefined ? zone.rotation : -Math.PI / 9;
+        
+        // 計算鼓面（頂部）和鼓底的中心點座標（考慮旋轉）
+        const headCenterY = centerPos[1] + (height / 2) * Math.cos(rotation);
+        const headCenterZ = centerPos[2] + (height / 2) * Math.sin(rotation);
+        const bottomCenterY = centerPos[1] - (height / 2) * Math.cos(rotation);
+        const bottomCenterZ = centerPos[2] - (height / 2) * Math.sin(rotation);
+        
+        // 計算鼓面法線向量（指向上方）
+        const normalX = 0;
+        const normalY = Math.cos(rotation);
+        const normalZ = Math.sin(rotation);
+        
+        // 存儲鼓面數據
+        drumSurfaces[zone.name] = {
+            name: zone.name,
+            radius: radius,
+            height: height,
+            centerX: centerPos[0],
+            centerY: centerPos[1],
+            centerZ: centerPos[2],
+            rotation: rotation,
+            
+            // 鼓面（頂部）數據
+            headSurface: {
+                centerX: centerPos[0],
+                centerY: headCenterY,
+                centerZ: headCenterZ,
+                normalX: normalX,
+                normalY: normalY,
+                normalZ: normalZ,
+                radius: radius
+            },
+            
+            // 鼓底數據
+            bottomSurface: {
+                centerX: centerPos[0],
+                centerY: bottomCenterY,
+                centerZ: bottomCenterZ,
+                radius: radius
+            },
+            
+            // 幾何範圍（用於快速碰撞檢測）
+            bounds: {
+                minX: centerPos[0] - radius,
+                maxX: centerPos[0] + radius,
+                minY: Math.min(headCenterY, bottomCenterY) - 0.1,
+                maxY: Math.max(headCenterY, bottomCenterY) + 0.1,
+                minZ: Math.min(headCenterZ, bottomCenterZ) - radius,
+                maxZ: Math.max(headCenterZ, bottomCenterZ) + radius
+            }
+        };
+    });
+    
+    console.log("Drum surfaces calculated:", drumSurfaces);
+    return drumSurfaces;
+}
+
+// 檢查鼓棒尖端是否碰到鼓面
+function checkDrumstickHit(tipX, tipY, tipZ) {
+    for (const drumName in drumSurfaces) {
+        const drum = drumSurfaces[drumName];
+        const surface = drum.headSurface;
+        
+        // 快速邊界檢查
+        if (tipX < drum.bounds.minX || tipX > drum.bounds.maxX ||
+            tipY < drum.bounds.minY || tipY > drum.bounds.maxY ||
+            tipZ < drum.bounds.minZ || tipZ > drum.bounds.maxZ) {
+            continue;
+        }
+        
+        // 檢查尖端到鼓面中心的水平距離
+        const dx = tipX - surface.centerX;
+        const dz = tipZ - surface.centerZ;
+        const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+        
+        if (horizontalDist > surface.radius) {
+            continue;  // 超出鼓面半徑
+        }
+        
+        // 計算尖端到鼓面的垂直距離（沿法線方向）
+        const distToSurface = 
+            (tipX - surface.centerX) * surface.normalX +
+            (tipY - surface.centerY) * surface.normalY +
+            (tipZ - surface.centerZ) * surface.normalZ;
+        
+        // 如果尖端非常接近鼓面（在表面上方或下方很小的範圍內）
+        const hitThreshold = 0.05;  // 5cm 容差
+        if (Math.abs(distToSurface) < hitThreshold) {
+            return {
+                hit: true,
+                drumName: drumName,
+                distance: distToSurface,
+                surface: surface
+            };
+        }
+    }
+    
+    return { hit: false };
+}
+
 // 繪製函數（3D版本）- Yaw控制左右，Pitch控制揮擊
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
@@ -914,6 +1036,7 @@ function render() {
 
 // 初始化並啟動
 init3D();
+get_drum_surface();  // 計算所有鼓面的幾何數據
 updateRight();
 updateLeft();
 render();
