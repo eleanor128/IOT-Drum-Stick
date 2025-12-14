@@ -238,12 +238,18 @@ class DrumCollisionDetector:
         # 限制範圍
         hand_z = max(GRIP_Z_MIN, min(GRIP_Z_MAX, hand_z))
         
-        # 2. 計算鼓棒的旋轉角度（弧度）
-        # 完全對應 drum_3d.js 的旋轉計算
-        # rightStick.rotation.x = (finalRightPitch / 45) * (Math.PI / 3);
-        # rightStick.rotation.y = (rightYaw / 45) * (Math.PI / 6);
-        rotation_x = (pitch / 45) * (math.pi / 3)  # pitch 控制上下揮擊（繞 X 軸）
-        rotation_y = (yaw / 45) * (math.pi / 6)    # yaw 控制左右擺動（繞 Y 軸）
+        # 加入 Pitch 對手部 Y 位置的影響（hitting 動畫）
+        PITCH_MIN = cfg.get("PITCH_MIN", -30)
+        PITCH_MAX = cfg.get("PITCH_MAX", 45)
+        clamped_pitch = max(PITCH_MIN, min(PITCH_MAX, pitch))
+        hand_y += clamped_pitch * PITCH_Y_FACTOR * 10  # 與前端一致
+        
+        # 2. 計算鼓棒的旋轉角度（弧度）- 完全對應 drum_3d.js 的 hitting 狀態
+        # 前端 hitting 時: rightRotX = -(clampedRightPitch / 20) * (Math.PI / 2)
+        # 前端 hitting 時: rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3)
+        # 碰撞檢測主要在 hitting 時觸發，所以使用 hitting 的旋轉公式
+        rotation_x = -(clamped_pitch / 20) * (math.pi / 2)  # pitch 控制上下揮擊
+        rotation_y = -(yaw / 30) * (math.pi / 3)             # yaw 控制左右旋轉
         
         # 3. 鼓棒長度（從配置檔讀取）
         stick_length = cfg["STICK_LENGTH"]
@@ -306,7 +312,11 @@ class DrumCollisionDetector:
         else:
             hand_x = GRIP_LEFT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         
-        hand_y = GRIP_BASE_Y + pitch * PITCH_Y_FACTOR
+        # 加入 Pitch 對手部 Y 位置的影響
+        PITCH_MIN = cfg.get("PITCH_MIN", -30)
+        PITCH_MAX = cfg.get("PITCH_MAX", 45)
+        clamped_pitch = max(PITCH_MIN, min(PITCH_MAX, pitch))
+        hand_y = GRIP_BASE_Y + clamped_pitch * PITCH_Y_FACTOR * 10
         
         # 計算 Z 位置
         hand_z = GRIP_BASE_Z
