@@ -752,14 +752,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetRightY = GRIP_BASE_Y;
     let targetRightZ = GRIP_BASE_Z;  // 基礎位置：預設對準 Snare
     
-    // 根據 Yaw 微調 X 位置（左右移動打 Hihat 或其他鼓）
-    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 影響左右位置
+    // 根據 Yaw 微調 X 位置（yaw 增加 → X 減少/向左）
+    targetRightX -= (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 增加，X 負向移動
     targetRightX = Math.max(GRIP_RIGHT_X_MIN, Math.min(GRIP_RIGHT_X_MAX, targetRightX));
 
-    // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
-    // Pitch 變小（舉起）-> 向前伸展打前方的鼓（Tom_high, Tom_mid, Symbal）
-    // Pitch 變大（向下）-> 保持後方打 Snare, Hihat, Tom_floor
-    targetRightY += clampedRightPitch * PITCH_Y_FACTOR;
+    // 根據 Pitch 移動 Y（pitch 增加 → Y 增加/向上）
+    targetRightY += clampedRightPitch * 0.01;  // pitch 增加，鼓棒向上
 
     // 動態深度調整：pitch 變小（舉起）代表打擊前方的鼓
     if (clampedRightPitch < PITCH_THRESHOLD) {
@@ -797,11 +795,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetLeftY = GRIP_BASE_Y;
     let targetLeftZ = GRIP_BASE_Z;  // 基礎位置與右手相同深度
     
-    // 根據 Yaw 微調 X 位置
-    targetLeftX += (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
+    // 根據 Yaw 微調 X 位置（yaw 增加 → X 減少/向左）
+    targetLeftX -= (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 增加，X 負向移動
     targetLeftX = Math.max(GRIP_LEFT_X_MIN, Math.min(GRIP_LEFT_X_MAX, targetLeftX));
 
-    targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR;
+    // 根據 Pitch 移動 Y（pitch 增加 → Y 增加/向上）
+    targetLeftY += clampedLeftPitch * 0.01;  // pitch 增加，鼓棒向上
 
     // 動態深度調整（與右手相同邏輯）
     if (clampedLeftPitch < PITCH_THRESHOLD) {
