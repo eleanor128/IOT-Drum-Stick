@@ -333,9 +333,11 @@ class DrumCollisionDetector:
             hand_x = GRIP_RIGHT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         else:
             hand_x = GRIP_LEFT_X - (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
-        
-        # 手部 Y 位置固定在基礎高度
-        hand_y = GRIP_BASE_Y
+
+        # 手部 Y 位置根據 pitch 動態調整（打高位置的鼓時手部要升高）
+        # pitch > 0 代表手舉高，手部 Y 增加
+        clamped_pitch = max(-30, min(45, pitch))
+        hand_y = GRIP_BASE_Y + max(0, clamped_pitch / 30) * 0.5
         
         # 計算 Z 位置（與前端和 calculate_stick_tip_position 完全一致）
         hand_z = GRIP_BASE_Z
@@ -350,9 +352,12 @@ class DrumCollisionDetector:
         az_contribution = max(-ACCEL_Z_MAX, min(ACCEL_Z_MAX, abs(ax) * ACCEL_Z_FACTOR))
         hand_z += az_contribution
         hand_z = max(GRIP_Z_MIN, min(GRIP_Z_MAX, hand_z))
-        
+
         # 檢查是否碰撞到任何鼓（XZ 平面 2D 投影檢測）
-        for drum in self.drums:
+        # 按照 Y 座標排序（從高到低），讓鈸（Ride, Symbal）優先於鼓
+        sorted_drums = sorted(self.drums, key=lambda d: d["y"], reverse=True)
+
+        for drum in sorted_drums:
             drum_x, drum_y, drum_z = drum["x"], drum["y"], drum["z"]
             radius = drum["radius"]
             
