@@ -245,9 +245,8 @@ class DrumCollisionDetector:
         rotation_x = (pitch / 45) * (math.pi / 3)  # pitch 控制上下揮擊（繞 X 軸）
         rotation_y = (yaw / 45) * (math.pi / 6)    # yaw 控制左右擺動（繞 Y 軸）
         
-        # 3. 鼓棒長度（從握把到前端的距離）
-        # 對應 drum_3d.js 中 tipMesh.position.z = 2
-        stick_length = 2.0
+        # 3. 鼓棒長度（從配置檔讀取）
+        stick_length = cfg["STICK_LENGTH"]
         
         # 4. 計算鼓棒前端相對於握把的偏移量
         # 鼓棒初始方向是沿著 Z 軸正向（向前）
@@ -352,7 +351,7 @@ class DrumCollisionDetector:
                 delta_y = target_tip_y - hand_y  # 從握把到目標高度的 Y 差
                 
                 # 使用反三角函數計算調整後的 pitch 角度
-                stick_length = 2.0
+                stick_length = cfg["STICK_LENGTH"]
                 if abs(delta_y) <= stick_length:
                     rotation_x = math.asin(-delta_y / stick_length)
                     adjusted_pitch = rotation_x / (math.pi / 3) * 45
