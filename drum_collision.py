@@ -17,47 +17,78 @@ class DrumCollisionDetector:
             # 找到 zones 陣列定義
             start = content.find('const zones = [')
             if start == -1:
-                raise ValueError("找不到 zones 定義")
+                raise ValueError("Cannot find zones definition")
             
             end = content.find('];', start)
             if end == -1:
-                raise ValueError("找不到 zones 結束標記")
+                raise ValueError("Cannot find zones end marker")
             
-            # 提取 zones 陣列內容
-            zones_str = content[start:end+2]
+            # 提取 zones 陣列內容（不包含 'const zones = ' 和最後的 '];'）
+            zones_start = start + len('const zones = ')
+            zones_content = content[zones_start:end+1]  # 包含 ']'
             
-            # 移除 JavaScript 註解
-            lines = []
-            for line in zones_str.split('\n'):
-                # 移除單行註解
-                if '//' in line:
-                    line = line[:line.index('//')]
-                lines.append(line)
-            zones_str = '\n'.join(lines)
-            
-            # 替換 JavaScript 語法為 JSON
-            zones_str = zones_str.replace('const zones = ', '')
-            zones_str = zones_str.replace('Math.PI', str(math.pi))
-            
-            # 解析 JSON
-            zones = eval(zones_str)  # 使用 eval 因為包含數學運算
-            
-            # 轉換為後端格式
+            # 逐行處理，提取每個鼓的配置
             drums = []
-            for zone in zones:
-                drums.append({
-                    "name": zone["name"],
-                    "x": zone["pos3d"][0],
-                    "y": zone["pos3d"][1],
-                    "z": zone["pos3d"][2],
-                    "radius": zone["radius"]
-                })
+            current_obj = {}
+            in_obj = False
             
-            print(f"✅ 成功從 {config_path} 載入 {len(drums)} 個鼓的配置")
-            return drums
+            for line in zones_content.split('\n'):
+                line = line.strip()
+                
+                # 移除註解
+                if '//' in line:
+                    line = line[:line.index('//')].strip()
+                
+                if not line:
+                    continue
+                
+                # 開始一個物件
+                if '{' in line:
+                    in_obj = True
+                    current_obj = {}
+                    continue
+                
+                # 結束一個物件
+                if '}' in line:
+                    if current_obj and 'name' in current_obj and 'pos3d' in current_obj:
+                        drums.append({
+                            "name": current_obj["name"],
+                            "x": current_obj["pos3d"][0],
+                            "y": current_obj["pos3d"][1],
+                            "z": current_obj["pos3d"][2],
+                            "radius": current_obj["radius"]
+                        })
+                    in_obj = False
+                    continue
+                
+                if not in_obj:
+                    continue
+                
+                # 解析屬性
+                if 'name:' in line:
+                    # name: "Hihat",
+                    name = line.split('"')[1]
+                    current_obj["name"] = name
+                    
+                elif 'pos3d:' in line:
+                    # pos3d: [1.8, 0.8, -1],
+                    pos_str = line[line.index('[')+1:line.index(']')]
+                    pos = [float(x.strip()) for x in pos_str.split(',')]
+                    current_obj["pos3d"] = pos
+                    
+                elif 'radius:' in line:
+                    # radius: 0.65,
+                    radius_str = line.split(':')[1].strip().rstrip(',')
+                    current_obj["radius"] = float(radius_str)
+            
+            if drums:
+                print(f"[DrumCollision] Loaded {len(drums)} drums from {config_path}")
+                return drums
+            else:
+                raise ValueError("No drums found in zones array")
             
         except Exception as e:
-            print(f"⚠️ 無法載入 {config_path}，使用預設配置: {e}")
+            print(f"[DrumCollision] Failed to load {config_path}, using defaults: {e}")
             # 備用硬編碼配置（以防載入失敗）
             return [
                 {"name": "Hihat", "x": 1.8, "y": 0.8, "z": -1, "radius": 0.65},
@@ -198,4 +229,4 @@ class DrumCollisionDetector:
         return {"drum_name": None, "adjusted_pitch": pitch}
 
 # 創建全局實例
-drum_collision = DrumCollision()
+drum_collision = DrumCollisionDetector()
