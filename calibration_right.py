@@ -3,6 +3,9 @@ import time
 import math
 
 sensor = mpu6050(0x68)
+# 設定傳感器量程，消除警告訊息
+sensor.set_accel_range(mpu6050.ACCEL_RANGE_2G)
+sensor.set_gyro_range(mpu6050.GYRO_RANGE_250DEG)
 
 ACCEL_OFFSET = {"x": 0.0605, "y": -0.0385, "z": 0.4891}
 GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
