@@ -388,8 +388,9 @@ function mapXYto3D(x, y, pitch) {
 // 碰撞檢測與修正：計算鼓棒是否穿入鼓面，並返回修正後的 Pitch 角度 (弧度)
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = 1.2;
-    // 檢查多個點：尖端 (1.0) 和 棒身中段 (0.7) 以防止穿模
-    const checkPoints = [1.0, 0.7];
+    // 分開檢查：尖端用於敲擊判定，棒身用於防止穿模
+    const tipPoint = 1.0;      // 尖端位置
+    const bodyPoint = 0.7;     // 棒身中段（僅用於防穿模）
     let correctedRotX = rotX;
     let hitDrum = null;
 
@@ -419,46 +420,59 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const normalY = Math.cos(drumRot);
         const normalZ = Math.sin(drumRot);
 
-        // 檢查每個關鍵點
-        checkPoints.forEach(fraction => {
-            const dist = stickLength * fraction;
+        // 1. 檢查尖端碰撞（用於敲擊判定）
+        const tipDist = stickLength * tipPoint;
+        const tipX = gripPos[0] + tipDist * Math.cos(rotX) * Math.sin(rotY);
+        const tipY = gripPos[1] - tipDist * Math.sin(rotX);
+        const tipZ = gripPos[2] + tipDist * Math.cos(rotX) * Math.cos(rotY);
 
-            // 計算該點的 3D 位置 (當前幀)
-            const pX = gripPos[0] + dist * Math.cos(rotX) * Math.sin(rotY);
-            const pY = gripPos[1] - dist * Math.sin(rotX);
-            const pZ = gripPos[2] + dist * Math.cos(rotX) * Math.cos(rotY);
+        const tipDx = tipX - drumPos[0];
+        const tipDz = tipZ - headCenterZ;
+        const tipInRadius = tipDx * tipDx + tipDz * tipDz < hitRadius * hitRadius;
+        
+        if (tipInRadius) {
+            const tipDistToPlane = (tipY - headCenterY) * normalY + (tipZ - headCenterZ) * normalZ;
+            
+            if (tipDistToPlane < buffer) {
+                // 尖端碰撞：修正角度 + 標記為打擊
+                const y_surface_at_tipZ = headCenterY - (normalZ / normalY) * (tipZ - headCenterZ);
+                let maxSin = (gripPos[1] - (y_surface_at_tipZ + buffer)) / tipDist;
+                maxSin = Math.max(-1, Math.min(1, maxSin));
+                const maxRotX = Math.asin(maxSin);
 
-            // 1. 檢查水平距離 (近似於圓形)
-            const dx = pX - drumPos[0];
-            const dz = pZ - headCenterZ; // 使用鼓面中心Z做判斷
-            if (dx * dx + dz * dz < hitRadius * hitRadius) {
-
-                // 2. 檢查是否穿過鼓面平面
-                // 點到平面的距離 = (點 - 平面上一點) dot 法線
-                const distToPlane = (pY - headCenterY) * normalY + (pZ - headCenterZ) * normalZ;
-
-                if (distToPlane < buffer) {
-                    // 發生碰撞，計算修正角度
-                    // 我們需要找到一個 new_rotX，使得點剛好在平面上
-                    // y_surface = head_center_y - tan(rot) * (pZ(new_rotX) - head_center_z)
-                    // sin(new_rotX) = (grip_y - y_surface) / dist
-                    // 這是一個隱式方程，我們用當前的 pZ 作為近似值來求解
-                    
-                    const y_surface_at_pZ = headCenterY - (normalZ / normalY) * (pZ - headCenterZ);
-                    
-                    let maxSin = (gripPos[1] - (y_surface_at_pZ + buffer)) / dist;
-                    maxSin = Math.max(-1, Math.min(1, maxSin));
-                    
-                    const maxRotX = Math.asin(maxSin);
-
-                    // 取最小的角度（限制向下揮動）
-                    if (maxRotX < correctedRotX) {
-                        correctedRotX = maxRotX;
-                        hitDrum = zone.name;
-                    }
+                if (maxRotX < correctedRotX) {
+                    correctedRotX = maxRotX;
+                    hitDrum = zone.name;  // 只有尖端碰撞才標記為打擊
                 }
             }
-        });
+        }
+
+        // 2. 檢查棒身碰撞（僅用於防止穿模，不觸發打擊）
+        const bodyDist = stickLength * bodyPoint;
+        const bodyX = gripPos[0] + bodyDist * Math.cos(rotX) * Math.sin(rotY);
+        const bodyY = gripPos[1] - bodyDist * Math.sin(rotX);
+        const bodyZ = gripPos[2] + bodyDist * Math.cos(rotX) * Math.cos(rotY);
+
+        const bodyDx = bodyX - drumPos[0];
+        const bodyDz = bodyZ - headCenterZ;
+        const bodyInRadius = bodyDx * bodyDx + bodyDz * bodyDz < hitRadius * hitRadius;
+        
+        if (bodyInRadius) {
+            const bodyDistToPlane = (bodyY - headCenterY) * normalY + (bodyZ - headCenterZ) * normalZ;
+            
+            if (bodyDistToPlane < buffer) {
+                // 棒身碰撞：僅修正角度，不標記為打擊
+                const y_surface_at_bodyZ = headCenterY - (normalZ / normalY) * (bodyZ - headCenterZ);
+                let maxSin = (gripPos[1] - (y_surface_at_bodyZ + buffer)) / bodyDist;
+                maxSin = Math.max(-1, Math.min(1, maxSin));
+                const maxRotX = Math.asin(maxSin);
+
+                if (maxRotX < correctedRotX) {
+                    correctedRotX = maxRotX;
+                    // 不設定 hitDrum，所以不會觸發打擊音效
+                }
+            }
+        }
     });
 
     return { correctedRotX, hitDrum };
