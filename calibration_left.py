@@ -1,19 +1,20 @@
 from mpu6050 import mpu6050
 import time
 import math
+from ahrs.filters import Madgwick
+from ahrs.common.orientation import q2euler
 
 sensor = mpu6050(0x69)
 # 設定傳感器量程，消除警告訊息
 sensor.set_accel_range(mpu6050.ACCEL_RANGE_2G)
 sensor.set_gyro_range(mpu6050.GYRO_RANGE_250DEG)
 
-ACCEL_OFFSET = {"x": 1.71, "y": -1.23, "z": 1.52} 
-GYRO_OFFSET = {"x": -1.22, "y": 2.69, "z": 0.31}
+ACCEL_OFFSET = {"x": 0.00, "y": 0.00, "z": 0.00}
+GYRO_OFFSET  = {"x": 0.00, "y": 0.00, "z": 0.00}
 
-pitch = 0.0
-roll  = 0.0
-yaw   = 0.0  
-alpha = 0.96
+# Madgwick 濾波器初始化
+madgwick = Madgwick(frequency=100, gain=0.033)
+quaternion = [1.0, 0.0, 0.0, 0.0]  # 初始四元數 [w, x, y, z]
 
 prev_time = time.time()   # 用於自動計算 dt
 
@@ -62,7 +63,7 @@ def complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt):
 
 def update_left_angle():
     """hit_detection.py 會呼叫這裡，不會跑迴圈、不輸出"""
-    global pitch, roll, yaw, prev_time
+    global quaternion, prev_time
 
     now = time.time()
     dt = now - prev_time
@@ -70,6 +71,24 @@ def update_left_angle():
 
     ax, ay, az, gx, gy, gz = get_calibrated()
 
-    pitch, roll, yaw = complementary_filter(pitch, roll, yaw, ax, ay, az, gx, gy, gz, dt)
+    # 將角速度從 deg/s 轉換為 rad/s（Madgwick 需要）
+    gx_rad = math.radians(gx)
+    gy_rad = math.radians(gy)
+    gz_rad = math.radians(gz)
+
+    # 使用 Madgwick 濾波器更新姿態
+    quaternion = madgwick.updateIMU(
+        quaternion,
+        gyr=[gx_rad, gy_rad, gz_rad],
+        acc=[ax, ay, az]
+    )
+
+    # 從四元數計算歐拉角（弧度）
+    roll_rad, pitch_rad, yaw_rad = q2euler(quaternion)
+
+    # 轉換為度數
+    roll = math.degrees(roll_rad)
+    pitch = math.degrees(pitch_rad)
+    yaw = math.degrees(yaw_rad)
 
     return roll, pitch, yaw, ax, ay, az, gx, gy, gz

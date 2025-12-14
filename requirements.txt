@@ -3,6 +3,8 @@ flask-cors
 yt-dlp
 spleeter
 
+ahrs
+
 # Raspberry Pi MPU6050 support
 smbus2
 mpu6050-raspberrypi
