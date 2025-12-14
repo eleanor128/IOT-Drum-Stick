@@ -37,7 +37,7 @@ const ACCEL_Z_MAX = 0.3;  // 加速度對 Z 軸最大影響（增加）
 const ACCEL_Z_FACTOR = 0.02;  // 加速度對 Z 軸影響係數（增加）
 
 // Z軸範圍限制（擴大範圍以覆蓋前後所有鼓）
-const GRIP_Z_MIN = -2.2;  // 握把最後方位置（打 Hihat, Tom_floor）
+const GRIP_Z_MIN = -3.0;  // 握把最後方位置（必須 <= GRIP_BASE_Z 才能到達後方鼓）
 const GRIP_Z_MAX = 1.0;   // 握把最前方位置（打 Symbal, Tom_high, Tom_mid）
 
 // 碰撞檢測設定

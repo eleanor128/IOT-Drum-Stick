@@ -4,16 +4,88 @@ import os
 
 class DrumCollisionDetector:
     def __init__(self, config_path="static/js/3d_settings.js"):
-        """從 3d_settings.js 載入鼓的配置"""
-        self.drums = self._load_drums_from_js(config_path)
-        self.collision_buffer = 0.05  # 從 3d_settings.js 的 COLLISION_BUFFER
+        """從 3d_settings.js 載入所有配置"""
+        self.config = self._load_config_from_js(config_path)
+        self.drums = self.config["drums"]
+        self.collision_buffer = self.config.get("COLLISION_BUFFER", 0.05)
         
-    def _load_drums_from_js(self, config_path):
-        """解析 3d_settings.js 中的 zones 陣列"""
+    def _load_config_from_js(self, config_path):
+        """解析 3d_settings.js 中的所有配置參數"""
+        config = {
+            "drums": [],
+            # 預設值（萬一讀取失敗）
+            "GRIP_RIGHT_X": 0.4,
+            "GRIP_LEFT_X": 0.6,
+            "GRIP_BASE_Y": 1.0,
+            "GRIP_BASE_Z": -3.0,
+            "YAW_SENSITIVITY": 45,
+            "YAW_POSITION_FACTOR": 0.8,
+            "PITCH_THRESHOLD": 15,
+            "PITCH_Y_FACTOR": 0.003,
+            "PITCH_Z_TILTED_MAX": 2.0,
+            "PITCH_Z_TILTED_FACTOR": 1.5,
+            "PITCH_Z_FLAT_FACTOR": 0.005,
+            "ACCEL_Z_FACTOR": 0.02,
+            "ACCEL_Z_MAX": 0.3,
+            "GRIP_Z_MIN": -3.0,
+            "GRIP_Z_MAX": 1.0,
+            "COLLISION_BUFFER": 0.05,
+            "STICK_LENGTH": 1.2,
+        }
+        
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+            
+            # 解析常數定義
+            import re
+            const_pattern = r'const\s+(\w+)\s*=\s*([^;]+);'
+            matches = re.findall(const_pattern, content)
+            
+            for name, value in matches:
+                value = value.strip()
                 
+                # 移除註解
+                if '//' in value:
+                    value = value[:value.index('//')].strip()
+                
+                # 解析數值
+                try:
+                    # 替換 Math.PI
+                    value = value.replace('Math.PI', str(math.pi))
+                    
+                    # 嘗試計算表達式
+                    if any(op in value for op in ['+', '-', '*', '/']):
+                        parsed_value = eval(value)
+                    else:
+                        # 嘗試轉換為浮點數
+                        parsed_value = float(value)
+                    
+                    if name in config:
+                        config[name] = parsed_value
+                        
+                except (ValueError, SyntaxError):
+                    pass  # 無法解析的值跳過
+            
+            # 解析 zones 陣列
+            config["drums"] = self._parse_zones_array(content)
+            
+            print(f"[DrumCollision] Loaded config from {config_path}")
+            print(f"  - {len(config['drums'])} drums")
+            print(f"  - PITCH_THRESHOLD = {config['PITCH_THRESHOLD']}")
+            print(f"  - YAW_POSITION_FACTOR = {config['YAW_POSITION_FACTOR']}")
+            print(f"  - GRIP_BASE_Z = {config['GRIP_BASE_Z']}")
+            
+            return config
+            
+        except Exception as e:
+            print(f"[DrumCollision] Failed to load config: {e}")
+            config["drums"] = self._get_default_drums()
+            return config
+    
+    def _parse_zones_array(self, content):
+        """解析 3d_settings.js 中的 zones 陣列"""
+        try:
             # 找到 zones 陣列定義
             start = content.find('const zones = [')
             if start == -1:
@@ -82,23 +154,25 @@ class DrumCollisionDetector:
                     current_obj["radius"] = float(radius_str)
             
             if drums:
-                print(f"[DrumCollision] Loaded {len(drums)} drums from {config_path}")
                 return drums
             else:
                 raise ValueError("No drums found in zones array")
             
         except Exception as e:
-            print(f"[DrumCollision] Failed to load {config_path}, using defaults: {e}")
-            # 備用硬編碼配置（以防載入失敗）
-            return [
-                {"name": "Hihat", "x": 1.8, "y": 0.8, "z": -1, "radius": 0.65},
-                {"name": "Snare", "x": 0.5, "y": 0.4, "z": -1, "radius": 0.65},
-                {"name": "Tom_high", "x": 0.6, "y": 0.8, "z": 0.3, "radius": 0.5},
-                {"name": "Tom_mid", "x": -0.6, "y": 0.8, "z": 0.3, "radius": 0.5},
-                {"name": "Symbal", "x": 1.7, "y": 1.4, "z": 0.5, "radius": 0.80},
-                {"name": "Ride", "x": -1.8, "y": 1.4, "z": -0.1, "radius": 0.90},
-                {"name": "Tom_floor", "x": -1.2, "y": 0.2, "z": -1, "radius": 0.80},
-            ]
+            print(f"[DrumCollision] Failed to parse zones: {e}")
+            return self._get_default_drums()
+    
+    def _get_default_drums(self):
+        """備用硬編碼配置（以防載入失敗）"""
+        return [
+            {"name": "Hihat", "x": 1.8, "y": 0.8, "z": -1, "radius": 0.65},
+            {"name": "Snare", "x": 0.5, "y": 0.4, "z": -1, "radius": 0.65},
+            {"name": "Tom_high", "x": 0.6, "y": 0.8, "z": 0.3, "radius": 0.5},
+            {"name": "Tom_mid", "x": -0.6, "y": 0.8, "z": 0.3, "radius": 0.5},
+            {"name": "Symbal", "x": 1.7, "y": 1.4, "z": 0.5, "radius": 0.80},
+            {"name": "Ride", "x": -1.8, "y": 1.4, "z": -0.1, "radius": 0.90},
+            {"name": "Tom_floor", "x": -1.2, "y": 0.2, "z": -1, "radius": 0.80},
+        ]
     
     def calculate_stick_tip_position(self, ax, pitch, yaw, hand="right"):
         """
@@ -115,17 +189,50 @@ class DrumCollisionDetector:
         (x, y, z): 鼓棒前端的 3D 座標
         """
         
-        # 1. 計算握把位置（手的位置）- 完全對應 drum_3d.js
-        # targetRightX = GRIP_RIGHT_X + (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
-        # targetLeftX = GRIP_LEFT_X + (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
-        # GRIP_RIGHT_X = 0.4, GRIP_LEFT_X = 0.6, YAW_SENSITIVITY = 45, YAW_POSITION_FACTOR = 0.8
-        if hand == "right":
-            hand_x = 0.4 + (yaw / 45) * 0.8  # 右手初始位置靠近 Snare
-        else:
-            hand_x = 0.6 + (yaw / 45) * 0.8  # 左手在左側
+        # 從配置讀取所有參數（自動與 3d_settings.js 同步）
+        cfg = self.config
+        GRIP_RIGHT_X = cfg["GRIP_RIGHT_X"]
+        GRIP_LEFT_X = cfg["GRIP_LEFT_X"]
+        GRIP_BASE_Y = cfg["GRIP_BASE_Y"]
+        GRIP_BASE_Z = cfg["GRIP_BASE_Z"]
+        YAW_SENSITIVITY = cfg["YAW_SENSITIVITY"]
+        YAW_POSITION_FACTOR = cfg["YAW_POSITION_FACTOR"]
+        PITCH_THRESHOLD = cfg["PITCH_THRESHOLD"]
+        PITCH_Y_FACTOR = cfg["PITCH_Y_FACTOR"]
+        PITCH_Z_TILTED_MAX = cfg["PITCH_Z_TILTED_MAX"]
+        PITCH_Z_TILTED_FACTOR = cfg["PITCH_Z_TILTED_FACTOR"]
+        PITCH_Z_FLAT_FACTOR = cfg["PITCH_Z_FLAT_FACTOR"]
+        ACCEL_Z_FACTOR = cfg["ACCEL_Z_FACTOR"]
+        ACCEL_Z_MAX = cfg["ACCEL_Z_MAX"]
+        GRIP_Z_MIN = cfg["GRIP_Z_MIN"]
+        GRIP_Z_MAX = cfg["GRIP_Z_MAX"]
         
-        hand_y = 1.5    # 手的高度（提高）
-        hand_z = -0.8   # 手的前後位置（與 Snare 的 Z 座標對齊）
+        # 1. 計算握把 X 位置
+        if hand == "right":
+            hand_x = GRIP_RIGHT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+        else:
+            hand_x = GRIP_LEFT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+        
+        # 2. 計算握把 Y 位置
+        hand_y = GRIP_BASE_Y + pitch * PITCH_Y_FACTOR
+        
+        # 3. 計算握把 Z 位置（與前端完全一致）
+        hand_z = GRIP_BASE_Z
+        
+        if pitch < PITCH_THRESHOLD:
+            # 打擊前方的鼓（舉起）
+            depth_factor = (PITCH_THRESHOLD - pitch) / 20
+            hand_z += min(PITCH_Z_TILTED_MAX, depth_factor * PITCH_Z_TILTED_FACTOR)
+        else:
+            # 打擊平面鼓（向下）
+            hand_z += pitch * PITCH_Z_FLAT_FACTOR
+        
+        # 加入加速度影響
+        az_contribution = max(-ACCEL_Z_MAX, min(ACCEL_Z_MAX, abs(ax) * ACCEL_Z_FACTOR))
+        hand_z += az_contribution
+        
+        # 限制範圍
+        hand_z = max(GRIP_Z_MIN, min(GRIP_Z_MAX, hand_z))
         
         # 2. 計算鼓棒的旋轉角度（弧度）
         # 完全對應 drum_3d.js 的旋轉計算
@@ -173,12 +280,42 @@ class DrumCollisionDetector:
         tip_x, tip_y, tip_z = self.calculate_stick_tip_position(ax, pitch, yaw, hand)
         
         # 計算握把位置（與 drum_3d.js 完全一致）
+        # 使用與 calculate_stick_tip_position 相同的邏輯（從配置讀取）
+        cfg = self.config
+        GRIP_RIGHT_X = cfg["GRIP_RIGHT_X"]
+        GRIP_LEFT_X = cfg["GRIP_LEFT_X"]
+        GRIP_BASE_Y = cfg["GRIP_BASE_Y"]
+        GRIP_BASE_Z = cfg["GRIP_BASE_Z"]
+        YAW_SENSITIVITY = cfg["YAW_SENSITIVITY"]
+        YAW_POSITION_FACTOR = cfg["YAW_POSITION_FACTOR"]
+        PITCH_THRESHOLD = cfg["PITCH_THRESHOLD"]
+        PITCH_Y_FACTOR = cfg["PITCH_Y_FACTOR"]
+        PITCH_Z_TILTED_MAX = cfg["PITCH_Z_TILTED_MAX"]
+        PITCH_Z_TILTED_FACTOR = cfg["PITCH_Z_TILTED_FACTOR"]
+        PITCH_Z_FLAT_FACTOR = cfg["PITCH_Z_FLAT_FACTOR"]
+        ACCEL_Z_FACTOR = cfg["ACCEL_Z_FACTOR"]
+        ACCEL_Z_MAX = cfg["ACCEL_Z_MAX"]
+        GRIP_Z_MIN = cfg["GRIP_Z_MIN"]
+        GRIP_Z_MAX = cfg["GRIP_Z_MAX"]
+        
         if hand == "right":
-            hand_x = 0.4 + (yaw / 45) * 0.8  # 右手起始位置在 Snare 上方
+            hand_x = GRIP_RIGHT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
         else:
-            hand_x = 0.6 + (yaw / 45) * 0.8  # 左手起始位置在 Snare 左側
-        hand_y = 1.5
-        hand_z = -0.8 + ax * 0.5  # X軸加速度控制前後深淺
+            hand_x = GRIP_LEFT_X + (yaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+        
+        hand_y = GRIP_BASE_Y + pitch * PITCH_Y_FACTOR
+        
+        # 計算 Z 位置
+        hand_z = GRIP_BASE_Z
+        if pitch < PITCH_THRESHOLD:
+            depth_factor = (PITCH_THRESHOLD - pitch) / 20
+            hand_z += min(PITCH_Z_TILTED_MAX, depth_factor * PITCH_Z_TILTED_FACTOR)
+        else:
+            hand_z += pitch * PITCH_Z_FLAT_FACTOR
+        
+        az_contribution = max(-ACCEL_Z_MAX, min(ACCEL_Z_MAX, abs(ax) * ACCEL_Z_FACTOR))
+        hand_z += az_contribution
+        hand_z = max(GRIP_Z_MIN, min(GRIP_Z_MAX, hand_z))
         
         # 檢查是否碰撞到任何鼓（XZ 平面 2D 投影檢測）
         for drum in self.drums:
