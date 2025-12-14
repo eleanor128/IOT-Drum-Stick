@@ -24,7 +24,7 @@ async function enableAudio() {
         // 使用 3d_settings.js 中的 SOUND_FILES 配置
         for (const key in SOUND_FILES) {
             try {
-                const response = await fetch(files[key]);
+                const response = await fetch(SOUND_FILES[key]);
                 if (!response.ok) continue;
                 const arrayBuffer = await response.arrayBuffer();
                 audioBuffers[key] = await audioCtx.decodeAudioData(arrayBuffer);
