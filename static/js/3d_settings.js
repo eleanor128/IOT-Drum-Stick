@@ -16,6 +16,10 @@ const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
 const YAW_SENSITIVITY = 45;  // Yaw 角度靈敏度
 const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
 
+// Pitch 角度範圍限制（度）
+const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
+const PITCH_MAX = 45;   // 最大 Pitch（向下最低到鼓面，不會更低）
+
 // 握把位置設定
 const GRIP_BASE_Z = -2.2;  // 握把基礎 Z 位置（後方）
 const GRIP_BASE_Y = 0.75;   // 握把基礎 Y 位置（高度）

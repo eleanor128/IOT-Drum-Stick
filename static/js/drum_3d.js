@@ -587,8 +587,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const effectiveRightYaw = rightYaw + rightYawOffset;
     const effectiveLeftYaw = leftYaw + leftYawOffset;
 
+    // 限制 Pitch 角度範圍，防止鼓棒尖端低於最低鼓面
+    const clampedRightPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, rightPitch));
+    const clampedLeftPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, leftPitch));
+
     // 計算旋轉角度 (弧度)
-    const rightRotX = (rightPitch / 30) * (Math.PI / 2.2);  // Pitch: 上下揮擊 (提高靈敏度，加大角度)
+    const rightRotX = (clampedRightPitch / 30) * (Math.PI / 2.2);  // Pitch: 上下揮擊 (提高靈敏度，加大角度)
     const rightRotY = (effectiveRightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
     
     // 右手握把位置計算 (基於角度的虛擬手臂模型)
@@ -600,18 +604,18 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 變小/負值 (舉起) -> 手部向前伸 (+Z) 以打擊後方鼓 (如鈸、通鼓)
-    targetRightY += rightPitch * 0.002; // 微調手部高度
+    targetRightY += clampedRightPitch * 0.002; // 微調手部高度
 
     // 動態深度調整：pitch 變小（舉起）代表打擊後方傾斜的鼓
     // pitch < 5° 代表舉起打擊傾斜的鼓（鈸、中鼓），需要往深處伸展
     const pitchThreshold = 5;  // 基準值：pitch 小於此值代表舉起打後方的鼓
-    if (rightPitch < pitchThreshold) {
+    if (clampedRightPitch < pitchThreshold) {
         // 打擊傾斜的鼓（Symbal, Ride, Tom_high, Tom_mid）
-        const depthFactor = (pitchThreshold - rightPitch) / 20;  // 標準化到 0-1
+        const depthFactor = (pitchThreshold - clampedRightPitch) / 20;  // 標準化到 0-1
         targetRightZ += Math.min(0.8, depthFactor * 0.6);  // 减少前伸幅度，降低敏感度
     } else {
         // 打擊平面的鼓（Snare, Tom_floor, Hihat）
-        targetRightZ += rightPitch * 0.003;  // 减少延伸系数
+        targetRightZ += clampedRightPitch * 0.003;  // 减少延伸系数
     }
 
     // 根據 X軸加速度 往深處移動 (模擬左右揮動時的伸展) - 降低敏感度
@@ -625,7 +629,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
-    const leftRotX = (leftPitch / 30) * (Math.PI / 2.2);
+    const leftRotX = (clampedLeftPitch / 30) * (Math.PI / 2.2);
     const leftRotY = (effectiveLeftYaw / 45) * (Math.PI / 4);
     
     // 左手握把位置計算
@@ -634,18 +638,18 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         let targetLeftZ = -2.2;  // 基礎位置：確保手部永遠在鼓棒尖端後方
     targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
 
-    targetLeftY += leftPitch * 0.002;
+    targetLeftY += clampedLeftPitch * 0.002;
 
     // 動態深度調整：pitch 變小（舉起）代表打擊後方傾斜的鼓
     // pitch < 5° 代表舉起打擊傾斜的鼓（鈸、中鼓），需要往深處伸展
     const leftPitchThreshold = 5;  // 基準值：pitch 小於此值代表舉起打後方的鼓
-    if (leftPitch < leftPitchThreshold) {
+    if (clampedLeftPitch < leftPitchThreshold) {
         // 打擊傾斜的鼓（Symbal, Ride, Tom_high, Tom_mid）
-        const leftDepthFactor = (leftPitchThreshold - leftPitch) / 20;  // 標準化到 0-1
+        const leftDepthFactor = (leftPitchThreshold - clampedLeftPitch) / 20;  // 標準化到 0-1
         targetLeftZ += Math.min(0.8, leftDepthFactor * 0.6);  // 减少前伸幅度，降低敏感度
     } else {
         // 打击平面的鼓（Snare, Tom_floor, Hihat）
-        targetLeftZ += leftPitch * 0.003;  // 减少延伸系数
+        targetLeftZ += clampedLeftPitch * 0.003;  // 减少延伸系数
     }
 
     // 根据 X轴加速度 往深处移动 - 降低敏感度
