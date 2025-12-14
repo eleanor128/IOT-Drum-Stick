@@ -605,9 +605,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const clampedLeftPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, leftPitch));
 
     // 偵測是否正在敲擊 (根據陀螺儀 Y 軸速度判斷)
-    // 根據數據分析：779個擊打樣本中，|gy| > 80 可捕捉 90%+ 的擊打
-    const rightIsHitting = Math.abs(rightData.gy) > 80;  // 敲擊時陀螺儀 Y 軸速度較大
-    const leftIsHitting = Math.abs(leftData.gy) > 80;
+    // 降低閾值以更容易觸發視覺效果
+    const rightIsHitting = Math.abs(rightData.gy) > 50;  // 敲擊時陀螺儀 Y 軸速度較大
+    const leftIsHitting = Math.abs(leftData.gy) > 50;
 
     // 計算旋轉角度 (弧度)
     // Pitch 行為：舉起 → pitch 變小(負值)，敲擊向下 → pitch 變大(正值)
@@ -715,14 +715,32 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         // 當敲擊時，計算該鼓的中心位置並對齊
         const drumCenter = getDrumCenter(rightHitDrum);
         if (drumCenter) {
-            // 計算從握把到鼓中心的角度
-            const dx = drumCenter.x - rightX;
-            const dz = drumCenter.z - rightZ;
-            const dy = drumCenter.y - rightY;
+            // 計算從鼓中心反推握把位置，確保尖端碰到鼓面
+            const stickLength = STICK_LENGTH;
             
-            // 計算目標 Yaw (左右角度)
+            // 計算從當前握把到鼓的方向向量
+            let dx = drumCenter.x - rightX;
+            let dz = drumCenter.z - rightZ;
+            let dy = drumCenter.y - rightY;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            // 標準化方向向量
+            dx /= dist;
+            dy /= dist;
+            dz /= dist;
+            
+            // 計算目標握把位置：從鼓面沿著方向向量反向移動鼓棒長度
+            const targetGripX = drumCenter.x - dx * stickLength;
+            const targetGripY = drumCenter.y - dy * stickLength;
+            const targetGripZ = drumCenter.z - dz * stickLength;
+            
+            // 平滑移動握把到目標位置
+            rightStick.position.x = lerp(rightX, targetGripX, DRUM_CENTER_BLEND_FACTOR);
+            rightStick.position.y = lerp(rightY, targetGripY, DRUM_CENTER_BLEND_FACTOR);
+            rightStick.position.z = lerp(rightZ, targetGripZ, DRUM_CENTER_BLEND_FACTOR);
+            
+            // 計算目標角度讓尖端指向鼓中心
             const targetYaw = Math.atan2(dx, dz);
-            // 計算目標 Pitch (上下角度)
             const horizontalDist = Math.sqrt(dx * dx + dz * dz);
             const targetPitch = Math.atan2(dy, horizontalDist);
             
@@ -757,14 +775,32 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         // 當敲擊時，計算該鼓的中心位置並對齊
         const drumCenter = getDrumCenter(leftHitDrum);
         if (drumCenter) {
-            // 計算從握把到鼓中心的角度
-            const dx = drumCenter.x - leftX;
-            const dz = drumCenter.z - leftZ;
-            const dy = drumCenter.y - leftY;
+            // 計算從鼓中心反推握把位置，確保尖端碰到鼓面
+            const stickLength = STICK_LENGTH;
             
-            // 計算目標 Yaw (左右角度)
+            // 計算從當前握把到鼓的方向向量
+            let dx = drumCenter.x - leftX;
+            let dz = drumCenter.z - leftZ;
+            let dy = drumCenter.y - leftY;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            // 標準化方向向量
+            dx /= dist;
+            dy /= dist;
+            dz /= dist;
+            
+            // 計算目標握把位置：從鼓面沿著方向向量反向移動鼓棒長度
+            const targetGripX = drumCenter.x - dx * stickLength;
+            const targetGripY = drumCenter.y - dy * stickLength;
+            const targetGripZ = drumCenter.z - dz * stickLength;
+            
+            // 平滑移動握把到目標位置
+            leftStick.position.x = lerp(leftX, targetGripX, DRUM_CENTER_BLEND_FACTOR);
+            leftStick.position.y = lerp(leftY, targetGripY, DRUM_CENTER_BLEND_FACTOR);
+            leftStick.position.z = lerp(leftZ, targetGripZ, DRUM_CENTER_BLEND_FACTOR);
+            
+            // 計算目標角度讓尖端指向鼓中心
             const targetYaw = Math.atan2(dx, dz);
-            // 計算目標 Pitch (上下角度)
             const horizontalDist = Math.sqrt(dx * dx + dz * dz);
             const targetPitch = Math.atan2(dy, horizontalDist);
             

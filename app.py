@@ -27,12 +27,12 @@ def right_data():
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
 
     # 閥值靈敏度在這邊調整
-    # 只在向下揮動時觸發
-    is_downward_swing = gy > 20  # Y軸角速度為正，表示向下
-    is_sudden_stop = az < -1.0     # Z軸加速度偵測到衝擊
+    # 根據數據分析調整閾值：|gy| > 50 更容易觸發
+    is_downward_swing = abs(gy) > 50  # Y軸角速度絕對值，向下揮動
+    has_acceleration = abs(az) > 0.5 or abs(ax) > 0.5  # 任意方向加速度
 
-    # 綜合判斷為敲擊
-    is_hit = is_downward_swing and is_sudden_stop
+    # 綜合判斷為敲擊（降低門檻，更容易觸發）
+    is_hit = is_downward_swing and has_acceleration
 
     # 偵測打擊到哪個鼓，並取得調整後的 pitch（傳入 ax 加速度）
     collision_info = drum_collision.detect_hit_drum(ax, pitch, yaw, hand="right")
@@ -60,9 +60,9 @@ def left_data():
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
 
     # 左手敲擊偵測（同樣的邏輯）
-    is_downward_swing = gy > 20
-    is_sudden_stop = az < -1.0
-    is_hit = is_downward_swing and is_sudden_stop
+    is_downward_swing = abs(gy) > 50  # Y軸角速度絕對值
+    has_acceleration = abs(az) > 0.5 or abs(ax) > 0.5  # 任意方向加速度
+    is_hit = is_downward_swing and has_acceleration
 
     # 偵測打擊到哪個鼓，並取得調整後的 pitch（傳入 ax 加速度）
     collision_info = drum_collision.detect_hit_drum(ax, pitch, yaw, hand="left")
