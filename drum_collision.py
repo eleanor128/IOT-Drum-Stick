@@ -256,19 +256,21 @@ class DrumCollisionDetector:
         # 前端：rightRotX = -(clampedRightPitch / 20) * (Math.PI / 2)
         # 前端：rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3)
         
-        # 判斷是否在敲擊狀態（az < -1.0 為敲擊）
-        is_hitting = (az < -1.0)
-        
+        # 判斷是否在敲擊狀態（根據 gy 判斷，與前端一致）
+        is_hitting = abs(az) > 1.0  # 簡化判斷，與前端邏輯對齊
+
         if is_hitting:
             # 敲擊時：pitch 增加 → 鼓棒向上旋轉
-            pitch_radians = -(pitch / 20) * (math.pi / 2)
+            # 與前端同步：rightRotX = -(clampedRightPitch / 15) * (Math.PI / 2)
+            pitch_radians = -(clamped_pitch / 15) * (math.pi / 2)
         else:
             # 平時：保持水平，僅微幅調整
-            pitch_radians = -(pitch / 25) * (math.pi / 8)
-        
+            # 與前端同步：rightRotX = -(clampedRightPitch / 20) * (Math.PI / 6)
+            pitch_radians = -(clamped_pitch / 20) * (math.pi / 6)
+
         # yaw 增加 → 鼓棒向左旋轉
-        # 注意：前端使用負號，所以這裡也要用負號
-        yaw_radians = -(yaw / 30) * (math.pi / 3)
+        # 與前端同步：rightRotY = -(effectiveRightYaw / 25) * (Math.PI / 2.5)
+        yaw_radians = -(yaw / 25) * (math.pi / 2.5)
         
         # 3D 旋轉公式（與 drum_3d.js 的 rightTipX/Y/Z 計算完全一致）：
         # rightTipX = rightX + stickLength * Math.sin(rightRotY) * Math.cos(rightRotX)
