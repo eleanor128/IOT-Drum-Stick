@@ -511,7 +511,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 右手握把位置計算 (基於角度的虛擬手臂模型)
     // 基礎位置
     let targetRightX = 0.2;
-    let targetRightY = 0.8;
+    let targetRightY = 0.6;
     let targetRightZ = -2.0;
 
     // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
@@ -538,7 +538,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 左手握把位置計算
     let targetLeftX = 0.8; // 左手基礎 X 較偏左 (正值)
-    let targetLeftY = 0.8;
+    let targetLeftY = 0.6;
     let targetLeftZ = -2.0;
 
     targetLeftX += effectiveLeftYaw * 0.01;
