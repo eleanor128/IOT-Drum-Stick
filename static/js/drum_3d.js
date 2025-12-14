@@ -485,41 +485,40 @@ let leftWasColliding = false;
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
 
-    // 右手握把位置（手部位置，作為圓心）
-    const [baseRightX, baseRightY, baseRightZ] = mapAccelTo3D(
-        rightData.ax, rightData.ay, rightData.az, false
-    );
-    
     // 計算旋轉角度 (弧度)
     const rightRotX = (rightPitch / 45) * (Math.PI / 3);  // Pitch: 上下揮擊
     const rightRotY = (rightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
     
-    // 根據 Yaw 計算左右偏移（以手部為圓心的左右擺動）
-    const rightYawOffsetX = Math.sin(rightRotY) * 0.35; // 左右擺動範圍（降低幅度）
-    
-    // 應用 Yaw 偏移到手部位置
-    const targetRightX = baseRightX + rightYawOffsetX;
-    const targetRightY = baseRightY;
-    const targetRightZ = baseRightZ;
+    // 右手握把位置計算 (基於角度的虛擬手臂模型)
+    // 基礎位置
+    let targetRightX = 0.2;
+    let targetRightY = 0.8;
+    let targetRightZ = -2.0;
+
+    // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
+    targetRightX += rightYaw * 0.03;
+
+    // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
+    // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
+    targetRightZ -= rightPitch * 0.03; 
+    targetRightY -= rightPitch * 0.01;
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
-    // 左手握把位置
-    const [baseLeftX, baseLeftY, baseLeftZ] = mapAccelTo3D(
-        leftData.ax, leftData.ay, leftData.az, true
-    );
-    
     const leftRotX = (leftPitch / 45) * (Math.PI / 3);
     const leftRotY = (leftYaw / 45) * (Math.PI / 4);
     
-    const leftYawOffsetX = Math.sin(leftRotY) * 0.35;
-    
-    const targetLeftX = baseLeftX + leftYawOffsetX;
-    const targetLeftY = baseLeftY;
-    const targetLeftZ = baseLeftZ;
+    // 左手握把位置計算
+    let targetLeftX = 0.8; // 左手基礎 X 較偏左 (正值)
+    let targetLeftY = 0.8;
+    let targetLeftZ = -2.0;
+
+    targetLeftX += leftYaw * 0.03;
+    targetLeftZ -= leftPitch * 0.03;
+    targetLeftY -= leftPitch * 0.01;
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
