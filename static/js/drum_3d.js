@@ -748,13 +748,16 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 以手為圓心、鼓棒為半徑，在XZ平面上旋轉
     const rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3);
     
-    // 右手握把位置計算 - 手部保持穩定，鼓棒通過旋轉移動尖端
-    let targetRightX = GRIP_RIGHT_X;  // 手部X位置固定
+    // 右手握把位置計算 - 手在 XZ 平面移動，鼓棒旋轉控制尖端
+    let targetRightX = GRIP_RIGHT_X;  // 手部X位置基礎值
     let targetRightY = GRIP_BASE_Y;   // 手部Y位置固定（高度）
     let targetRightZ = GRIP_BASE_Z;   // 手部Z位置基礎值
 
-    // 根據 Pitch 調整手部 Z 位置（前後伸展，影響打擊範圍）
+    // 根據 Yaw 調整手部 X 位置（左右移動以打不同位置的鼓）
+    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
+    targetRightX = Math.max(GRIP_RIGHT_X_MIN, Math.min(GRIP_RIGHT_X_MAX, targetRightX));
 
+    // 根據 Pitch 調整手部 Z 位置（前後移動以打過的鼓）
     // 動態深度調整：pitch 變小（舉起）代表打擊前方的鼓
     if (clampedRightPitch < PITCH_THRESHOLD) {
         // 打擊前方的鼓（Symbal, Ride, Tom_high, Tom_mid）- 需要大幅前伸

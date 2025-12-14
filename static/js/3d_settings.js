@@ -13,9 +13,9 @@ const STICK_BODY_POINT = 0.7;  // 棒身碰撞檢測位置（相對於棒長）
 const SMOOTH_FACTOR = 0.08;  // 位置平滑係數（0-1，越小越平滑但延遲越高）降低以減少閃爍
 const PITCH_SENSITIVITY = 30;  // Pitch 角度靈敏度
 const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
-const YAW_SENSITIVITY = 45;  // Yaw 角度靈敏度
-const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
-const YAW_POSITION_FACTOR = 1.5;  // Yaw 對 X 位置的影響係數（增加移動幅度）
+const YAW_SENSITIVITY = 30;  // Yaw 角度靈敏度（降低以增加旋轉幅度）
+const YAW_ANGLE_FACTOR = Math.PI / 3;  // Yaw 角度轉換係數
+const YAW_POSITION_FACTOR = 2.5;  // Yaw 對 X 位置的影響係數（增加移動幅度，讓手部能左右移動更多）
 
 // Pitch 角度範圍限制（度）
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
@@ -172,21 +172,21 @@ const maxDrumZ = Math.max(...drumZPositions);  // 最前方鼓 (Symbal: 0.5)
 
 // Z軸範圍限制（根據鼓的位置和鼓棒長度自動計算）
 // 手部位置 = 鼓面位置 - 鼓棒長度 * 係數
-const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 0.8;  // 握把最後方位置（打後方鼓時手的位置）
-const GRIP_Z_MAX = maxDrumZ - STICK_LENGTH * 0.7;  // 握把最前方位置（打前方鼓時手的位置）
+const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 1.2;  // 握把最後方位置（打後方鼓時手可以更後方）
+const GRIP_Z_MAX = maxDrumZ + STICK_LENGTH * 0.5;  // 握把最前方位置（打前方鼓時手可以更前方）
 
-// X軸範圍限制（左右手分開設定，因為起始位置不同）
-// 每隻手都要能打到所有的鼓，根據各自的起始位置計算範圍
-// 計算邏輯：打某個鼓時，手的位置 = 基礎位置 + (鼓位置 - 基礎位置) * 係數
-// 係數 0.6 表示手保持在內側（不會伸到鼓棒尖端）
+// X軸範圍限制（左右手分開設定，根據鼓的位置和鼓棒長度計算）
+// 每隻手都要能打到所有的鼓
+// 計算邏輯：握把範圍 = 鼓位置 ± 鼓棒長度（手可以在鼓的左右兩側，透過旋轉打到鼓）
 
-// 右手範圍：從 GRIP_RIGHT_X 出發，能打到最左側和最右側的鼓
-const GRIP_RIGHT_X_MIN = GRIP_RIGHT_X + (minDrumX - GRIP_RIGHT_X) * 0.6;  // 打最左側鼓時手的位置
-const GRIP_RIGHT_X_MAX = GRIP_RIGHT_X + (maxDrumX - GRIP_RIGHT_X) * 0.6;  // 打最右側鼓時手的位置
+// 右手範圍：能打到最左側（Ride -1.8）到最右側（Hihat 1.8）的鼓
+// 握把位置範圍需要包含所有鼓 ± 鼓棒長度的延伸
+const GRIP_RIGHT_X_MIN = minDrumX - STICK_LENGTH * 0.3;  // 最左側鼓左方（打Ride時手的左側極限）
+const GRIP_RIGHT_X_MAX = maxDrumX + STICK_LENGTH * 0.3;  // 最右側鼓右方（打Hihat時手的右側極限）
 
-// 左手範圍：從 GRIP_LEFT_X 出發，能打到最左側和最右側的鼓
-const GRIP_LEFT_X_MIN = GRIP_LEFT_X + (minDrumX - GRIP_LEFT_X) * 0.6;  // 打最左側鼓時手的位置
-const GRIP_LEFT_X_MAX = GRIP_LEFT_X + (maxDrumX - GRIP_LEFT_X) * 0.6;  // 打最右側鼓時手的位置
+// 左手範圍：與右手相同，兩隻手都能打到所有的鼓
+const GRIP_LEFT_X_MIN = minDrumX - STICK_LENGTH * 0.3;  // 最左側鼓左方
+const GRIP_LEFT_X_MAX = maxDrumX + STICK_LENGTH * 0.3;  // 最右側鼓右方
 
 // 鼓的高度設定
 const CYMBAL_HEIGHT = 0.05;  // 鈸高度
