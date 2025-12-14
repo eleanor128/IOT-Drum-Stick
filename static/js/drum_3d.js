@@ -403,11 +403,11 @@ function solveStickCollision(gripPos, rotX, rotY) {
         
         let drumHeight;
         if (isCymbal) {
-            drumHeight = 0.05;  // 鈸很薄
+            drumHeight = 0.1;  // 鈸很薄
         } else if (zone.name === "Tom_floor") {
-            drumHeight = 1.0;   // 落地鼓較長
+            drumHeight = 1.2;   // 落地鼓較長
         } else {
-            drumHeight = 0.5;   // 其他鼓的標準高度
+            drumHeight = 0.8;   // 其他鼓的標準高度
         }
         
         const drumTopY = drumPos[1] + drumHeight / 2;
