@@ -181,7 +181,7 @@ class DrumCollisionDetector:
         
         # 檢查是否碰撞到任何鼓（按順序檢查，優先偵測較高的鼓）
         for drum in self.drums:
-            drum_x, drum_y, drum_z = drum["pos3d"]
+            drum_x, drum_y, drum_z = drum["x"], drum["y"], drum["z"]
             radius = drum["radius"]
             
             # 計算鼓的高度（厚度）
