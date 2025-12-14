@@ -201,7 +201,7 @@ const zones = [
     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 1.0, 0.8], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m
     { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.8, 1.2], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   // 鼓面高度: 1.825m
     { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.6, 1.7, 1.0], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  // 鼓面高度: 1.725m
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1, 0, -0.8], radius: 0.70, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
 ];
 // 修改 glowColor 來自定義每個鼓的發光顏色 (格式: 0xRRGGBB)
 // Math.PI / 18	10°	微微傾斜
