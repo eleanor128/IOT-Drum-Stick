@@ -154,8 +154,8 @@ class DrumCollisionDetector:
     
     def detect_hit_drum(self, ax, pitch, yaw, hand="right"):
         """
-        偵測鼓棒尖端是否打擊到某個鼓，並計算調整後的 pitch 角度
-        只要鼓棒尖端碰到鼓面就算打擊到
+        偵測鼓棒尖端是否打擊到某個鼓（基於 XZ 平面投影）
+        將鼓和鼓棒都映射到 XZ 平面（俯視圖），只檢查 2D 距離
         
         參數說明：
         - ax: X軸加速度，控制鼓棒前後深涺
@@ -169,7 +169,7 @@ class DrumCollisionDetector:
             "adjusted_pitch": 調整後的 pitch 角度（讓鼓棒停在鼓面上）
         }
         """
-        # 計算鼓棒尖端位置
+        # 計算鼓棒尖端 3D 位置
         tip_x, tip_y, tip_z = self.calculate_stick_tip_position(ax, pitch, yaw, hand)
         
         # 計算握把位置（與 drum_3d.js 完全一致）
@@ -180,40 +180,37 @@ class DrumCollisionDetector:
         hand_y = 1.5
         hand_z = -0.8 + ax * 0.5  # X軸加速度控制前後深淺
         
-        # 檢查是否碰撞到任何鼓（按順序檢查，優先偵測較高的鼓）
+        # 檢查是否碰撞到任何鼓（XZ 平面 2D 投影檢測）
         for drum in self.drums:
             drum_x, drum_y, drum_z = drum["x"], drum["y"], drum["z"]
             radius = drum["radius"]
             
-            # 計算鼓的高度（厚度）
-            is_cymbal = "Symbal" in drum["name"] or "Ride" in drum["name"] or "Hihat" in drum["name"]
-            if is_cymbal:
-                drum_height = 0.05  # 鈸很薄
-            elif drum["name"] == "Tom_floor":
-                drum_height = 1.0   # 落地鼓較長
-            else:
-                drum_height = 0.5   # 其他鼓的標準高度
-            
-            # 計算鼓面高度（中心點 + 半高度）
-            drum_top_y = drum_y + drum_height / 2
-            
-            # 計算鼓棒尖端與鼓中心的水平距離（X-Z 平面）
+            # 計算鼓棒尖端與鼓中心在 XZ 平面上的 2D 距離（俯視圖）
             dx = tip_x - drum_x
             dz = tip_z - drum_z
-            horizontal_dist = math.sqrt(dx * dx + dz * dz)
+            distance_2d = math.sqrt(dx * dx + dz * dz)
             
-            # 只要鼓棒尖端在鼓的半徑範圍內，且高度接近或低於鼓面，就算打擊到
-            if horizontal_dist <= radius and tip_y <= drum_top_y + 0.03:
+            # 只要鼓棒尖端在鼓的 XZ 投影範圍內，就算打擊到
+            # 不考慮 Y 軸高度，讓擊中更容易
+            if distance_2d <= radius:
                 # 碰撞發生！計算調整後的 pitch 讓鼓棒尖端停在鼓面上
-                # 目標：讓鼓棒尖端的 Y 座標等於鼓面高度 + 0.03（緊貼鼓面）
-                target_tip_y = drum_top_y + 0.03
+                
+                # 計算鼓面高度
+                is_cymbal = "Symbal" in drum["name"] or "Ride" in drum["name"] or "Hihat" in drum["name"]
+                if is_cymbal:
+                    drum_height = 0.05  # 鈸很薄
+                elif drum["name"] == "Tom_floor":
+                    drum_height = 1.0   # 落地鼓較長
+                else:
+                    drum_height = 0.5   # 其他鼓的標準高度
+                
+                drum_top_y = drum_y + drum_height / 2
+                target_tip_y = drum_top_y + 0.03  # 鼓棒尖端停在鼓面上方 3cm
                 
                 # 計算需要的高度差
                 delta_y = target_tip_y - hand_y  # 從握把到目標高度的 Y 差
                 
                 # 使用反三角函數計算調整後的 pitch 角度
-                # dy = -stick_length * sin(rotation_x)
-                # => rotation_x = asin(-dy / stick_length)
                 stick_length = 2.0
                 if abs(delta_y) <= stick_length:
                     rotation_x = math.asin(-delta_y / stick_length)
