@@ -753,8 +753,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetRightY = GRIP_BASE_Y;   // 手部Y位置固定（高度）
     let targetRightZ = GRIP_BASE_Z;   // 手部Z位置基礎值
 
-    // 根據 Yaw 調整手部 X 位置（左右移動以打不同位置的鼓）
-    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
+    // 根據 Yaw 調整手部 X 位置（yaw增加→手往X負向/左側移動）
+    targetRightX -= (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
     targetRightX = Math.max(GRIP_RIGHT_X_MIN, Math.min(GRIP_RIGHT_X_MAX, targetRightX));
 
     // 根據 Pitch 調整手部 Z 位置（前後移動以打過的鼓）
@@ -797,8 +797,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetLeftY = GRIP_BASE_Y;
     let targetLeftZ = GRIP_BASE_Z;  // 基礎位置與右手相同深度
     
-    // 根據 Yaw 調整握把 X 位置（手左右移動）
-    targetLeftX += (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
+    // 根據 Yaw 調整握把 X 位置（yaw增加→手往X負向/左側移動）
+    targetLeftX -= (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
     targetLeftX = Math.max(GRIP_LEFT_X_MIN, Math.min(GRIP_LEFT_X_MAX, targetLeftX));
 
     // 握把 Y 保持在基礎高度（手不上下移動，只有鼓棒旋轉）
