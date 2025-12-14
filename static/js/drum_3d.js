@@ -198,13 +198,13 @@ let rightStick, leftStick;
 // pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
 // 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
 const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m
-    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, // 鼓面高度: 0.65m
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   // 鼓面高度: 1.25m
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.4, 0.7], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   // 鼓面高度: 1.825m
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.8, 1.4, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  // 鼓面高度: 1.725m
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1.4, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   
+    { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, 
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   
+    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.4, 0.7], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.8, 1.4, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1.4, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, 
 ];
 // 修改 glowColor 來自定義每個鼓的發光顏色 (格式: 0xRRGGBB)
 // Math.PI / 18	10°	微微傾斜
@@ -512,11 +512,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 基礎位置
     let targetRightX = 0.2;
     let targetRightY = 0.6;
-    let targetRightZ = -2.0;
-
-    // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
-    targetRightX += effectiveRightYaw * 0.01;
-    // 限制 X 軸範圍 (防止超出 Floor Tom)
+        let targetRightZ = -2.5;
     targetRightX = Math.max(-0.8, Math.min(0.8, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
@@ -539,10 +535,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 左手握把位置計算
     let targetLeftX = 0.8; // 左手基礎 X 較偏左 (正值)
     let targetLeftY = 0.6;
-    let targetLeftZ = -2.0;
-
-    targetLeftX += effectiveLeftYaw * 0.01;
-    // 限制 X 軸範圍
+        let targetLeftZ = -2.5;
     targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
 
     targetLeftZ -= leftPitch * 0.005;
