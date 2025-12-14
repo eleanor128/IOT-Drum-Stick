@@ -489,10 +489,10 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 計算旋轉角度 (弧度)
     const rightRotX = (rightPitch / 45) * (Math.PI / 3);  // Pitch: 上下揮擊
-    const rightRotY = (rightYaw / 45) * (Math.PI / 2);     // Yaw: 左右擺動（增加範圍）
+    const rightRotY = (rightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
     
     // 根據 Yaw 計算左右偏移（以手部為圓心的左右擺動）
-    const rightYawOffsetX = Math.sin(rightRotY) * 0.6; // 左右擺動範圍
+    const rightYawOffsetX = Math.sin(rightRotY) * 0.35; // 左右擺動範圍（降低幅度）
     
     // 應用 Yaw 偏移到手部位置
     const targetRightX = baseRightX + rightYawOffsetX;
