@@ -554,14 +554,14 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     if (rightPitch < pitchThreshold) {
         // 打擊傾斜的鼓（Symbal, Ride, Tom_high, Tom_mid）
         const depthFactor = (pitchThreshold - rightPitch) / 20;  // 標準化到 0-1
-        targetRightZ += Math.min(1.3, depthFactor * 1.5);  // 往前延伸，最多到 -0.5
+        targetRightZ += Math.min(0.9, depthFactor * 1.0);  // 降低靈敏度
     } else {
         // 打擊平面的鼓（Snare, Tom_floor, Hihat）
-        targetRightZ += rightPitch * 0.01;  // 輕微延伸
+        targetRightZ += rightPitch * 0.008;  // 降低靈敏度
     }
 
     // 根據 X軸加速度 往深處移動 (模擬左右揮動時的伸展)
-    targetRightZ += Math.min(0.3, Math.abs(rightData.ax) * 0.03);
+    targetRightZ += Math.min(0.2, Math.abs(rightData.ax) * 0.02);  // 降低靈敏度
     
     // 限制手部Z軸範圍：-1.8（起始）到 -0.5（最前，鼓棒尖端可達Z=0.7）
     targetRightZ = Math.max(-1.8, Math.min(-0.5, targetRightZ));
@@ -588,14 +588,14 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     if (leftPitch < leftPitchThreshold) {
         // 打擊傾斜的鼓（Symbal, Ride, Tom_high, Tom_mid）
         const leftDepthFactor = (leftPitchThreshold - leftPitch) / 20;  // 標準化到 0-1
-        targetLeftZ += Math.min(1.3, leftDepthFactor * 1.5);  // 往前延伸，最多到 -0.5
+        targetLeftZ += Math.min(0.9, leftDepthFactor * 1.0);  // 降低靈敏度
     } else {
         // 打擊平面的鼓（Snare, Tom_floor, Hihat）
-        targetLeftZ += leftPitch * 0.01;  // 輕微延伸
+        targetLeftZ += leftPitch * 0.008;  // 降低靈敏度
     }
 
     // 根據 X軸加速度 往深處移動
-    targetLeftZ += Math.min(0.3, Math.abs(leftData.ax) * 0.03);
+    targetLeftZ += Math.min(0.2, Math.abs(leftData.ax) * 0.02);  // 降低靈敏度
     
     // 限制手部Z軸範圍：-1.8（起始）到 -0.5（最前，鼓棒尖端可達Z=0.7）
     targetLeftZ = Math.max(-1.8, Math.min(-0.5, targetLeftZ));
