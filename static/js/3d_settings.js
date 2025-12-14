@@ -20,24 +20,24 @@ const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
 const PITCH_MAX = 45;   // 最大 Pitch（向下最低到鼓面，不會更低）
 
-// 握把位置設定
-const GRIP_BASE_Z = -2.2;  // 握把基礎 Z 位置（後方）
-const GRIP_BASE_Y = 0.75;   // 握把基礎 Y 位置（高度）
-const GRIP_RIGHT_X = 0.2;  // 右手握把基礎 X 位置
-const GRIP_LEFT_X = 0.8;   // 左手握把基礎 X 位置
+// 握把位置設定（優化為可輕鬆敲擊 Snare 的位置）
+const GRIP_BASE_Z = -1.84;  // 握把基礎 Z 位置（定位於可直接打 Snare）
+const GRIP_BASE_Y = 1.00;   // 握把基礎 Y 位置（舒適敲擊高度）
+const GRIP_RIGHT_X = 0.5;   // 右手握把基礎 X 位置（對齊 Snare X 軸）
+const GRIP_LEFT_X = -0.9;   // 左手握把基礎 X 位置（左側鼓的中心位置）
 
-// Z軸移動參數
-const PITCH_THRESHOLD = 5;  // Pitch 閾值（度），小於此值代表舉起打後方的鼓
-const PITCH_Y_FACTOR = 0.002;  // Pitch 對 Y 軸影響係數
-const PITCH_Z_TILTED_MAX = 0.8;  // 打擊傾斜鼓時最大 Z 偏移
-const PITCH_Z_TILTED_FACTOR = 0.6;  // 打擊傾斜鼓時 Z 偏移係數
-const PITCH_Z_FLAT_FACTOR = 0.003;  // 打擊平面鼓時 Z 偏移係數
-const ACCEL_Z_MAX = 0.15;  // 加速度對 Z 軸最大影響
-const ACCEL_Z_FACTOR = 0.01;  // 加速度對 Z 軸影響係數
+// Z軸移動參數（增強前伸能力以打到前方的鼓）
+const PITCH_THRESHOLD = 5;  // Pitch 閾值（度），小於此值代表舉起打前方的鼓
+const PITCH_Y_FACTOR = 0.003;  // Pitch 對 Y 軸影響係數
+const PITCH_Z_TILTED_MAX = 2.0;  // 打擊傾斜鼓時最大 Z 偏移（增加以達到前方鼓）
+const PITCH_Z_TILTED_FACTOR = 1.5;  // 打擊傾斜鼓時 Z 偏移係數（增加靈敏度）
+const PITCH_Z_FLAT_FACTOR = 0.005;  // 打擊平面鼓時 Z 偏移係數
+const ACCEL_Z_MAX = 0.3;  // 加速度對 Z 軸最大影響（增加）
+const ACCEL_Z_FACTOR = 0.02;  // 加速度對 Z 軸影響係數（增加）
 
-// Z軸範圍限制
-const GRIP_Z_MIN = -2.2;  // 握把最後方位置
-const GRIP_Z_MAX = -0.5;  // 握把最前方位置
+// Z軸範圍限制（擴大範圍以覆蓋前後所有鼓）
+const GRIP_Z_MIN = -2.2;  // 握把最後方位置（打 Hihat, Tom_floor）
+const GRIP_Z_MAX = 1.0;   // 握把最前方位置（打 Symbal, Tom_high, Tom_mid）
 
 // 碰撞檢測設定
 const COLLISION_BUFFER = 0.05;  // 碰撞緩衝距離
