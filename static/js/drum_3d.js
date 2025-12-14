@@ -165,32 +165,24 @@ function isValidHit(ax, ay, az, gx, gy, gz) {
     return (hasDownwardSwing || magnitude > magnitudeThreshold || gyroMagnitude > gyroThreshold);
 }
 
-// 鼓棒 3D 位置映射（根據加速度數據）
+// 計算手部位置（握把位置）- 固定作為揮擊圓心
 function mapAccelTo3D(ax, ay, az, isLeft = false) {
-    // 調整初始位置到 Snare 上方 (Snare: x=0.5, y=0.4, z=-0.8)
-    // 鼓棒長度 1.2，握把在 z，尖端在 z+1.2
-    // 為了讓尖端在 Snare 上方 (z=-0.8)，握把應該在 z=-2.0 左右
-    
-    // X軸（左右）：ax 正值=右側，負值=左側
-    // 基礎位置設為 0.5 (Snare 位置)，左右手稍微錯開
+    // 手部位置相對固定（握把位置）
+    // X軸（左右）：左右手基礎位置
     const baseX = isLeft ? 0.2 : 0.8;
-    const x3d = baseX + ax * 0.1;
     
-    // Y軸（高度）：az 越小=越高，az 越大=越低
-    // 調整基準值，讓平放時 (az~10) 高度約為 0.6 (Snare 0.4 上方)
-    const y3d = 1.5 - (az * 0.08);
+    // Y軸（高度）：手部高度，微調
+    const baseY = 0.8; // 手部基礎高度
+    const y3d = baseY + (10 - az) * 0.02; // az 越小（手舉高）越高
     
-    // Z軸（前後）：ay 控制深度
-    // 基礎位置設為 -2.4 (更靠近相機，避免誤觸後排)
-    // 修正：增加 ay 的靈敏度 (0.03 -> 0.1)
-    // 新增：當手舉高時 (az < 10)，通常是為了打遠處的鼓，所以自動增加深度
-    const z3d = -2.4 + (ay * 0.1) + ((10 - az) * 0.1);
+    // Z軸（前後）：手部位置（握把）固定在相機前方
+    const z3d = -2.0; // 手部握把固定在相機前方
     
     // 限制範圍
     return [
-        Math.max(-2.0, Math.min(2.0, x3d)),
-        Math.max(0.3, Math.min(2.5, y3d)),
-        Math.max(-3.0, Math.min(0.5, z3d)) // 放寬 Z 軸上限，從 -1.0 改為 0.5，讓鼓棒能伸到後排
+        Math.max(-2.0, Math.min(2.0, baseX)),
+        Math.max(0.5, Math.min(1.5, y3d)),
+        z3d
     ];
 }
 
@@ -486,33 +478,50 @@ function updateDrumGlows() {
 let rightWasColliding = false;
 let leftWasColliding = false;
 
-// 繪製函數（3D版本）- 使用加速度數據控制鼓棒位置
+// 繪製函數（3D版本）- Yaw控制左右，Pitch控制揮擊
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
 
-    // 右手鼓棒位置（改用加速度數據）
-    const [targetRightX, targetRightY, targetRightZ] = mapAccelTo3D(
+    // 右手握把位置（手部位置，作為圓心）
+    const [baseRightX, baseRightY, baseRightZ] = mapAccelTo3D(
         rightData.ax, rightData.ay, rightData.az, false
     );
+    
+    // 計算旋轉角度 (弧度)
+    const rightRotX = (rightPitch / 45) * (Math.PI / 3);  // Pitch: 上下揮擊
+    const rightRotY = (rightYaw / 45) * (Math.PI / 2);     // Yaw: 左右擺動（增加範圍）
+    
+    // 根據 Yaw 計算左右偏移（以手部為圓心的左右擺動）
+    const rightYawOffsetX = Math.sin(rightRotY) * 0.6; // 左右擺動範圍
+    
+    // 應用 Yaw 偏移到手部位置
+    const targetRightX = baseRightX + rightYawOffsetX;
+    const targetRightY = baseRightY;
+    const targetRightZ = baseRightZ;
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
-    // 左手鼓棒位置（改用加速度數據）
-    const [targetLeftX, targetLeftY, targetLeftZ] = mapAccelTo3D(
+    // 左手握把位置
+    const [baseLeftX, baseLeftY, baseLeftZ] = mapAccelTo3D(
         leftData.ax, leftData.ay, leftData.az, true
     );
+    
+    const leftRotX = (leftPitch / 45) * (Math.PI / 3);
+    const leftRotY = (leftYaw / 45) * (Math.PI / 2);
+    
+    const leftYawOffsetX = Math.sin(leftRotY) * 0.6;
+    
+    const targetLeftX = baseLeftX + leftYawOffsetX;
+    const targetLeftY = baseLeftY;
+    const targetLeftZ = baseLeftZ;
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
     const leftY = lerp(leftStick.position.y, targetLeftY, smoothFactor);
     const leftZ = lerp(leftStick.position.z, targetLeftZ, smoothFactor);
-    
-    // 計算原始旋轉角度 (弧度)
-    const rightRotX = (rightPitch / 45) * (Math.PI / 3);
-    const rightRotY = (rightYaw / 45) * (Math.PI / 6);
     
     // 應用碰撞修正 (防止穿模)
     const rightResult = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
@@ -534,12 +543,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightX, rightY, rightZ);
     rightStick.rotation.x = rightResult.correctedRotX;
-    // yaw 控制左右擺動（繞 Y 軸旋轉）
-    rightStick.rotation.y = rightRotY;
+    rightStick.rotation.y = rightRotY; // Yaw 控制左右
     
     // 左手同理
-    const leftRotX = (leftPitch / 45) * (Math.PI / 3);
-    const leftRotY = (leftYaw / 45) * (Math.PI / 6);
     const leftResult = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
     
     // 檢測左手打擊
