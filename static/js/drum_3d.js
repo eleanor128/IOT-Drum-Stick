@@ -257,15 +257,13 @@ function init3D() {
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);  // 使用自定義半徑或預設值
         
         let height;
-        // 根據 zones 註解中的鼓面高度設定圓柱體高度 (Height = (Top - CenterY) * 2)
-        if (zone.name === "Hihat") height = 0.45;
-        else if (zone.name === "Snare") height = 0.5;
-        else if (zone.name === "Tom_high") height = 0.9;
-        else if (zone.name === "Tom_mid") height = 0.9;
-        else if (zone.name === "Symbal") height = 0.85;
-        else if (zone.name === "Ride") height = 0.65;
-        else if (zone.name === "Tom_floor") height = 1.4;
-        else height = 0.5;
+        if (isCymbal) {
+            height = 0.05;  // 鈸很薄
+        } else if (zone.name === "Tom_floor") {
+            height = 1;   // 落地通鼓較長
+        } else {
+            height = 0.5;   // 其他鼓的標準高度
+        }
         
         // 鼓/鈸主體 - 統一使用深色
         const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
@@ -311,8 +309,8 @@ function init3D() {
     function createDrumstick(color, emissiveColor) {
         const drumstick = new THREE.Group();
         
-        // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸，縮短為 0.9
-        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 0.9, 8);
+        // 鼓棒主體（圓柱）- 沿著 Z 軸方向延伸，加長
+        const stickBody = new THREE.CylinderGeometry(0.015, 0.02, 1.2, 8);
         const stickMaterial = new THREE.MeshStandardMaterial({ 
             color: color,
             emissive: emissiveColor,
@@ -324,13 +322,13 @@ function init3D() {
         
         // 旋轉鼓棒，讓它水平（沿著 Z 軸）
         stickMesh.rotation.x = Math.PI / 2;
-        stickMesh.position.z = 0.45;  // 中心在 z=0.45，範圍從 0 到 0.9
+        stickMesh.position.z = 0.6;  // 中心在 z=0.6，範圍從 0 到 1.2
         drumstick.add(stickMesh);
         
         // 鼓棒頂端（球形敲擊端）- 在前方
         const tipGeometry = new THREE.SphereGeometry(0.03, 12, 12);
         const tipMesh = new THREE.Mesh(tipGeometry, stickMaterial);
-        tipMesh.position.z = 0.9;  // 放在棒子前端（緊貼鼓棒主體）
+        tipMesh.position.z = 1.2;  // 放在棒子前端（緊貼鼓棒主體）
         tipMesh.castShadow = true;
         drumstick.add(tipMesh);
         
@@ -389,7 +387,7 @@ function mapXYto3D(x, y, pitch) {
 
 // 碰撞檢測與修正：計算鼓棒是否穿入鼓面，並返回修正後的 Pitch 角度 (弧度)
 function solveStickCollision(gripPos, rotX, rotY) {
-    const stickLength = 0.9; // 鼓棒長度縮短
+    const stickLength = 1.2;
     // 檢查多個點：尖端 (1.0) 和 棒身中段 (0.7) 以防止穿模
     const checkPoints = [1.0, 0.7];
     let correctedRotX = rotX;
@@ -404,14 +402,13 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const hitRadius = radius + 0.2;
         
         let drumHeight;
-        if (zone.name === "Hihat") drumHeight = 0.45;
-        else if (zone.name === "Snare") drumHeight = 0.5;
-        else if (zone.name === "Tom_high") drumHeight = 0.9;
-        else if (zone.name === "Tom_mid") drumHeight = 0.9;
-        else if (zone.name === "Symbal") drumHeight = 0.85;
-        else if (zone.name === "Ride") drumHeight = 0.65;
-        else if (zone.name === "Tom_floor") drumHeight = 1.4;
-        else drumHeight = 0.5;
+        if (isCymbal) {
+            drumHeight = 0.1;  // 鈸很薄
+        } else if (zone.name === "Tom_floor") {
+            drumHeight = 1.2;   // 落地鼓較長
+        } else {
+            drumHeight = 0.8;   // 其他鼓的標準高度
+        }
         
         const drumTopY = drumPos[1] + drumHeight / 2;
         const buffer = 0.1; // 緩衝距離
@@ -528,8 +525,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
-    // 增加靈敏度和最大深度，以補償鼓棒縮短 (0.9m)
-    targetRightZ += Math.min(1.8, Math.abs(rightData.ax) * 0.15);
+    // 降低靈敏度，並限制最大深度 (保持在 z <= -1)
+    targetRightZ += Math.min(1.0, Math.abs(rightData.ax) * 0.05);
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -552,7 +549,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
-    targetLeftZ += Math.min(1.8, Math.abs(leftData.ax) * 0.15);
+    targetLeftZ += Math.min(1.0, Math.abs(leftData.ax) * 0.05);
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
