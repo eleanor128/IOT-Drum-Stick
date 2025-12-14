@@ -20,11 +20,11 @@ const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
 const PITCH_MAX = 45;   // 最大 Pitch（向下最低到鼓面，不會更低）
 
-// 握把位置設定（優化為可輕鬆敲擊 Snare 的位置）
+// 握把位置設定
 const GRIP_BASE_Z = -1.84;  // 握把基礎 Z 位置（定位於可直接打 Snare）
 const GRIP_BASE_Y = 1.00;   // 握把基礎 Y 位置（舒適敲擊高度）
-const GRIP_RIGHT_X = 1.2;   // 右手握把基礎 X 位置（右側，靠近 Hihat）
-const GRIP_LEFT_X = -0.9;   // 左手握把基礎 X 位置（左側鼓的中心位置）
+const GRIP_RIGHT_X = 0.4;   // 右手握把基礎 X 位置（右側，靠近 Hihat）
+const GRIP_LEFT_X = 0.6;   // 左手握把基礎 X 位置（左側鼓的中心位置）
 
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
 const PITCH_THRESHOLD = 5;  // Pitch 閾值（度），小於此值代表舉起打前方的鼓
