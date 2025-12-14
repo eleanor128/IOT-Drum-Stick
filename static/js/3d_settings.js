@@ -154,7 +154,7 @@ const zones = [
         name: "Tom_floor", 
         x: 675, y: 225, w: 225, h: 225, 
         color: "#4d4d4d", 
-        pos3d: [-1.4, 0.2, -1], 
+        pos3d: [-1.5, 0.2, -1], 
         radius: 0.80, 
         rotation: -Math.PI / 9,  // -20°
         glowColor: "#aaaaaa" 
