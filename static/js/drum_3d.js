@@ -737,14 +737,15 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 平時保持水平 (rotation.x ≈ 0)，敲擊時才大幅旋轉
     let rightRotX, leftRotX;
     if (rightIsHitting) {
-        // 敲擊時：完整使用 pitch 角度，讓鼓棒垂直揮動
-        // pitch > 0 (向下) → rotation.x > 0 → 尖端向下
-        rightRotX = (clampedRightPitch / 30) * (Math.PI / 2.2);
+        // 敲擊時：pitch 增加 → 鼓棒向上旋轉（尖端Y增加）
+        // 反轉旋轉方向：負號讓 pitch 增加時鼓棒向上
+        rightRotX = -(clampedRightPitch / 30) * (Math.PI / 2.2);
     } else {
-        // 平時：大幅減小 pitch 影響，保持水平 (僅微幅調整，用於位置計算)
-        rightRotX = (clampedRightPitch / 30) * (Math.PI / 12);  // 降低到原本的 1/6
+        // 平時：保持水平，僅微幅調整
+        rightRotX = -(clampedRightPitch / 30) * (Math.PI / 12);
     }
-    const rightRotY = (effectiveRightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
+    // yaw 增加 → 鼓棒向左旋轉（尖端X減少）
+    const rightRotY = -(effectiveRightYaw / 45) * (Math.PI / 4);
     
     // 右手握把位置計算 (基於角度的虛擬手臂模型)
     // 基礎位置：優化為可輕鬆敲擊 Snare，Hihat/Tom_floor 只需 yaw 變化
@@ -752,12 +753,14 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetRightY = GRIP_BASE_Y;
     let targetRightZ = GRIP_BASE_Z;  // 基礎位置：預設對準 Snare
     
-    // 根據 Yaw 微調 X 位置（yaw 增加 → X 減少/向左）
-    targetRightX -= (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 增加，X 負向移動
+    // 根據 Yaw 調整握把 X 位置（手左右移動）
+    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
     targetRightX = Math.max(GRIP_RIGHT_X_MIN, Math.min(GRIP_RIGHT_X_MAX, targetRightX));
 
-    // 根據 Pitch 移動 Y（pitch 增加 → Y 增加/向上）
-    targetRightY += clampedRightPitch * 0.01;  // pitch 增加，鼓棒向上
+    // 握把 Y 保持在基礎高度（手不上下移動，只有鼓棒旋轉）
+    targetRightY = GRIP_BASE_Y;
+
+    // 根據 Pitch 調整 Z 位置（前後伸展）
 
     // 動態深度調整：pitch 變小（舉起）代表打擊前方的鼓
     if (clampedRightPitch < PITCH_THRESHOLD) {
@@ -780,28 +783,30 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
-    // 左手鼓棒旋轉計算 (同右手邏輯)
+    // 左手鼓棒旋轉計算
     if (leftIsHitting) {
-        // 敲擊時：完整使用 pitch 角度，pitch > 0 → 尖端向下敲擊
-        leftRotX = (clampedLeftPitch / 30) * (Math.PI / 2.2);
+        // 敲擊時：pitch 增加 → 鼓棒向上旋轉（尖端Y增加）
+        leftRotX = -(clampedLeftPitch / 30) * (Math.PI / 2.2);
     } else {
         // 平時：保持水平，僅微幅調整
-        leftRotX = (clampedLeftPitch / 30) * (Math.PI / 12);
+        leftRotX = -(clampedLeftPitch / 30) * (Math.PI / 12);
     }
-    const leftRotY = (effectiveLeftYaw / 45) * (Math.PI / 4);
+    // yaw 增加 → 鼓棒向左旋轉（尖端X減少）
+    const leftRotY = -(effectiveLeftYaw / 45) * (Math.PI / 4);
     
     // 左手握把位置計算
     let targetLeftX = GRIP_LEFT_X;  // 左手基礎位置（對準左側鼓）
     let targetLeftY = GRIP_BASE_Y;
     let targetLeftZ = GRIP_BASE_Z;  // 基礎位置與右手相同深度
     
-    // 根據 Yaw 微調 X 位置（yaw 增加 → X 減少/向左）
-    targetLeftX -= (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 增加，X 負向移動
+    // 根據 Yaw 調整握把 X 位置（手左右移動）
+    targetLeftX += (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
     targetLeftX = Math.max(GRIP_LEFT_X_MIN, Math.min(GRIP_LEFT_X_MAX, targetLeftX));
 
-    // 根據 Pitch 移動 Y（pitch 增加 → Y 增加/向上）
-    targetLeftY += clampedLeftPitch * 0.01;  // pitch 增加，鼓棒向上
+    // 握把 Y 保持在基礎高度（手不上下移動，只有鼓棒旋轉）
+    targetLeftY = GRIP_BASE_Y;
 
+    // 根據 Pitch 調整 Z 位置（前後伸展）
     // 動態深度調整（與右手相同邏輯）
     if (clampedLeftPitch < PITCH_THRESHOLD) {
         // 打擊前方的鼓（Symbal, Ride, Tom_high, Tom_mid）
