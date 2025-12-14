@@ -25,7 +25,7 @@ const PITCH_MAX = 45;   // 最大 Pitch（向下最低到鼓面，不會更低�
 const GRIP_BASE_Z = -3;  // 握把基礎 Z 位置（定位於可直接打 Snare）
 const GRIP_BASE_Y = 1.00;   // 握把基礎 Y 位置（舒適敲擊高度）
 const GRIP_RIGHT_X = 0.6;  // 右手握把基礎 X 位置（X負向，視角右側/鼓手右側）
-const GRIP_LEFT_X = 11.8;    // 左手握把基礎 X 位置（X正向，視角左側/鼓手左側）
+const GRIP_LEFT_X = 0.8;    // 左手握把基礎 X 位置（X正向，視角左側/鼓手左側）
 
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
 const PITCH_THRESHOLD = 15;  // Pitch 閾值（度），小於此值代表舉起打前方的鼓
