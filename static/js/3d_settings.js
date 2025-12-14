@@ -100,9 +100,9 @@ const zones = [
         name: "Hihat", 
         x: 675, y: 225, w: 225, h: 225, 
         color: "#3232ff", 
-        pos3d: [1.8, 0.8, -1], 
+        pos3d: [2, 0.8, -1], 
         radius: 0.65, 
-        rotation: -Math.PI / 9,  // -20°
+        rotation: -Math.PI / 7,  // -20°
         glowColor: "#3399ff"
     },   
     { 
