@@ -252,9 +252,11 @@ class DrumCollisionDetector:
         stick_length = cfg["STICK_LENGTH"]
         
         # X 方向：yaw 控制左右偏移
-        # yaw 正值 = 向左，yaw 負值 = 向右
+        # yaw 正值 = 向左（鼓棒尖端往左轉），yaw 負值 = 向右
+        # 使用負號讓旋轉方向與手部移動一致
+        # 使用 0.5 縮放係數平衡手部移動和鼓棒旋轉的影響
         yaw_radians = (yaw / 30) * (math.pi / 3)
-        dx = stick_length * math.sin(yaw_radians)
+        dx = -stick_length * math.sin(yaw_radians) * 0.5  # 0.5: 平衡手部和鼓棒的 X 位移
         
         # Y 方向：pitch 控制上下
         # pitch 正值 = 舉高（尖端向上），pitch 負值 = 向下
