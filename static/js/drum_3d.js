@@ -397,7 +397,7 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
         
         // 增加碰撞檢測半徑，確保打到邊緣也能觸發，並防止邊緣穿模
-        const hitRadius = radius + 0.15;
+        const hitRadius = radius + 0.2;
         
         let drumHeight;
         if (isCymbal) {
@@ -425,8 +425,8 @@ function solveStickCollision(gripPos, rotX, rotY) {
             // 尖端 Y = gripY - L * sin(rotX)
             const currentTipY = gripPos[1] - stickLength * Math.sin(rotX);
             
-            // 如果尖端低於鼓面 (增加緩衝到 0.05，確保視覺上不穿模)
-            const buffer = 0.05;
+            // 如果尖端低於鼓面 (增加緩衝，確保視覺上不穿模)
+            const buffer = 0.1;
             if (currentTipY < drumTopY + buffer) {
                 // 計算限制角度：sin(rotX) <= (gripY - drumTopY) / L
                 let maxSin = (gripPos[1] - (drumTopY + buffer)) / stickLength;
