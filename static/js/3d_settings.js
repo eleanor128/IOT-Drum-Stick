@@ -44,7 +44,9 @@ const HIT_RADIUS_OFFSET = 0.1;  // 碰撞檢測半徑偏移
 const HIT_COOLDOWN_FRAMES = 10;  // 擊打冷卻時間（幀數）
 
 // 自動對齊設定
-const DRUM_CENTER_BLEND_FACTOR = 0.8;  // 擊打時鼓面中心對齊混合係數（0-1）
+const DRUM_CENTER_BLEND_FACTOR = 0.9;  // 擊打時鼓面中心對齊混合係數（0-1，提高以增強瞄準效果）
+const DRUM_AIM_DISTANCE = 0.8;  // 在此距離內開始瞄準鼓面中心（米）
+const DRUM_AIM_BLEND_FACTOR = 0.3;  // 接近時的瞄準混合係數（較溫和）
 
 // 發光動畫設定
 const GLOW_DECAY_RATE = 0.05;  // 發光衰減速度（每幀）
