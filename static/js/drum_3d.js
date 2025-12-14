@@ -198,13 +198,13 @@ let rightStick, leftStick;
 // pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
 // 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
 const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.6, 1.0, -0.8], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m
     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, // 鼓面高度: 0.65m
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 1.0, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   // 鼓面高度: 1.25m
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 1.0, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.8, 0.7], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   // 鼓面高度: 1.825m
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.8, 1.7, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  // 鼓面高度: 1.725m
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   // 鼓面高度: 1.25m
+    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.4, 0.7], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   // 鼓面高度: 1.825m
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.8, 1.4, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  // 鼓面高度: 1.725m
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1.4, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
 ];
 // 修改 glowColor 來自定義每個鼓的發光顏色 (格式: 0xRRGGBB)
 // Math.PI / 18	10°	微微傾斜
@@ -387,7 +387,7 @@ function mapXYto3D(x, y, pitch) {
 
 // 碰撞檢測與修正：計算鼓棒是否穿入鼓面，並返回修正後的 Pitch 角度 (弧度)
 function solveStickCollision(gripPos, rotX, rotY) {
-    const stickLength = 0.9;
+    const stickLength = 1.2;
     // 檢查多個點：尖端 (1.0) 和 棒身中段 (0.7) 以防止穿模
     const checkPoints = [1.0, 0.7];
     let correctedRotX = rotX;
@@ -517,17 +517,16 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
     targetRightX += effectiveRightYaw * 0.01;
     // 限制 X 軸範圍 (防止超出 Floor Tom)
-    targetRightX = Math.max(-1.2, Math.min(1.2, targetRightX));
+    targetRightX = Math.max(-0.8, Math.min(0.8, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
     targetRightZ -= rightPitch * 0.005; 
-    targetRightY -= rightPitch * 0.015; // 增加手部上下移動幅度，以配合較高的鈸
+    targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
     // 降低靈敏度，並限制最大深度 (保持在 z <= -1)
-    // 增加移動範圍以補償鼓棒縮短 (0.9m)
-    targetRightZ += Math.min(1.5, Math.abs(rightData.ax) * 0.1);
+    targetRightZ += Math.min(1.0, Math.abs(rightData.ax) * 0.05);
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -544,13 +543,13 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
 
     targetLeftX += effectiveLeftYaw * 0.01;
     // 限制 X 軸範圍
-    targetLeftX = Math.max(-1.2, Math.min(1.2, targetLeftX));
+    targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
 
     targetLeftZ -= leftPitch * 0.005;
-    targetLeftY -= leftPitch * 0.015;
+    targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
-    targetLeftZ += Math.min(1.5, Math.abs(leftData.ax) * 0.1);
+    targetLeftZ += Math.min(1.0, Math.abs(leftData.ax) * 0.05);
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
