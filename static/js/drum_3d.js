@@ -502,6 +502,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
     targetRightZ -= rightPitch * 0.01; 
     targetRightY -= rightPitch * 0.005;
+
+    // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
+    targetRightZ += Math.abs(rightData.ax) * 0.05;
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -519,6 +522,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     targetLeftX += leftYaw * 0.01;
     targetLeftZ -= leftPitch * 0.01;
     targetLeftY -= leftPitch * 0.005;
+
+    // 根據 X軸加速度 往深處移動
+    targetLeftZ += Math.abs(leftData.ax) * 0.05;
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
