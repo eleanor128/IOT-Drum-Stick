@@ -10,7 +10,7 @@ const STICK_TIP_POINT = 1.0;   // 尖端碰撞檢測位置（相對於棒長）
 const STICK_BODY_POINT = 0.7;  // 棒身碰撞檢測位置（相對於棒長）
 
 // 平滑與靈敏度設定
-const SMOOTH_FACTOR = 0.15;  // 位置平滑係數（0-1，越小越平滑但延遲越高）
+const SMOOTH_FACTOR = 0.08;  // 位置平滑係數（0-1，越小越平滑但延遲越高）降低以減少閃爍
 const PITCH_SENSITIVITY = 30;  // Pitch 角度靈敏度
 const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
 const YAW_SENSITIVITY = 45;  // Yaw 角度靈敏度
