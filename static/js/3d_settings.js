@@ -127,7 +127,7 @@ const zones = [
         name: "Tom_mid", 
         x: 450, y: 0, w: 225, h: 225, 
         color: "#ff7f2a", 
-        pos3d: [-0.6, 0.8, 0.7], 
+        pos3d: [-0.6, 0.8, 0.5], 
         radius: 0.55, 
         rotation: -Math.PI / 7,  // -26°
         glowColor: "#ff6600" 
