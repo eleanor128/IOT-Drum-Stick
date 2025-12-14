@@ -15,7 +15,7 @@ const PITCH_SENSITIVITY = 30;  // Pitch 角度靈敏度
 const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
 const YAW_SENSITIVITY = 45;  // Yaw 角度靈敏度
 const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
-const YAW_POSITION_FACTOR = 0.8;  // Yaw 對 X 位置的影響係數（降低以減少左右移動幅度）
+const YAW_POSITION_FACTOR = 1.5;  // Yaw 對 X 位置的影響係數（增加移動幅度）
 
 // Pitch 角度範圍限制（度）
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
@@ -162,67 +162,31 @@ const zones = [
 // 根據鼓的位置、鼓棒長度和起始位置自動計算
 // 每隻手都應該能打到所有的鼓
 
-/**
- * 計算握把範圍限制
- * @returns {Object} 包含所有範圍限制的物件
- */
-function calculateGripRanges() {
-    // 計算所有鼓的 X 和 Z 範圍
-    const drumXPositions = zones.map(z => z.pos3d[0]);
-    const drumZPositions = zones.map(z => z.pos3d[2]);
-    const minDrumX = Math.min(...drumXPositions);  // 最左側鼓 (Ride: -1.8)
-    const maxDrumX = Math.max(...drumXPositions);  // 最右側鼓 (Hihat: 1.8)
-    const minDrumZ = Math.min(...drumZPositions);  // 最後方鼓 (Z: -1.0)
-    const maxDrumZ = Math.max(...drumZPositions);  // 最前方鼓 (Symbal: 0.5)
+// 計算所有鼓的 X 和 Z 範圍
+const drumXPositions = zones.map(z => z.pos3d[0]);
+const drumZPositions = zones.map(z => z.pos3d[2]);
+const minDrumX = Math.min(...drumXPositions);  // 最左側鼓 (Ride: -1.8)
+const maxDrumX = Math.max(...drumXPositions);  // 最右側鼓 (Hihat: 1.8)
+const minDrumZ = Math.min(...drumZPositions);  // 最後方鼓 (Z: -1.0)
+const maxDrumZ = Math.max(...drumZPositions);  // 最前方鼓 (Symbal: 0.5)
 
-    // Z軸範圍限制（根據鼓的位置和鼓棒長度自動計算）
-    // 手部位置 = 鼓面位置 - 鼓棒長度 * 係數
-    const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 0.8;  // 握把最後方位置（打後方鼓時手的位置）
-    const GRIP_Z_MAX = maxDrumZ - STICK_LENGTH * 0.7;  // 握把最前方位置（打前方鼓時手的位置）
+// Z軸範圍限制（根據鼓的位置和鼓棒長度自動計算）
+// 手部位置 = 鼓面位置 - 鼓棒長度 * 係數
+const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 0.8;  // 握把最後方位置（打後方鼓時手的位置）
+const GRIP_Z_MAX = maxDrumZ - STICK_LENGTH * 0.7;  // 握把最前方位置（打前方鼓時手的位置）
 
-    // X軸範圍限制（左右手分開設定，因為起始位置不同）
-    // 每隻手都要能打到所有的鼓，根據各自的起始位置計算範圍
-    // 計算邏輯：打某個鼓時，手的位置 = 基礎位置 + (鼓位置 - 基礎位置) * 係數
-    // 係數 0.6 表示手保持在內側（不會伸到鼓棒尖端）
+// X軸範圍限制（左右手分開設定，因為起始位置不同）
+// 每隻手都要能打到所有的鼓，根據各自的起始位置計算範圍
+// 計算邏輯：打某個鼓時，手的位置 = 基礎位置 + (鼓位置 - 基礎位置) * 係數
+// 係數 0.6 表示手保持在內側（不會伸到鼓棒尖端）
 
-    // 右手範圍：從 GRIP_RIGHT_X 出發，能打到最左側和最右側的鼓
-    const GRIP_RIGHT_X_MIN = GRIP_RIGHT_X + (minDrumX - GRIP_RIGHT_X) * 0.6;  // 打最左側鼓時手的位置
-    const GRIP_RIGHT_X_MAX = GRIP_RIGHT_X + (maxDrumX - GRIP_RIGHT_X) * 0.6;  // 打最右側鼓時手的位置
+// 右手範圍：從 GRIP_RIGHT_X 出發，能打到最左側和最右側的鼓
+const GRIP_RIGHT_X_MIN = GRIP_RIGHT_X + (minDrumX - GRIP_RIGHT_X) * 0.6;  // 打最左側鼓時手的位置
+const GRIP_RIGHT_X_MAX = GRIP_RIGHT_X + (maxDrumX - GRIP_RIGHT_X) * 0.6;  // 打最右側鼓時手的位置
 
-    // 左手範圍：從 GRIP_LEFT_X 出發，能打到最左側和最右側的鼓
-    const GRIP_LEFT_X_MIN = GRIP_LEFT_X + (minDrumX - GRIP_LEFT_X) * 0.6;  // 打最左側鼓時手的位置
-    const GRIP_LEFT_X_MAX = GRIP_LEFT_X + (maxDrumX - GRIP_LEFT_X) * 0.6;  // 打最右側鼓時手的位置
-
-    return {
-        GRIP_Z_MIN,
-        GRIP_Z_MAX,
-        GRIP_RIGHT_X_MIN,
-        GRIP_RIGHT_X_MAX,
-        GRIP_LEFT_X_MIN,
-        GRIP_LEFT_X_MAX
-    };
-}
-
-// 初始化計算範圍
-let gripRanges = calculateGripRanges();
-let GRIP_Z_MIN = gripRanges.GRIP_Z_MIN;
-let GRIP_Z_MAX = gripRanges.GRIP_Z_MAX;
-let GRIP_RIGHT_X_MIN = gripRanges.GRIP_RIGHT_X_MIN;
-let GRIP_RIGHT_X_MAX = gripRanges.GRIP_RIGHT_X_MAX;
-let GRIP_LEFT_X_MIN = gripRanges.GRIP_LEFT_X_MIN;
-let GRIP_LEFT_X_MAX = gripRanges.GRIP_LEFT_X_MAX;
-
-// 提供重新計算的函數（當鼓的位置或其他參數改變時可調用）
-function updateGripRanges() {
-    gripRanges = calculateGripRanges();
-    GRIP_Z_MIN = gripRanges.GRIP_Z_MIN;
-    GRIP_Z_MAX = gripRanges.GRIP_Z_MAX;
-    GRIP_RIGHT_X_MIN = gripRanges.GRIP_RIGHT_X_MIN;
-    GRIP_RIGHT_X_MAX = gripRanges.GRIP_RIGHT_X_MAX;
-    GRIP_LEFT_X_MIN = gripRanges.GRIP_LEFT_X_MIN;
-    GRIP_LEFT_X_MAX = gripRanges.GRIP_LEFT_X_MAX;
-    console.log('Grip ranges updated:', gripRanges);
-}
+// 左手範圍：從 GRIP_LEFT_X 出發，能打到最左側和最右側的鼓
+const GRIP_LEFT_X_MIN = GRIP_LEFT_X + (minDrumX - GRIP_LEFT_X) * 0.6;  // 打最左側鼓時手的位置
+const GRIP_LEFT_X_MAX = GRIP_LEFT_X + (maxDrumX - GRIP_LEFT_X) * 0.6;  // 打最右側鼓時手的位置
 
 // 鼓的高度設定
 const CYMBAL_HEIGHT = 0.05;  // 鈸高度
