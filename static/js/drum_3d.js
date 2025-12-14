@@ -195,16 +195,43 @@ let scene, camera, renderer;
 let drumMeshes = {};
 let rightStick, leftStick;
 
-// pos3d: [x, y中心點, z], 鼓面/鈸面中心點座標（考慮傾斜後）：
+// pos3d: [x, y中心點, z], 鼓/鈸的完整幾何位置（傾斜圓柱體）：
 // 
-// 【鼓面中心點位置計算】(Y = y中心點 + height/2*cos(rot), Z = z + height/2*sin(rot))
-// 1. Hihat:     中心點 [1.8,  0.824, -1.009]  (鈸, height=0.05, rot=-20°)
-// 2. Snare:     中心點 [0.5,  0.642, -0.865]  (鼓, height=0.5,  rot=-15°)
-// 3. Tom_high:  中心點 [0.6,  1.025,  0.592]  (鼓, height=0.5,  rot=-26°)
-// 4. Tom_mid:   中心點 [-0.6, 1.025,  0.592]  (鼓, height=0.5,  rot=-26°)
-// 5. Symbal:    中心點 [1.6,  1.422,  0.688]  (鈸, height=0.05, rot=-30°)
-// 6. Ride:      中心點 [-1.8, 1.422, -0.113]  (鈸, height=0.05, rot=-30°)
-// 7. Tom_floor: 中心點 [-1.4, 0.670, -0.971]  (鼓, height=1.0,  rot=-20°)
+// 【每個鼓/鈸的幾何範圍】(鼓面=頂部, 鼓底=底部)
+// 1. Hihat (鈸):
+//    - 中心點 [1.8, 0.8, -1], 半徑=0.65, 高度=0.05, 傾斜=-20°
+//    - 鼓面(頂) Y=0.824, Z=-1.009 | 鼓底 Y=0.776, Z=-0.991
+//    - 範圍: Y=[0.776~0.824], Z=[-1.009~-0.991], X=[1.15~2.45]
+// 
+// 2. Snare (鼓):
+//    - 中心點 [0.5, 0.4, -0.8], 半徑=0.65, 高度=0.5, 傾斜=-15°
+//    - 鼓面(頂) Y=0.642, Z=-0.865 | 鼓底 Y=0.158, Z=-0.735
+//    - 範圍: Y=[0.158~0.642], Z=[-0.865~-0.735], X=[-0.15~1.15]
+// 
+// 3. Tom_high (鼓):
+//    - 中心點 [0.6, 0.8, 0.7], 半徑=0.55, 高度=0.5, 傾斜=-26°
+//    - 鼓面(頂) Y=1.025, Z=0.592 | 鼓底 Y=0.575, Z=0.808
+//    - 範圍: Y=[0.575~1.025], Z=[0.592~0.808], X=[0.05~1.15]
+// 
+// 4. Tom_mid (鼓):
+//    - 中心點 [-0.6, 0.8, 0.7], 半徑=0.55, 高度=0.5, 傾斜=-26°
+//    - 鼓面(頂) Y=1.025, Z=0.592 | 鼓底 Y=0.575, Z=0.808
+//    - 範圍: Y=[0.575~1.025], Z=[0.592~0.808], X=[-1.15~-0.05]
+// 
+// 5. Symbal (鈸):
+//    - 中心點 [1.6, 1.4, 0.7], 半徑=0.80, 高度=0.05, 傾斜=-30°
+//    - 鼓面(頂) Y=1.422, Z=0.688 | 鼓底 Y=1.378, Z=0.713
+//    - 範圍: Y=[1.378~1.422], Z=[0.688~0.713], X=[0.8~2.4]
+// 
+// 6. Ride (鈸):
+//    - 中心點 [-1.8, 1.4, -0.1], 半徑=0.90, 高度=0.05, 傾斜=-30°
+//    - 鼓面(頂) Y=1.422, Z=-0.113 | 鼓底 Y=1.378, Z=-0.088
+//    - 範圍: Y=[1.378~1.422], Z=[-0.113~-0.088], X=[-2.7~-0.9]
+// 
+// 7. Tom_floor (鼓):
+//    - 中心點 [-1.4, 0.2, -0.8], 半徑=0.80, 高度=1.0, 傾斜=-20°
+//    - 鼓面(頂) Y=0.670, Z=-0.971 | 鼓底 Y=-0.270, Z=-0.629
+//    - 範圍: Y=[-0.270~0.670], Z=[-0.971~-0.629], X=[-2.2~-0.6]
 // 
 // 【鼓棒尖端移動範圍】
 // X軸: -1.8 (Ride) ～ 1.8 (Hihat)     範圍: 3.6m
@@ -409,7 +436,7 @@ function mapXYto3D(x, y, pitch) {
     return [x3d, y3d, z3d];
 }
 
-// 碰撞檢測與修正：計算鼓棒是否穿入鼓面，並返回修正後的 Pitch 角度 (弧度)
+// 碰撞檢測與修正：計算鼓棒是否穿入鼓/鈸內部（包含頂部、側面、底部），並返回修正後的 Pitch 角度 (弧度)
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = 1.2;
     // 分開檢查：尖端用於敲擊判定，棒身用於防止穿模
@@ -423,7 +450,7 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const drumRot = zone.rotation;
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
-        const hitRadius = radius + 0.2; // 增加碰撞檢測半徑
+        const hitRadius = radius + 0.1; // 碰撞檢測半徑（減小，更精確）
 
         let drumHeight;
         if (isCymbal) {
@@ -436,11 +463,13 @@ function solveStickCollision(gripPos, rotX, rotY) {
 
         const buffer = 0.05; // 緩衝距離
 
-        // 計算鼓面中心點 (考慮旋轉)
+        // 計算鼓面(頂部)和鼓底中心點 (考慮旋轉)
         const headCenterY = drumPos[1] + (drumHeight / 2) * Math.cos(drumRot);
         const headCenterZ = drumPos[2] + (drumHeight / 2) * Math.sin(drumRot);
+        const bottomCenterY = drumPos[1] - (drumHeight / 2) * Math.cos(drumRot);
+        const bottomCenterZ = drumPos[2] - (drumHeight / 2) * Math.sin(drumRot);
 
-        // 計算鼓面法線向量
+        // 計算鼓面法線向量（向上）
         const normalY = Math.cos(drumRot);
         const normalZ = Math.sin(drumRot);
 
@@ -450,23 +479,45 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const tipY = gripPos[1] - tipDist * Math.sin(rotX);
         const tipZ = gripPos[2] + tipDist * Math.cos(rotX) * Math.cos(rotY);
 
+        // 計算尖端到鼓中心軸的水平距離
         const tipDx = tipX - drumPos[0];
         const tipDz = tipZ - headCenterZ;
-        const tipInRadius = tipDx * tipDx + tipDz * tipDz < hitRadius * hitRadius;
+        const tipHorizontalDist = Math.sqrt(tipDx * tipDx + tipDz * tipDz);
         
-        if (tipInRadius) {
-            const tipDistToPlane = (tipY - headCenterY) * normalY + (tipZ - headCenterZ) * normalZ;
+        // 檢查是否在鼓的水平範圍內
+        if (tipHorizontalDist < hitRadius) {
+            // 計算尖端到鼓面的垂直距離（沿法線方向）
+            const tipDistToHeadPlane = (tipY - headCenterY) * normalY + (tipZ - headCenterZ) * normalZ;
+            const tipDistToBottomPlane = (tipY - bottomCenterY) * normalY + (tipZ - bottomCenterZ) * normalZ;
             
-            if (tipDistToPlane < buffer) {
-                // 尖端碰撞：修正角度 + 標記為打擊
-                const y_surface_at_tipZ = headCenterY - (normalZ / normalY) * (tipZ - headCenterZ);
-                let maxSin = (gripPos[1] - (y_surface_at_tipZ + buffer)) / tipDist;
-                maxSin = Math.max(-1, Math.min(1, maxSin));
-                const maxRotX = Math.asin(maxSin);
+            // 檢查是否在鼓的高度範圍內（從鼓底到鼓面）
+            const isAboveBottom = tipDistToBottomPlane > -buffer;  // 在鼓底上方
+            const isBelowHead = tipDistToHeadPlane < buffer;        // 在鼓面下方
+            
+            if (isAboveBottom && isBelowHead) {
+                // 尖端在鼓內部或接觸鼓面
+                if (tipDistToHeadPlane >= -buffer && tipDistToHeadPlane < buffer) {
+                    // 尖端接觸鼓面：修正角度 + 標記為打擊
+                    const y_surface_at_tipZ = headCenterY - (normalZ / normalY) * (tipZ - headCenterZ);
+                    let maxSin = (gripPos[1] - (y_surface_at_tipZ + buffer)) / tipDist;
+                    maxSin = Math.max(-1, Math.min(1, maxSin));
+                    const maxRotX = Math.asin(maxSin);
 
-                if (maxRotX < correctedRotX) {
-                    correctedRotX = maxRotX;
-                    hitDrum = zone.name;  // 只有尖端碰撞才標記為打擊
+                    if (maxRotX < correctedRotX) {
+                        correctedRotX = maxRotX;
+                        hitDrum = zone.name;  // 只有尖端碰撞鼓面才標記為打擊
+                    }
+                } else {
+                    // 尖端在鼓內部：修正角度防止穿入
+                    const y_surface_at_tipZ = headCenterY - (normalZ / normalY) * (tipZ - headCenterZ);
+                    let maxSin = (gripPos[1] - (y_surface_at_tipZ + buffer)) / tipDist;
+                    maxSin = Math.max(-1, Math.min(1, maxSin));
+                    const maxRotX = Math.asin(maxSin);
+
+                    if (maxRotX < correctedRotX) {
+                        correctedRotX = maxRotX;
+                        // 不標記為打擊，僅防止穿入
+                    }
                 }
             }
         }
@@ -477,15 +528,23 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const bodyY = gripPos[1] - bodyDist * Math.sin(rotX);
         const bodyZ = gripPos[2] + bodyDist * Math.cos(rotX) * Math.cos(rotY);
 
+        // 計算棒身到鼓中心軸的水平距離
         const bodyDx = bodyX - drumPos[0];
         const bodyDz = bodyZ - headCenterZ;
-        const bodyInRadius = bodyDx * bodyDx + bodyDz * bodyDz < hitRadius * hitRadius;
+        const bodyHorizontalDist = Math.sqrt(bodyDx * bodyDx + bodyDz * bodyDz);
         
-        if (bodyInRadius) {
-            const bodyDistToPlane = (bodyY - headCenterY) * normalY + (bodyZ - headCenterZ) * normalZ;
+        // 檢查是否在鼓的水平範圍內
+        if (bodyHorizontalDist < hitRadius) {
+            // 計算棒身到鼓面和鼓底的垂直距離
+            const bodyDistToHeadPlane = (bodyY - headCenterY) * normalY + (bodyZ - headCenterZ) * normalZ;
+            const bodyDistToBottomPlane = (bodyY - bottomCenterY) * normalY + (bodyZ - bottomCenterZ) * normalZ;
             
-            if (bodyDistToPlane < buffer) {
-                // 棒身碰撞：僅修正角度，不標記為打擊
+            // 檢查是否在鼓的高度範圍內
+            const isAboveBottom = bodyDistToBottomPlane > -buffer;
+            const isBelowHead = bodyDistToHeadPlane < buffer;
+            
+            if (isAboveBottom && isBelowHead) {
+                // 棒身在鼓內部或接觸鼓面：僅修正角度，不標記為打擊
                 const y_surface_at_bodyZ = headCenterY - (normalZ / normalY) * (bodyZ - headCenterZ);
                 let maxSin = (gripPos[1] - (y_surface_at_bodyZ + buffer)) / bodyDist;
                 maxSin = Math.max(-1, Math.min(1, maxSin));
