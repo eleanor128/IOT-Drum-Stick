@@ -744,24 +744,16 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         // 平時：保持水平，僅微幅調整
         rightRotX = -(clampedRightPitch / 25) * (Math.PI / 8);
     }
-    // yaw 增加 → 鼓棒向左旋轉（尖端X減少）
-    // 增加旋轉幅度：從 /45 改為 /30
+    // yaw 增加 → 鼓棒在水平面（平行地面）向左旋轉（尖端X減少）
+    // 以手為圓心、鼓棒為半徑，在XZ平面上旋轉
     const rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3);
     
-    // 右手握把位置計算 (基於角度的虛擬手臂模型)
-    // 基礎位置：優化為可輕鬆敲擊 Snare，Hihat/Tom_floor 只需 yaw 變化
-    let targetRightX = GRIP_RIGHT_X;
-    let targetRightY = GRIP_BASE_Y;
-    let targetRightZ = GRIP_BASE_Z;  // 基礎位置：預設對準 Snare
-    
-    // 根據 Yaw 調整握把 X 位置（手左右移動）
-    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
-    targetRightX = Math.max(GRIP_RIGHT_X_MIN, Math.min(GRIP_RIGHT_X_MAX, targetRightX));
+    // 右手握把位置計算 - 手部保持穩定，鼓棒通過旋轉移動尖端
+    let targetRightX = GRIP_RIGHT_X;  // 手部X位置固定
+    let targetRightY = GRIP_BASE_Y;   // 手部Y位置固定（高度）
+    let targetRightZ = GRIP_BASE_Z;   // 手部Z位置基礎值
 
-    // 握把 Y 保持在基礎高度（手不上下移動，只有鼓棒旋轉）
-    targetRightY = GRIP_BASE_Y;
-
-    // 根據 Pitch 調整 Z 位置（前後伸展）
+    // 根據 Pitch 調整手部 Z 位置（前後伸展，影響打擊範圍）
 
     // 動態深度調整：pitch 變小（舉起）代表打擊前方的鼓
     if (clampedRightPitch < PITCH_THRESHOLD) {
