@@ -251,19 +251,31 @@ class DrumCollisionDetector:
         # 確保視覺上的鼓棒尖端與碰撞檢測的尖端位置完全一致
         stick_length = cfg["STICK_LENGTH"]
         
-        # 將角度轉換為弧度
-        # pitch: 上下旋轉角度（度），正值向上
-        # yaw: 左右旋轉角度（度），正值向左
-        pitch_radians = math.radians(pitch)
-        yaw_radians = math.radians(yaw)
+        # 將角度轉換為弧度（與前端 drum_3d.js 完全一致）
+        # 前端：rightRotX = -(clampedRightPitch / 20) * (Math.PI / 2)
+        # 前端：rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3)
         
-        # 3D 旋轉公式（與 drum_3d.js 完全一致）：
-        # - rotation.x (pitch) 控制 Y-Z 平面的旋轉（上下擺動）
-        # - rotation.y (yaw) 控制 X-Z 平面的旋轉（左右擺動）
-        # 
-        # 鼓棒尖端相對於握把的偏移量：
+        # 判斷是否在敲擊狀態（az < -1.0 為敲擊）
+        is_hitting = (az < -1.0)
+        
+        if is_hitting:
+            # 敲擊時：pitch 增加 → 鼓棒向上旋轉
+            pitch_radians = -(pitch / 20) * (math.pi / 2)
+        else:
+            # 平時：保持水平，僅微幅調整
+            pitch_radians = -(pitch / 25) * (math.pi / 8)
+        
+        # yaw 增加 → 鼓棒向左旋轉
+        # 注意：前端使用負號，所以這裡也要用負號
+        yaw_radians = -(yaw / 30) * (math.pi / 3)
+        
+        # 3D 旋轉公式（與 drum_3d.js 的 rightTipX/Y/Z 計算完全一致）：
+        # rightTipX = rightX + stickLength * Math.sin(rightRotY) * Math.cos(rightRotX)
+        # rightTipY = rightY - stickLength * Math.sin(rightRotX)
+        # rightTipZ = rightZ + stickLength * Math.cos(rightRotY) * Math.cos(rightRotX)
+        
         dx = stick_length * math.sin(yaw_radians) * math.cos(pitch_radians)  # X: 左右
-        dy = -stick_length * math.sin(pitch_radians)                         # Y: 上下（負號因為向上旋轉時Y減少）
+        dy = -stick_length * math.sin(pitch_radians)                         # Y: 上下
         dz = stick_length * math.cos(yaw_radians) * math.cos(pitch_radians)  # Z: 前後
         
         # 確保 dz > 0（尖端始終在手的前方）
