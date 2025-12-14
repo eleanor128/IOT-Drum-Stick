@@ -116,12 +116,13 @@ class DrumCollisionDetector:
         """
         
         # 1. 計算握把位置（手的位置）- 完全對應 drum_3d.js
-        # rightHandX = (rightYaw - 45) / 90 * 3 + 1;  // 右手初始位置靠近 Snare
-        # leftHandX = (leftYaw - 45) / 90 * 3 - 1;   // 左手在左側
+        # targetRightX = GRIP_RIGHT_X + (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+        # targetLeftX = GRIP_LEFT_X + (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR
+        # GRIP_RIGHT_X = 0.4, GRIP_LEFT_X = 0.6, YAW_SENSITIVITY = 45, YAW_POSITION_FACTOR = 0.8
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 3 + 1  # 右手初始位置靠近 Snare
+            hand_x = 0.4 + (yaw / 45) * 0.8  # 右手初始位置靠近 Snare
         else:
-            hand_x = (yaw - 45) / 90 * 3 - 1  # 左手在左側
+            hand_x = 0.6 + (yaw / 45) * 0.8  # 左手在左側
         
         hand_y = 1.5    # 手的高度（提高）
         hand_z = -0.8   # 手的前後位置（與 Snare 的 Z 座標對齊）
@@ -173,9 +174,9 @@ class DrumCollisionDetector:
         
         # 計算握把位置（與 drum_3d.js 完全一致）
         if hand == "right":
-            hand_x = (yaw - 45) / 90 * 3 + 0.5  # 右手起始位置在 Snare 上方
+            hand_x = 0.4 + (yaw / 45) * 0.8  # 右手起始位置在 Snare 上方
         else:
-            hand_x = (yaw - 45) / 90 * 3 + 0.3  # 左手起始位置在 Snare 左側
+            hand_x = 0.6 + (yaw / 45) * 0.8  # 左手起始位置在 Snare 左側
         hand_y = 1.5
         hand_z = -0.8 + ax * 0.5  # X軸加速度控制前後深淺
         

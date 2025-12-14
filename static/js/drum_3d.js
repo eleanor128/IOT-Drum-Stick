@@ -753,7 +753,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetRightZ = GRIP_BASE_Z;  // 基礎位置：預設對準 Snare
     
     // 根據 Yaw 微調 X 位置（左右移動打 Hihat 或其他鼓）
-    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * 1.5;  // Yaw 影響左右位置
+    targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 影響左右位置
     targetRightX = Math.max(-1.5, Math.min(2.5, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
@@ -798,7 +798,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetLeftZ = GRIP_BASE_Z;  // 基礎位置與右手相同深度
     
     // 根據 Yaw 微調 X 位置
-    targetLeftX += (effectiveLeftYaw / YAW_SENSITIVITY) * 1.5;
+    targetLeftX += (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
     targetLeftX = Math.max(-2.5, Math.min(1.5, targetLeftX));
 
     targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR;

@@ -15,6 +15,7 @@ const PITCH_SENSITIVITY = 30;  // Pitch 角度靈敏度
 const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
 const YAW_SENSITIVITY = 45;  // Yaw 角度靈敏度
 const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
+const YAW_POSITION_FACTOR = 0.8;  // Yaw 對 X 位置的影響係數（降低以減少左右移動幅度）
 
 // Pitch 角度範圍限制（度）
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
