@@ -517,7 +517,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
-    targetRightZ -= rightPitch * 0.005; 
+    // 增加 Pitch 對 Z 軸的影響，讓手抬高時能伸得更深，打到中鼓
+    targetRightZ -= rightPitch * 0.012; // 從 0.005 增加到 0.012，讓 pitch 大時手伸得更深
     targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
@@ -538,7 +539,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
         let targetLeftZ = -2.5;
     targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
 
-    targetLeftZ -= leftPitch * 0.005;
+    // 增加 Pitch 對 Z 軸的影響，讓手抬高時能伸得更深，打到中鼓
+    targetLeftZ -= leftPitch * 0.012; // 從 0.005 增加到 0.012，讓 pitch 大時手伸得更深
     targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
