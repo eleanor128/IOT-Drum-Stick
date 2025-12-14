@@ -596,10 +596,13 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const leftIsHitting = Math.abs(leftData.gy) > 50;
 
     // 計算旋轉角度 (弧度)
+    // Pitch 行為：舉起 → pitch 變小(負值)，敲擊向下 → pitch 變大(正值)
+    // rotation.x：正值 = 尖端向下 (敲擊姿勢)，負值 = 尖端向上 (舉起姿勢)
     // 平時保持水平 (rotation.x ≈ 0)，敲擊時才大幅旋轉
     let rightRotX, leftRotX;
     if (rightIsHitting) {
         // 敲擊時：完整使用 pitch 角度，讓鼓棒垂直揮動
+        // pitch > 0 (向下) → rotation.x > 0 → 尖端向下
         rightRotX = (clampedRightPitch / 30) * (Math.PI / 2.2);
     } else {
         // 平時：大幅減小 pitch 影響，保持水平 (僅微幅調整，用於位置計算)
@@ -641,11 +644,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
+    // 左手鼓棒旋轉計算 (同右手邏輯)
     if (leftIsHitting) {
-        // 敲擊時：完整使用 pitch 角度
+        // 敲擊時：完整使用 pitch 角度，pitch > 0 → 尖端向下敲擊
         leftRotX = (clampedLeftPitch / 30) * (Math.PI / 2.2);
     } else {
-        // 平時：保持水平
+        // 平時：保持水平，僅微幅調整
         leftRotX = (clampedLeftPitch / 30) * (Math.PI / 12);
     }
     const leftRotY = (effectiveLeftYaw / 45) * (Math.PI / 4);
