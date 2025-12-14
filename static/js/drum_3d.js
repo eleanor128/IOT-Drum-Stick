@@ -443,7 +443,9 @@ function solveStickCollision(gripPos, rotX, rotY) {
     const tipPoint = 1.0;      // 尖端位置
     const bodyPoint = 0.7;     // 棒身中段（僅用於防穿模）
     let correctedRotX = rotX;
+    let correctedRotY = rotY;
     let hitDrum = null;
+    let hitDrumCenter = null;  // 記錄擊中的鼓面中心位置
 
     zones.forEach(zone => {
         const drumPos = zone.pos3d;
@@ -506,6 +508,12 @@ function solveStickCollision(gripPos, rotX, rotY) {
                     if (maxRotX < correctedRotX) {
                         correctedRotX = maxRotX;
                         hitDrum = zone.name;  // 只有尖端碰撞鼓面才標記為打擊
+                        // 記錄鼓面中心位置，用於視覺對齊
+                        hitDrumCenter = {
+                            x: drumPos[0],
+                            y: headCenterY,
+                            z: headCenterZ
+                        };
                     }
                 } else {
                     // 尖端在鼓內部：修正角度防止穿入
@@ -558,7 +566,34 @@ function solveStickCollision(gripPos, rotX, rotY) {
         }
     });
 
-    return { correctedRotX, hitDrum };
+    // 如果檢測到擊打，微調角度讓尖端對齊鼓面中心（視覺優化）
+    if (hitDrum && hitDrumCenter) {
+        const tipDist = stickLength * tipPoint;
+        
+        // 計算當前尖端位置
+        const currentTipX = gripPos[0] + tipDist * Math.cos(correctedRotX) * Math.sin(correctedRotY);
+        const currentTipY = gripPos[1] - tipDist * Math.sin(correctedRotX);
+        const currentTipZ = gripPos[2] + tipDist * Math.cos(correctedRotX) * Math.cos(correctedRotY);
+        
+        // 計算需要的角度調整讓尖端指向鼓面中心
+        const targetDx = hitDrumCenter.x - gripPos[0];
+        const targetDy = hitDrumCenter.y - gripPos[1];
+        const targetDz = hitDrumCenter.z - gripPos[2];
+        
+        // 計算目標角度（水平方向 - Yaw）
+        const targetRotY = Math.atan2(targetDx, targetDz);
+        
+        // 計算目標角度（垂直方向 - Pitch）
+        const horizontalDist = Math.sqrt(targetDx * targetDx + targetDz * targetDz);
+        const targetRotX = -Math.atan2(targetDy, horizontalDist);
+        
+        // 平滑混合：80% 目標角度 + 20% 原始角度（避免突兀）
+        const blendFactor = 0.8;
+        correctedRotX = targetRotX * blendFactor + correctedRotX * (1 - blendFactor);
+        correctedRotY = targetRotY * blendFactor + correctedRotY * (1 - blendFactor);
+    }
+
+    return { correctedRotX, correctedRotY, hitDrum };
 }
 
 // 線性插值函數，用於平滑移動
@@ -708,7 +743,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 更新右手鼓棒位置和旋轉
     rightStick.position.set(rightX, rightY, rightZ);
     rightStick.rotation.x = rightResult.correctedRotX;
-    rightStick.rotation.y = rightRotY; // Yaw 控制左右
+    rightStick.rotation.y = rightResult.correctedRotY; // Yaw 控制左右，擊打時自動對齊鼓面中心
     
     // 左手同理
     const leftResult = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
@@ -730,7 +765,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 更新左手鼓棒位置和旋轉
     leftStick.position.set(leftX, leftY, leftZ);
     leftStick.rotation.x = leftResult.correctedRotX;
-    leftStick.rotation.y = leftRotY;
+    leftStick.rotation.y = leftResult.correctedRotY; // Yaw 控制左右，擊打時自動對齊鼓面中心
     
     // 渲染場景
     renderer.render(scene, camera);
