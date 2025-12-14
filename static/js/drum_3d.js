@@ -281,19 +281,6 @@ function init3D() {
         
     });
     
-    // 輔助函數：根據鼓的名稱獲取鼓面中心位置
-    function getDrumCenter(drumName) {
-        const zone = zones.find(z => z.name === drumName);
-        if (zone && zone.pos3d) {
-            return {
-                x: zone.pos3d[0],
-                y: zone.pos3d[1],
-                z: zone.pos3d[2]
-            };
-        }
-        return null;
-    }
-    
     // 創建真實鼓棒（圓柱體 + 球形頂端）
     // 鼓棒從使用者位置（相機）握著，水平於地面
     function createDrumstick(color, emissiveColor) {
@@ -591,6 +578,19 @@ document.addEventListener('keydown', (e) => {
         console.log("Yaw Calibrated (Center Reset)");
     }
 });
+
+// 輔助函數：根據鼓的名稱獲取鼓面中心位置
+function getDrumCenter(drumName) {
+    const zone = zones.find(z => z.name === drumName);
+    if (zone && zone.pos3d) {
+        return {
+            x: zone.pos3d[0],
+            y: zone.pos3d[1],
+            z: zone.pos3d[2]
+        };
+    }
+    return null;
+}
 
 // 繪製函數（3D版本）- Yaw控制左右，Pitch控制揮擊
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
