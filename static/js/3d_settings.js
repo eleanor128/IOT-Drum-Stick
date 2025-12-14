@@ -41,7 +41,7 @@ const GRIP_Z_MIN = -2.0;  // 握把最後方位置（打 Snare/Hihat/Tom_floor�
 const GRIP_Z_MAX = -0.3;  // 握把最前方位置（打 Symbal，Z=0.5 - 棒長*0.7）
 
 // X軸範圍限制（左右手分開設定，因為起始位置不同）
-const GRIP_RIGHT_X_MIN = -1;  // 右手握把最小X值（打 Ride，視角右側最遠處）
+const GRIP_RIGHT_X_MIN = -0.8;  // 右手握把最小X值（打 Ride，視角右側最遠處）
 const GRIP_RIGHT_X_MAX = 0.6;  // 右手握把最大X值（打 Tom_mid，保持在內側）
 const GRIP_LEFT_X_MIN = 0.3;    // 左手握把最小X值（打 Snare，保持在內側）
 const GRIP_LEFT_X_MAX = 1.5;    // 左手握把最大X值（打 Hihat/Symbal，視角左側最遠處）
