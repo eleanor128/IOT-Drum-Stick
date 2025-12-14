@@ -178,14 +178,14 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     // Z軸（前後）：手部位置（握把）基礎位置 + X軸加速度影響
     // X軸加速度大時（左右快速移動），手會稍微往深處移動以打到後方的鼓
     const baseZ = -2.0; // 手部握把基礎位置
-    const zOffset = Math.abs(ax) * 0.08; // X軸加速度越大，往深處偏移越多（幅度較小）
+    const zOffset = Math.abs(ax) * 0.15; // X軸加速度越大，往深處偏移越多（增加係數讓能打到後方）
     const z3d = baseZ + zOffset;
     
     // 限制範圍
     return [
         Math.max(-2.0, Math.min(2.0, baseX)),
         Math.max(0.5, Math.min(1.5, y3d)),
-        Math.max(-2.0, Math.min(-1.0, z3d)) // Z軸限制在 -2.0 到 -1.0 之間
+        Math.max(-2.0, Math.min(0.5, z3d)) // Z軸限制放寬，允許伸到更前方
     ];
 }
 
@@ -198,13 +198,13 @@ let rightStick, leftStick;
 // pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
 // 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
 const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.6, 1.0, -0.8], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.2, 1.0, -0.6], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m（拉近X和Z）
     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, // 鼓面高度: 0.65m
-    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 1.0, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   // 鼓面高度: 1.25m
-    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 1.0, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m
-    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.6, 1.8, 0.7], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   // 鼓面高度: 1.825m
-    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.8, 1.7, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  // 鼓面高度: 1.725m
-    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
+    { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.8, 1.0, 0.3], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   // 鼓面高度: 1.25m（拉近Z）
+    { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.8, 1.0, 0.3], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m（拉近Z）
+    { name: "Symbal",    x: 675, y: 0,   w: 225, h: 225, color:"#e5b3ff", pos3d: [1.2, 1.8, 0.3], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },   // 鼓面高度: 1.825m（拉近X和Z）
+    { name: "Ride",      x: 0,   y: 0,   w: 225, h: 225, color:"#6eeee7", pos3d: [-1.3, 1.7, -0.3], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },  // 鼓面高度: 1.725m（拉近X）
+    { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color:"#4d4d4d", pos3d: [-1.0, 0.2, -0.8], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" }, // 鼓面高度: 0.9m
 ];
 // 修改 glowColor 來自定義每個鼓的發光顏色 (格式: 0xRRGGBB)
 // Math.PI / 18	10°	微微傾斜
@@ -492,10 +492,10 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 計算旋轉角度 (弧度)
     const rightRotX = (rightPitch / 45) * (Math.PI / 3);  // Pitch: 上下揮擊
-    const rightRotY = (rightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
+    const rightRotY = (rightYaw / 45) * (Math.PI / 3);     // Yaw: 左右擺動（增加範圍以打到側邊的鼓）
     
     // 根據 Yaw 計算左右偏移（以手部為圓心的左右擺動）
-    const rightYawOffsetX = Math.sin(rightRotY) * 0.35; // 左右擺動範圍（降低幅度）
+    const rightYawOffsetX = Math.sin(rightRotY) * 0.5; // 左右擺動範圍（適度增加以打到遠處的鼓）
     
     // 應用 Yaw 偏移到手部位置
     const targetRightX = baseRightX + rightYawOffsetX;
@@ -513,9 +513,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     );
     
     const leftRotX = (leftPitch / 45) * (Math.PI / 3);
-    const leftRotY = (leftYaw / 45) * (Math.PI / 4);
+    const leftRotY = (leftYaw / 45) * (Math.PI / 3);
     
-    const leftYawOffsetX = Math.sin(leftRotY) * 0.35;
+    const leftYawOffsetX = Math.sin(leftRotY) * 0.5;
     
     const targetLeftX = baseLeftX + leftYawOffsetX;
     const targetLeftY = baseLeftY;
