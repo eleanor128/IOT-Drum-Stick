@@ -178,13 +178,14 @@ class DrumCollisionDetector:
             {"name": "Tom_floor", "x": -1.2, "y": 0.2, "z": -1, "radius": 0.80},
         ]
     
-    def calculate_stick_tip_position(self, ax, pitch, yaw, hand="right"):
+    def calculate_stick_tip_position(self, ax, az, pitch, yaw, hand="right"):
         """
         計算鼓棒前端（敲擊端）的 3D 位置
         完全對應 drum_3d.js 的計算邏輯
         
         參數說明：
         - ax: X軸加速度，控制鼓棒前後深淺
+        - az: Z軸加速度，用於判斷是否在敲擊狀態
         - pitch: Y軸旋轉角度，控制鼓棒上下揮動
         - yaw: Z軸旋轉角度，控制鼓棒左右位置
         - hand: "right" 或 "left"
@@ -288,13 +289,14 @@ class DrumCollisionDetector:
         
         return tip_x, tip_y, tip_z
     
-    def detect_hit_drum(self, ax, pitch, yaw, hand="right"):
+    def detect_hit_drum(self, ax, az, pitch, yaw, hand="right"):
         """
         偵測鼓棒尖端是否打擊到某個鼓（基於 XZ 平面投影）
         將鼓和鼓棒都映射到 XZ 平面（俯視圖），只檢查 2D 距離
         
         參數說明：
-        - ax: X軸加速度，控制鼓棒前後深涺
+        - ax: X軸加速度，控制鼓棒前後深度
+        - az: Z軸加速度，用於判斷是否在敲擊狀態
         - pitch: Y軸旋轉角度，控制鼓棒上下揮動
         - yaw: Z軸旋轉角度，控制鼓棒左右位置
         - hand: "right" 或 "left"
@@ -306,7 +308,7 @@ class DrumCollisionDetector:
         }
         """
         # 計算鼓棒尖端 3D 位置
-        tip_x, tip_y, tip_z = self.calculate_stick_tip_position(ax, pitch, yaw, hand)
+        tip_x, tip_y, tip_z = self.calculate_stick_tip_position(ax, az, pitch, yaw, hand)
         
         # 計算握把位置（與 drum_3d.js 完全一致）
         # 使用與 calculate_stick_tip_position 相同的邏輯（從配置讀取）
