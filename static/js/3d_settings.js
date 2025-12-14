@@ -18,7 +18,7 @@ const YAW_ANGLE_FACTOR = Math.PI / 4;  // Yaw 角度轉換係數
 
 // 握把位置設定
 const GRIP_BASE_Z = -2.2;  // 握把基礎 Z 位置（後方）
-const GRIP_BASE_Y = 0.6;   // 握把基礎 Y 位置（高度）
+const GRIP_BASE_Y = 0.75;   // 握把基礎 Y 位置（高度）
 const GRIP_RIGHT_X = 0.2;  // 右手握把基礎 X 位置
 const GRIP_LEFT_X = 0.8;   // 左手握把基礎 X 位置
 
