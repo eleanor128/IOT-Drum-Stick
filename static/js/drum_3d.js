@@ -169,7 +169,7 @@ function isValidHit(ax, ay, az, gx, gy, gz) {
 function mapAccelTo3D(ax, ay, az, isLeft = false) {
     // 手部位置相對固定（握把位置）
     // X軸（左右）：左右手基礎位置
-    const baseX = isLeft ? 0.2 : 0.8;
+    const baseX = isLeft ? 0.8 : 0.2;
     
     // Y軸（高度）：手部高度，微調
     const baseY = 0.8; // 手部基礎高度
