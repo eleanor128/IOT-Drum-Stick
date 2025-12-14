@@ -372,164 +372,76 @@ function mapXYto3D(x, y, pitch) {
     return [x3d, y3d, z3d];
 }
 
-// 碰撞檢測與修正：計算鼓棒是否穿入鼓/鈸內部（包含頂部、側面、底部），並返回修正後的 Pitch 角度 (弧度)
+// 碰撞檢測與修正：基於 XZ 平面投影，防止鼓棒穿透鼓面
+// 只要鼓棒尖端的 XZ 投影在鼓的範圍內，就修正角度讓尖端停在鼓面上
 function solveStickCollision(gripPos, rotX, rotY) {
-    const stickLength = 1.2;
-    // 分開檢查：尖端用於敲擊判定，棒身用於防止穿模
-    const tipPoint = 1.0;      // 尖端位置
-    const bodyPoint = 0.7;     // 棒身中段（僅用於防穿模）
+    const stickLength = STICK_LENGTH;
     let correctedRotX = rotX;
     let correctedRotY = rotY;
-    let hitDrum = null;
-    let hitDrumCenter = null;  // 記錄擊中的鼓面中心位置
 
+    // 計算鼓棒尖端的 3D 位置
+    const tipX = gripPos[0] + stickLength * Math.sin(rotY) * Math.cos(rotX);
+    const tipY = gripPos[1] - stickLength * Math.sin(rotX);
+    const tipZ = gripPos[2] + stickLength * Math.cos(rotY) * Math.cos(rotX);
+
+    // 遍歷所有鼓，檢查是否在 XZ 平面範圍內
     zones.forEach(zone => {
-        const drumPos = zone.pos3d;
-        const drumRot = zone.rotation;
-        const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
-        const radius = zone.radius || (isCymbal ? 1.2 : 0.9);
-        const hitRadius = radius + 0.1; // 碰撞檢測半徑（減小，更精確）
+        const drumX = zone.pos3d[0];
+        const drumY = zone.pos3d[1];
+        const drumZ = zone.pos3d[2];
+        const radius = zone.radius;
+        const drumRot = zone.rotation !== undefined ? zone.rotation : -Math.PI / 9;
 
+        // 計算鼓的高度和鼓面位置
+        const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         let drumHeight;
         if (isCymbal) {
-            drumHeight = 0.05;
+            drumHeight = CYMBAL_HEIGHT;
         } else if (zone.name === "Tom_floor") {
-            drumHeight = 1.0;
+            drumHeight = TOM_FLOOR_HEIGHT;
         } else {
-            drumHeight = 0.5;
+            drumHeight = STANDARD_DRUM_HEIGHT;
         }
 
-        const buffer = 0.05; // 緩衝距離
+        // 計算鼓面中心位置（考慮旋轉）
+        // 鼓面在鼓的頂部，需要沿著法線方向偏移
+        const drumSurfaceY = drumY + (drumHeight / 2) * Math.cos(drumRot);
+        const drumSurfaceZ = drumZ + (drumHeight / 2) * Math.sin(drumRot);
 
-        // 計算鼓面(頂部)和鼓底中心點 (考慮旋轉)
-        const headCenterY = drumPos[1] + (drumHeight / 2) * Math.cos(drumRot);
-        const headCenterZ = drumPos[2] + (drumHeight / 2) * Math.sin(drumRot);
-        const bottomCenterY = drumPos[1] - (drumHeight / 2) * Math.cos(drumRot);
-        const bottomCenterZ = drumPos[2] - (drumHeight / 2) * Math.sin(drumRot);
+        // XZ 平面距離檢測（俯視圖）- 使用鼓的中心 XZ 位置，不是鼓面位置
+        const dx = tipX - drumX;
+        const dz = tipZ - drumZ;
+        const distanceXZ = Math.sqrt(dx * dx + dz * dz);
 
-        // 計算鼓面法線向量（向上）
-        const normalY = Math.cos(drumRot);
-        const normalZ = Math.sin(drumRot);
+        // 如果尖端在鼓的 XZ 投影範圍內
+        if (distanceXZ <= radius) {
+            // 計算鼓面法線向量
+            const normalY = Math.cos(drumRot);
+            const normalZ = Math.sin(drumRot);
 
-        // 1. 檢查尖端碰撞（用於敲擊判定）
-        const tipDist = stickLength * tipPoint;
-        const tipX = gripPos[0] + tipDist * Math.cos(rotX) * Math.sin(rotY);
-        const tipY = gripPos[1] - tipDist * Math.sin(rotX);
-        const tipZ = gripPos[2] + tipDist * Math.cos(rotX) * Math.cos(rotY);
-
-        // 計算尖端到鼓中心軸的水平距離
-        const tipDx = tipX - drumPos[0];
-        const tipDz = tipZ - headCenterZ;
-        const tipHorizontalDist = Math.sqrt(tipDx * tipDx + tipDz * tipDz);
-        
-        // 檢查是否在鼓的水平範圍內
-        if (tipHorizontalDist < hitRadius) {
             // 計算尖端到鼓面的垂直距離（沿法線方向）
-            const tipDistToHeadPlane = (tipY - headCenterY) * normalY + (tipZ - headCenterZ) * normalZ;
-            const tipDistToBottomPlane = (tipY - bottomCenterY) * normalY + (tipZ - bottomCenterZ) * normalZ;
-            
-            // 檢查是否在鼓的高度範圍內（從鼓底到鼓面）
-            const isAboveBottom = tipDistToBottomPlane > -buffer;  // 在鼓底上方
-            const isBelowHead = tipDistToHeadPlane < buffer;        // 在鼓面下方
-            
-            if (isAboveBottom && isBelowHead) {
-                // 尖端在鼓內部或接觸鼓面
-                if (tipDistToHeadPlane >= -buffer && tipDistToHeadPlane < buffer) {
-                    // 尖端接觸鼓面：修正角度 + 標記為打擊
-                    const y_surface_at_tipZ = headCenterY - (normalZ / normalY) * (tipZ - headCenterZ);
-                    let maxSin = (gripPos[1] - (y_surface_at_tipZ + buffer)) / tipDist;
-                    maxSin = Math.max(-1, Math.min(1, maxSin));
-                    const maxRotX = Math.asin(maxSin);
+            const distToSurface = (tipY - drumSurfaceY) * normalY + (tipZ - drumSurfaceZ) * normalZ;
 
-                    if (maxRotX < correctedRotX) {
-                        correctedRotX = maxRotX;
-                        hitDrum = zone.name;  // 只有尖端碰撞鼓面才標記為打擊
-                        // 記錄鼓面中心位置，用於視覺對齊
-                        hitDrumCenter = {
-                            x: drumPos[0],
-                            y: headCenterY,
-                            z: headCenterZ
-                        };
-                    }
-                } else {
-                    // 尖端在鼓內部：修正角度防止穿入
-                    const y_surface_at_tipZ = headCenterY - (normalZ / normalY) * (tipZ - headCenterZ);
-                    let maxSin = (gripPos[1] - (y_surface_at_tipZ + buffer)) / tipDist;
-                    maxSin = Math.max(-1, Math.min(1, maxSin));
-                    const maxRotX = Math.asin(maxSin);
+            // 如果尖端在鼓面下方（穿透了）
+            if (distToSurface < 0.05) {  // 0.05 是緩衝距離
+                // 計算目標尖端位置（鼓面上方 0.05）
+                const targetTipY = drumSurfaceY + 0.05 * normalY;
+                const deltaY = gripPos[1] - targetTipY;
 
-                    if (maxRotX < correctedRotX) {
-                        correctedRotX = maxRotX;
-                        // 不標記為打擊，僅防止穿入
-                    }
-                }
-            }
-        }
+                // 計算需要的 rotX（pitch）角度
+                let sinRotX = deltaY / stickLength;
+                sinRotX = Math.max(-1, Math.min(1, sinRotX));
+                const newRotX = Math.asin(sinRotX);
 
-        // 2. 檢查棒身碰撞（僅用於防止穿模，不觸發打擊）
-        const bodyDist = stickLength * bodyPoint;
-        const bodyX = gripPos[0] + bodyDist * Math.cos(rotX) * Math.sin(rotY);
-        const bodyY = gripPos[1] - bodyDist * Math.sin(rotX);
-        const bodyZ = gripPos[2] + bodyDist * Math.cos(rotX) * Math.cos(rotY);
-
-        // 計算棒身到鼓中心軸的水平距離
-        const bodyDx = bodyX - drumPos[0];
-        const bodyDz = bodyZ - headCenterZ;
-        const bodyHorizontalDist = Math.sqrt(bodyDx * bodyDx + bodyDz * bodyDz);
-        
-        // 檢查是否在鼓的水平範圍內
-        if (bodyHorizontalDist < hitRadius) {
-            // 計算棒身到鼓面和鼓底的垂直距離
-            const bodyDistToHeadPlane = (bodyY - headCenterY) * normalY + (bodyZ - headCenterZ) * normalZ;
-            const bodyDistToBottomPlane = (bodyY - bottomCenterY) * normalY + (bodyZ - bottomCenterZ) * normalZ;
-            
-            // 檢查是否在鼓的高度範圍內
-            const isAboveBottom = bodyDistToBottomPlane > -buffer;
-            const isBelowHead = bodyDistToHeadPlane < buffer;
-            
-            if (isAboveBottom && isBelowHead) {
-                // 棒身在鼓內部或接觸鼓面：僅修正角度，不標記為打擊
-                const y_surface_at_bodyZ = headCenterY - (normalZ / normalY) * (bodyZ - headCenterZ);
-                let maxSin = (gripPos[1] - (y_surface_at_bodyZ + buffer)) / bodyDist;
-                maxSin = Math.max(-1, Math.min(1, maxSin));
-                const maxRotX = Math.asin(maxSin);
-
-                if (maxRotX < correctedRotX) {
-                    correctedRotX = maxRotX;
-                    // 不設定 hitDrum，所以不會觸發打擊音效
+                // 只在新角度比當前角度更水平時才修正（防止向下穿透）
+                if (newRotX > correctedRotX) {
+                    correctedRotX = newRotX;
                 }
             }
         }
     });
 
-    // 如果檢測到擊打，微調角度讓尖端對齊鼓面中心（視覺優化）
-    if (hitDrum && hitDrumCenter) {
-        const tipDist = stickLength * tipPoint;
-        
-        // 計算當前尖端位置
-        const currentTipX = gripPos[0] + tipDist * Math.cos(correctedRotX) * Math.sin(correctedRotY);
-        const currentTipY = gripPos[1] - tipDist * Math.sin(correctedRotX);
-        const currentTipZ = gripPos[2] + tipDist * Math.cos(correctedRotX) * Math.cos(correctedRotY);
-        
-        // 計算需要的角度調整讓尖端指向鼓面中心
-        const targetDx = hitDrumCenter.x - gripPos[0];
-        const targetDy = hitDrumCenter.y - gripPos[1];
-        const targetDz = hitDrumCenter.z - gripPos[2];
-        
-        // 計算目標角度（水平方向 - Yaw）
-        const targetRotY = Math.atan2(targetDx, targetDz);
-        
-        // 計算目標角度（垂直方向 - Pitch）
-        const horizontalDist = Math.sqrt(targetDx * targetDx + targetDz * targetDz);
-        const targetRotX = -Math.atan2(targetDy, horizontalDist);
-        
-        // 平滑混合：80% 目標角度 + 20% 原始角度（避免突兀）
-        const blendFactor = 0.8;
-        correctedRotX = targetRotX * blendFactor + correctedRotX * (1 - blendFactor);
-        correctedRotY = targetRotY * blendFactor + correctedRotY * (1 - blendFactor);
-    }
-
-    return { correctedRotX, correctedRotY, hitDrum };
+    return { correctedRotX, correctedRotY, hitDrum: null };
 }
 
 // 線性插值函數，用於平滑移動
