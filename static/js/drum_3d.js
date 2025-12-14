@@ -198,7 +198,7 @@ let rightStick, leftStick;
 // pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
 // 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
 const zones = [
-    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.6, 1.0, -0.8], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m
+    { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   // 鼓面高度: 1.025m
     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, // 鼓面高度: 0.65m
     { name: "Tom_high",  x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },   // 鼓面高度: 1.25m
     { name: "Tom_mid",   x: 450, y: 0,   w: 225, h: 225, color:"#ff7f2a", pos3d: [-0.6, 0.8, 0.7], radius: 0.55, rotation: -Math.PI / 7, glowColor: "#ff6600" },  // 鼓面高度: 1.25m
