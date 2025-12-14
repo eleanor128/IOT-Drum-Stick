@@ -641,15 +641,16 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let rightRotX, leftRotX;
     if (rightIsHitting) {
         // 敲擊時：pitch 增加 → 鼓棒向上旋轉（尖端Y增加）
-        // 增加旋轉幅度：從 /30 改為 /20
-        rightRotX = -(clampedRightPitch / 20) * (Math.PI / 2);
+        // 增加旋轉幅度讓揮擊更明顯
+        rightRotX = -(clampedRightPitch / 15) * (Math.PI / 2);
     } else {
         // 平時：保持水平，僅微幅調整
-        rightRotX = -(clampedRightPitch / 25) * (Math.PI / 8);
+        rightRotX = -(clampedRightPitch / 20) * (Math.PI / 6);
     }
     // yaw 增加 → 鼓棒在水平面（平行地面）向左旋轉（尖端X減少）
     // 以手為圓心、鼓棒為半徑，在XZ平面上旋轉
-    const rightRotY = -(effectiveRightYaw / 30) * (Math.PI / 3);
+    // 增加旋轉幅度讓左右移動更明顯
+    const rightRotY = -(effectiveRightYaw / 25) * (Math.PI / 2.5);
     
     // 右手握把位置計算 - 手在 XYZ 空間移動，鼓棒旋轉控制尖端
     let targetRightX = GRIP_RIGHT_X;  // 手部X位置基礎值
@@ -680,7 +681,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 手部Y位置根據pitch動態調整（打高位置的鼓時手部要升高）
     // pitch > 0 代表手舉高，手部Y增加
     targetRightY = GRIP_BASE_Y + Math.max(0, clampedRightPitch / 30) * 0.5;
-    
+    targetRightY = Math.max(GRIP_Y_MIN, Math.min(GRIP_Y_MAX, targetRightY));
+
     // 應用平滑處理
     let rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
     let rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
@@ -694,15 +696,15 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 左手鼓棒旋轉計算
     if (leftIsHitting) {
         // 敲擊時：pitch 增加 → 鼓棒向上旋轉（尖端Y增加）
-        // 增加旋轉幅度：從 /30 改為 /20
-        leftRotX = -(clampedLeftPitch / 20) * (Math.PI / 2);
+        // 增加旋轉幅度讓揮擊更明顯
+        leftRotX = -(clampedLeftPitch / 15) * (Math.PI / 2);
     } else {
         // 平時：保持水平，僅微幅調整
-        leftRotX = -(clampedLeftPitch / 25) * (Math.PI / 8);
+        leftRotX = -(clampedLeftPitch / 20) * (Math.PI / 6);
     }
     // yaw 增加 → 鼓棒向左旋轉（尖端X減少）
-    // 增加旋轉幅度：從 /45 改為 /30
-    const leftRotY = -(effectiveLeftYaw / 30) * (Math.PI / 3);
+    // 增加旋轉幅度讓左右移動更明顯
+    const leftRotY = -(effectiveLeftYaw / 25) * (Math.PI / 2.5);
     
     // 左手握把位置計算
     let targetLeftX = GRIP_LEFT_X;  // 左手基礎位置（對準左側鼓）
@@ -733,7 +735,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 手部Y位置根據pitch動態調整（打高位置的鼓時手部要升高）
     // pitch > 0 代表手舉高，手部Y增加
     targetLeftY = GRIP_BASE_Y + Math.max(0, clampedLeftPitch / 30) * 0.5;
-    
+    targetLeftY = Math.max(GRIP_Y_MIN, Math.min(GRIP_Y_MAX, targetLeftY));
+
     // 應用平滑處理
     let leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
     let leftY = lerp(leftStick.position.y, targetLeftY, smoothFactor);
@@ -746,13 +749,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
 
     // 右手感測器敲擊偵測 (從後端取得)
     const rightHitDrum = rightData.is_hit ? rightData.hit_drum : null;
-    
-    // 計算鼓棒尖端位置（用於瞄準檢測）
-    const stickLength = STICK_LENGTH;
-    const rightTipX = rightX + stickLength * Math.sin(rightRotY) * Math.cos(rightRotX);
-    const rightTipY = rightY - stickLength * Math.sin(rightRotX);
-    const rightTipZ = rightZ + stickLength * Math.cos(rightRotY) * Math.cos(rightRotX);
-    
+
     // 檢測右手打擊
     if (rightHitDrum) {
         if (!rightWasColliding && rightHitCooldown <= 0) {
@@ -762,60 +759,19 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
             console.log(`🥁 Right Hit (Sensor): ${rightHitDrum}`);
         }
         rightWasColliding = true;
-
-        // 只在剛打擊瞬間（cooldown剛啟動時）做 auto-aim
-        if (rightHitCooldown >= 8) {  // cooldown 10 -> 9 -> 8 的前3幀
-            // 取得鼓資訊
-            const drumZone = zones.find(z => z.name === rightHitDrum);
-            let drumTarget = getDrumCenter(rightHitDrum);
-            // 若是 Symbal、Ride、Tom_high、Tom_mid，auto-aim 指向最深 Z
-            if (drumZone && ["Symbal","Ride","Tom_high","Tom_mid"].includes(rightHitDrum)) {
-                drumTarget = {...drumTarget};
-                drumTarget.z = drumZone.pos3d[2] + drumZone.radius;
-            }
-            if (drumTarget) {
-                let dx = drumTarget.x - rightX;
-                let dz = drumTarget.z - rightZ;
-                let dy = drumTarget.y - rightY;
-                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                dx /= dist;
-                dy /= dist;
-                dz /= dist;
-                const targetGripX = drumTarget.x - dx * stickLength;
-                const targetGripY = drumTarget.y - dy * stickLength;
-                const targetGripZ = drumTarget.z - dz * stickLength;
-                rightStick.position.x = lerp(rightX, targetGripX, DRUM_CENTER_BLEND_FACTOR);
-                rightStick.position.y = lerp(rightY, targetGripY, DRUM_CENTER_BLEND_FACTOR);
-                rightStick.position.z = lerp(rightZ, targetGripZ, DRUM_CENTER_BLEND_FACTOR);
-                const targetYaw = Math.atan2(dx, dz);
-                const horizontalDist = Math.sqrt(dx * dx + dz * dz);
-                const targetPitch = Math.atan2(dy, horizontalDist);
-                rightStick.rotation.y = lerp(rightRotYCorrected, targetYaw, DRUM_CENTER_BLEND_FACTOR);
-                rightStick.rotation.x = lerp(rightRotX, targetPitch, DRUM_CENTER_BLEND_FACTOR);
-            }
-        } else {
-            // 打擊後恢復自由移動
-            rightStick.position.set(rightX, rightY, rightZ);
-            rightStick.rotation.x = rightRotX;
-            rightStick.rotation.y = rightRotYCorrected;
-        }
     } else {
         rightWasColliding = false;
-        // 正常移動，使用碰撞修正後的角度（防止穿透）
-        rightStick.position.set(rightX, rightY, rightZ);
-        rightStick.rotation.x = rightRotX;
-        rightStick.rotation.y = rightRotYCorrected;
     }
     if (rightHitCooldown > 0) rightHitCooldown--;
+
+    // 正常移動，不做 auto-aim，使用碰撞修正後的角度（防止穿透）
+    rightStick.position.set(rightX, rightY, rightZ);
+    rightStick.rotation.x = rightRotX;
+    rightStick.rotation.y = rightRotYCorrected;
     
     // 左手感測器敲擊偵測 (從後端取得)
     const leftHitDrum = leftData.is_hit ? leftData.hit_drum : null;
-    
-    // 計算鼓棒尖端位置（用於瞄準檢測）
-    const leftTipX = leftX + stickLength * Math.sin(leftRotY) * Math.cos(leftRotX);
-    const leftTipY = leftY - stickLength * Math.sin(leftRotX);
-    const leftTipZ = leftZ + stickLength * Math.cos(leftRotY) * Math.cos(leftRotX);
-    
+
     // 檢測左手打擊
     if (leftHitDrum) {
         if (!leftWasColliding && leftHitCooldown <= 0) {
@@ -825,107 +781,15 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
             console.log(`🥁 Left Hit (Sensor): ${leftHitDrum}`);
         }
         leftWasColliding = true;
-
-        // 只在剛打擊瞬間（cooldown剛啟動時）做 auto-aim
-        if (leftHitCooldown >= 8) {  // cooldown 10 -> 9 -> 8 的前3幀
-            // 當敲擊時，計算該鼓的中心位置並強力對齊
-            const drumCenter = getDrumCenter(leftHitDrum);
-            if (drumCenter) {
-                // 計算從鼓中心反推握把位置，確保尖端碰到鼓面
-                let dx = drumCenter.x - leftX;
-                let dz = drumCenter.z - leftZ;
-                let dy = drumCenter.y - leftY;
-                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-                // 標準化方向向量
-                dx /= dist;
-                dy /= dist;
-                dz /= dist;
-
-                // 計算目標握把位置：從鼓面沿著方向向量反向移動鼓棒長度
-                const targetGripX = drumCenter.x - dx * stickLength;
-                const targetGripY = drumCenter.y - dy * stickLength;
-                const targetGripZ = drumCenter.z - dz * stickLength;
-
-                // 平滑移動握把到目標位置（擊打時使用強力對齊）
-                leftStick.position.x = lerp(leftX, targetGripX, DRUM_CENTER_BLEND_FACTOR);
-                leftStick.position.y = lerp(leftY, targetGripY, DRUM_CENTER_BLEND_FACTOR);
-                leftStick.position.z = lerp(leftZ, targetGripZ, DRUM_CENTER_BLEND_FACTOR);
-
-                // 計算目標角度讓尖端指向鼓中心
-                const targetYaw = Math.atan2(dx, dz);
-                const horizontalDist = Math.sqrt(dx * dx + dz * dz);
-                const targetPitch = Math.atan2(dy, horizontalDist);
-
-                // 混合當前角度和目標角度（擊打時使用強力對齊）
-                leftStick.rotation.y = lerp(leftRotYCorrected, targetYaw, DRUM_CENTER_BLEND_FACTOR);
-                leftStick.rotation.x = lerp(leftRotX, targetPitch, DRUM_CENTER_BLEND_FACTOR);
-            }
-        } else {
-            // 打擊後恢復自由移動
-            leftStick.position.set(leftX, leftY, leftZ);
-            leftStick.rotation.x = leftRotX;
-            leftStick.rotation.y = leftRotYCorrected;
-        }
     } else {
         leftWasColliding = false;
-
-        // 檢測是否接近任何鼓（即使沒有打擊）
-        let closestDrum = null;
-        let minDistance = DRUM_AIM_DISTANCE;
-
-        zones.forEach(zone => {
-            const drumCenter = getDrumCenter(zone.name);
-            if (drumCenter) {
-                const dx = leftTipX - drumCenter.x;
-                const dy = leftTipY - drumCenter.y;
-                const dz = leftTipZ - drumCenter.z;
-                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestDrum = drumCenter;
-                }
-            }
-        });
-
-        // 如果接近某個鼓，輕微瞄準鼓面中心
-        if (closestDrum) {
-            let dx = closestDrum.x - leftX;
-            let dz = closestDrum.z - leftZ;
-            let dy = closestDrum.y - leftY;
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-            dx /= dist;
-            dy /= dist;
-            dz /= dist;
-
-            const targetGripX = closestDrum.x - dx * stickLength;
-            const targetGripY = closestDrum.y - dy * stickLength;
-            const targetGripZ = closestDrum.z - dz * stickLength;
-
-            const targetYaw = Math.atan2(dx, dz);
-            const horizontalDist = Math.sqrt(dx * dx + dz * dz);
-            const targetPitch = Math.atan2(dy, horizontalDist);
-
-            // 使用較溫和的混合係數，保持自然感
-            leftStick.position.x = lerp(leftX, targetGripX, DRUM_AIM_BLEND_FACTOR);
-            leftStick.position.y = lerp(leftY, targetGripY, DRUM_AIM_BLEND_FACTOR);
-            leftStick.position.z = lerp(leftZ, targetGripZ, DRUM_AIM_BLEND_FACTOR);
-            leftStick.rotation.y = lerp(leftRotYCorrected, targetYaw, DRUM_AIM_BLEND_FACTOR);
-            leftStick.rotation.x = lerp(leftRotX, targetPitch, DRUM_AIM_BLEND_FACTOR);
-        } else {
-            // 正常狀態：使用碰撞修正後的角度（防止穿透）
-            leftStick.rotation.x = leftRotX;
-            leftStick.rotation.y = leftRotYCorrected;
-        }
     }
     if (leftHitCooldown > 0) leftHitCooldown--;
-    
-    // 更新左手鼓棒位置（如果沒有對齊則使用原始位置）
-    if (!leftHitDrum) {
-        leftStick.position.set(leftX, leftY, leftZ);
-    }
+
+    // 正常移動，不做 auto-aim，使用碰撞修正後的角度（防止穿透）
+    leftStick.position.set(leftX, leftY, leftZ);
+    leftStick.rotation.x = leftRotX;
+    leftStick.rotation.y = leftRotYCorrected;
     
     // 渲染場景
     renderer.render(scene, camera);

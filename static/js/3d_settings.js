@@ -190,6 +190,16 @@ const GRIP_RIGHT_X_MAX = maxDrumX + STICK_LENGTH * 0.15;  // 最右側鼓右方�
 const GRIP_LEFT_X_MIN = minDrumX - STICK_LENGTH * 0.15;  // 最左側鼓左方
 const GRIP_LEFT_X_MAX = maxDrumX + STICK_LENGTH * 0.15;  // 最右側鼓右方
 
+// Y軸範圍限制（根據鼓的高度計算）
+// 計算所有鼓的 Y 範圍
+const drumYPositions = zones.map(z => z.pos3d[1]);
+const minDrumY = Math.min(...drumYPositions);  // 最低鼓 (Tom_floor: 0.2)
+const maxDrumY = Math.max(...drumYPositions);  // 最高鼓 (Ride/Symbal: 1.4)
+
+// 手部Y位置範圍（需要能打到最低和最高的鼓）
+const GRIP_Y_MIN = Math.max(0.3, minDrumY - STICK_LENGTH * 0.3);  // 最低位置（不低於地面）
+const GRIP_Y_MAX = maxDrumY - STICK_LENGTH * 0.3;  // 最高位置（打Ride/Symbal時手的高度）
+
 // 鼓的高度設定
 const CYMBAL_HEIGHT = 0.05;  // 鈸高度
 const TOM_FLOOR_HEIGHT = 1.0;  // 落地通鼓高度
