@@ -236,7 +236,7 @@ function init3D() {
     scene.background = new THREE.Color(0x222222);
     
     camera = new THREE.PerspectiveCamera(60, 900 / 600, 0.1, 1000);
-    camera.position.set(0, 3, -4.5);
+    camera.position.set(0, 3.3, -4.5);
     camera.lookAt(0, 0, 2);
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
