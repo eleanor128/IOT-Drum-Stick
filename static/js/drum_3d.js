@@ -591,8 +591,20 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const clampedRightPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, rightPitch));
     const clampedLeftPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, leftPitch));
 
+    // 偵測是否正在敲擊 (根據陀螺儀 Y 軸速度判斷)
+    const rightIsHitting = Math.abs(rightData.gy) > 50;  // 敲擊時陀螺儀 Y 軸速度較大
+    const leftIsHitting = Math.abs(leftData.gy) > 50;
+
     // 計算旋轉角度 (弧度)
-    const rightRotX = (clampedRightPitch / 30) * (Math.PI / 2.2);  // Pitch: 上下揮擊 (提高靈敏度，加大角度)
+    // 平時保持水平 (rotation.x ≈ 0)，敲擊時才大幅旋轉
+    let rightRotX, leftRotX;
+    if (rightIsHitting) {
+        // 敲擊時：完整使用 pitch 角度，讓鼓棒垂直揮動
+        rightRotX = (clampedRightPitch / 30) * (Math.PI / 2.2);
+    } else {
+        // 平時：大幅減小 pitch 影響，保持水平 (僅微幅調整，用於位置計算)
+        rightRotX = (clampedRightPitch / 30) * (Math.PI / 12);  // 降低到原本的 1/6
+    }
     const rightRotY = (effectiveRightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
     
     // 右手握把位置計算 (基於角度的虛擬手臂模型)
@@ -629,7 +641,13 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
-    const leftRotX = (clampedLeftPitch / 30) * (Math.PI / 2.2);
+    if (leftIsHitting) {
+        // 敲擊時：完整使用 pitch 角度
+        leftRotX = (clampedLeftPitch / 30) * (Math.PI / 2.2);
+    } else {
+        // 平時：保持水平
+        leftRotX = (clampedLeftPitch / 30) * (Math.PI / 12);
+    }
     const leftRotY = (effectiveLeftYaw / 45) * (Math.PI / 4);
     
     // 左手握把位置計算
