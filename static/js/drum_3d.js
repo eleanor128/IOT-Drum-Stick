@@ -388,6 +388,8 @@ function mapXYto3D(x, y, pitch) {
 // 碰撞檢測與修正：計算鼓棒是否穿入鼓面，並返回修正後的 Pitch 角度 (弧度)
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = 1.2;
+    // 檢查多個點：尖端 (1.0) 和 棒身中段 (0.7) 以防止穿模
+    const checkPoints = [1.0, 0.7];
     let correctedRotX = rotX;
     let hitDrum = null;
     
@@ -409,39 +411,39 @@ function solveStickCollision(gripPos, rotX, rotY) {
         }
         
         const drumTopY = drumPos[1] + drumHeight / 2;
+        const buffer = 0.1; // 緩衝距離
         
-        // 計算鼓棒尖端位置 (Tip)
-        // 鼓棒握把在 gripPos，長度 1.2
-        // 旋轉：X軸為 Pitch (正值向下), Y軸為 Yaw
-        const tipX = gripPos[0] + stickLength * Math.cos(rotX) * Math.sin(rotY);
-        const tipZ = gripPos[2] + stickLength * Math.cos(rotX) * Math.cos(rotY);
-        
-        // 檢查水平距離 (XZ平面)
-        const dx = tipX - drumPos[0];
-        const dz = tipZ - drumPos[2];
-        
-        if (dx * dx + dz * dz < hitRadius * hitRadius) {
-            // 檢查垂直穿透
-            // 尖端 Y = gripY - L * sin(rotX)
-            const currentTipY = gripPos[1] - stickLength * Math.sin(rotX);
+        // 檢查每個關鍵點
+        checkPoints.forEach(fraction => {
+            const dist = stickLength * fraction;
             
-            // 如果尖端低於鼓面 (增加緩衝，確保視覺上不穿模)
-            const buffer = 0.1;
-            if (currentTipY < drumTopY + buffer) {
-                // 計算限制角度：sin(rotX) <= (gripY - drumTopY) / L
-                let maxSin = (gripPos[1] - (drumTopY + buffer)) / stickLength;
+            // 計算該點的 3D 位置
+            const pX = gripPos[0] + dist * Math.cos(rotX) * Math.sin(rotY);
+            const pZ = gripPos[2] + dist * Math.cos(rotX) * Math.cos(rotY);
+            
+            // 檢查水平距離
+            const dx = pX - drumPos[0];
+            const dz = pZ - drumPos[2];
+            
+            if (dx * dx + dz * dz < hitRadius * hitRadius) {
+                // 檢查垂直高度
+                const currentPY = gripPos[1] - dist * Math.sin(rotX);
                 
-                // 限制 maxSin 在 [-1, 1] 範圍內，防止 NaN (當握把過低或過高時)
-                maxSin = Math.max(-1, Math.min(1, maxSin));
-                
-                const maxRotX = Math.asin(maxSin);
-                // 因為 rotX 越大越向下，所以取最小值
-                if (maxRotX < correctedRotX) {
-                    correctedRotX = maxRotX;
-                    hitDrum = zone.name;
+                if (currentPY < drumTopY + buffer) {
+                    // 計算限制角度
+                    let maxSin = (gripPos[1] - (drumTopY + buffer)) / dist;
+                    maxSin = Math.max(-1, Math.min(1, maxSin));
+                    
+                    const maxRotX = Math.asin(maxSin);
+                    
+                    // 取最小的角度（限制向下揮動）
+                    if (maxRotX < correctedRotX) {
+                        correctedRotX = maxRotX;
+                        hitDrum = zone.name;
+                    }
                 }
             }
-        }
+        });
     });
     
     return { correctedRotX, hitDrum };
@@ -481,13 +483,30 @@ function updateDrumGlows() {
 let rightWasColliding = false;
 let leftWasColliding = false;
 
+// 校正偏移量
+let rightYawOffset = 0;
+let leftYawOffset = 0;
+
+// 按下 'R' 鍵重置方向 (校正漂移)
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'r') {
+        rightYawOffset = -rightData["yaw (z軸轉)"];
+        leftYawOffset = -leftData["yaw (z軸轉)"];
+        console.log("Yaw Calibrated (Center Reset)");
+    }
+});
+
 // 繪製函數（3D版本）- Yaw控制左右，Pitch控制揮擊
 function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
     const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
 
+    // 應用 Yaw 偏移 (校正漂移)
+    const effectiveRightYaw = rightYaw + rightYawOffset;
+    const effectiveLeftYaw = leftYaw + leftYawOffset;
+
     // 計算旋轉角度 (弧度)
     const rightRotX = (rightPitch / 30) * (Math.PI / 2.2);  // Pitch: 上下揮擊 (提高靈敏度，加大角度)
-    const rightRotY = (rightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
+    const rightRotY = (effectiveRightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
     
     // 右手握把位置計算 (基於角度的虛擬手臂模型)
     // 基礎位置
@@ -496,7 +515,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetRightZ = -2.0;
 
     // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
-    targetRightX += rightYaw * 0.01;
+    targetRightX += effectiveRightYaw * 0.01;
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
@@ -512,14 +531,14 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
     const leftRotX = (leftPitch / 30) * (Math.PI / 2.2);
-    const leftRotY = (leftYaw / 45) * (Math.PI / 4);
+    const leftRotY = (effectiveLeftYaw / 45) * (Math.PI / 4);
     
     // 左手握把位置計算
     let targetLeftX = 0.8; // 左手基礎 X 較偏左 (正值)
     let targetLeftY = 0.8;
     let targetLeftZ = -2.0;
 
-    targetLeftX += leftYaw * 0.01;
+    targetLeftX += effectiveLeftYaw * 0.01;
     targetLeftZ -= leftPitch * 0.005;
     targetLeftY -= leftPitch * 0.002;
 
