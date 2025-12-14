@@ -516,6 +516,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
 
     // 根據 Yaw 移動 X (左右) - 增加移動範圍以覆蓋兩側鼓
     targetRightX += effectiveRightYaw * 0.01;
+    // 限制 X 軸範圍 (防止超出 Floor Tom)
+    targetRightX = Math.max(-0.8, Math.min(0.8, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
@@ -523,7 +525,8 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
-    targetRightZ += Math.abs(rightData.ax) * 0.20;
+    // 降低靈敏度，並限制最大深度 (保持在 z <= -1)
+    targetRightZ += Math.min(1.0, Math.abs(rightData.ax) * 0.05);
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -539,11 +542,14 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     let targetLeftZ = -2.0;
 
     targetLeftX += effectiveLeftYaw * 0.01;
+    // 限制 X 軸範圍
+    targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
+
     targetLeftZ -= leftPitch * 0.005;
     targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
-    targetLeftZ += Math.abs(leftData.ax) * 0.20;
+    targetLeftZ += Math.min(1.0, Math.abs(leftData.ax) * 0.05);
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
