@@ -24,8 +24,8 @@ const PITCH_MAX = 45;   // 最大 Pitch（向下最低到鼓面，不會更低�
 // 握把位置設定
 const GRIP_BASE_Z = -3;  // 握把基礎 Z 位置（定位於可直接打 Snare）
 const GRIP_BASE_Y = 1.00;   // 握把基礎 Y 位置（舒適敲擊高度）
-const GRIP_RIGHT_X = 0.4;   // 右手握把基礎 X 位置（右側，靠近 Hihat）
-const GRIP_LEFT_X = 0.6;   // 左手握把基礎 X 位置（左側鼓的中心位置）
+const GRIP_RIGHT_X = -0.6;  // 右手握把基礎 X 位置（X負向，視角右側/鼓手右側）
+const GRIP_LEFT_X = 0.4;    // 左手握把基礎 X 位置（X正向，視角左側/鼓手左側）
 
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
 const PITCH_THRESHOLD = 15;  // Pitch 閾值（度），小於此值代表舉起打前方的鼓
@@ -40,9 +40,11 @@ const ACCEL_Z_FACTOR = 0.02;  // 加速度對 Z 軸影響係數（增加）
 const GRIP_Z_MIN = -2.0;  // 握把最後方位置（打 Snare/Hihat/Tom_floor，Z=-1 - 棒長*0.8）
 const GRIP_Z_MAX = -0.3;  // 握把最前方位置（打 Symbal，Z=0.5 - 棒長*0.7）
 
-// X軸範圍限制（新增：限制左右移動範圍）
-const GRIP_X_MIN = -1.1;  // 握把最左側位置（打 Ride/Tom_floor，保持在內側）
-const GRIP_X_MAX = 1.1;   // 握把最右側位置（打 Hihat，保持在內側）
+// X軸範圍限制（左右手分開設定，因為起始位置不同）
+const GRIP_RIGHT_X_MIN = -1.4;  // 右手握把最小X值（打 Ride，視角右側最遠處）
+const GRIP_RIGHT_X_MAX = -0.2;  // 右手握把最大X值（打 Tom_mid，保持在內側）
+const GRIP_LEFT_X_MIN = 0.3;    // 左手握把最小X值（打 Snare，保持在內側）
+const GRIP_LEFT_X_MAX = 1.5;    // 左手握把最大X值（打 Hihat/Symbal，視角左側最遠處）
 
 // 碰撞檢測設定
 const COLLISION_BUFFER = 0.05;  // 碰撞緩衝距離

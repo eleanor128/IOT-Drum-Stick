@@ -754,7 +754,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 根據 Yaw 微調 X 位置（左右移動打 Hihat 或其他鼓）
     targetRightX += (effectiveRightYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;  // Yaw 影響左右位置
-    targetRightX = Math.max(GRIP_X_MIN, Math.min(GRIP_X_MAX, targetRightX));
+    targetRightX = Math.max(GRIP_RIGHT_X_MIN, Math.min(GRIP_RIGHT_X_MAX, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 變小（舉起）-> 向前伸展打前方的鼓（Tom_high, Tom_mid, Symbal）
@@ -799,7 +799,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     
     // 根據 Yaw 微調 X 位置
     targetLeftX += (effectiveLeftYaw / YAW_SENSITIVITY) * YAW_POSITION_FACTOR;
-    targetLeftX = Math.max(GRIP_X_MIN, Math.min(GRIP_X_MAX, targetLeftX));
+    targetLeftX = Math.max(GRIP_LEFT_X_MIN, Math.min(GRIP_LEFT_X_MAX, targetLeftX));
 
     targetLeftY += clampedLeftPitch * PITCH_Y_FACTOR;
 

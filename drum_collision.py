@@ -14,8 +14,8 @@ class DrumCollisionDetector:
         config = {
             "drums": [],
             # 預設值（萬一讀取失敗）
-            "GRIP_RIGHT_X": 0.4,
-            "GRIP_LEFT_X": 0.6,
+            "GRIP_RIGHT_X": -0.6,
+            "GRIP_LEFT_X": 0.4,
             "GRIP_BASE_Y": 1.0,
             "GRIP_BASE_Z": -3.0,
             "YAW_SENSITIVITY": 45,
@@ -29,8 +29,10 @@ class DrumCollisionDetector:
             "ACCEL_Z_MAX": 0.3,
             "GRIP_Z_MIN": -2.0,
             "GRIP_Z_MAX": -0.3,
-            "GRIP_X_MIN": -1.1,
-            "GRIP_X_MAX": 1.1,
+            "GRIP_RIGHT_X_MIN": -1.4,
+            "GRIP_RIGHT_X_MAX": -0.2,
+            "GRIP_LEFT_X_MIN": 0.3,
+            "GRIP_LEFT_X_MAX": 1.5,
             "COLLISION_BUFFER": 0.05,
             "STICK_LENGTH": 1.2,
         }
