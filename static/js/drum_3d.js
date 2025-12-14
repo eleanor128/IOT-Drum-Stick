@@ -486,7 +486,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
 
     // 計算旋轉角度 (弧度)
-    const rightRotX = (rightPitch / 45) * (Math.PI / 3);  // Pitch: 上下揮擊
+    const rightRotX = (rightPitch / 30) * (Math.PI / 2.2);  // Pitch: 上下揮擊 (提高靈敏度，加大角度)
     const rightRotY = (rightYaw / 45) * (Math.PI / 4);     // Yaw: 左右擺動（降低靈敏度）
     
     // 右手握把位置計算 (基於角度的虛擬手臂模型)
@@ -501,7 +501,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
     targetRightZ -= rightPitch * 0.01; 
-    targetRightY -= rightPitch * 0.005;
+    targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
     targetRightZ += Math.abs(rightData.ax) * 0.05;
@@ -511,7 +511,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     const rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     const rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
     
-    const leftRotX = (leftPitch / 45) * (Math.PI / 3);
+    const leftRotX = (leftPitch / 30) * (Math.PI / 2.2);
     const leftRotY = (leftYaw / 45) * (Math.PI / 4);
     
     // 左手握把位置計算
@@ -521,7 +521,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
 
     targetLeftX += leftYaw * 0.01;
     targetLeftZ -= leftPitch * 0.01;
-    targetLeftY -= leftPitch * 0.005;
+    targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
     targetLeftZ += Math.abs(leftData.ax) * 0.05;
