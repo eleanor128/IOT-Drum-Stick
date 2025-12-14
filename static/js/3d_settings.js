@@ -28,11 +28,11 @@ const GRIP_RIGHT_X = 0.4;  // 右手握把基礎 X 位置（對稱於 Snare 中�
 const GRIP_LEFT_X = 0.6;    // 左手握把基礎 X 位置（對稱於 Snare 中心 0.5）
 
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
-const PITCH_THRESHOLD = -10;  // Pitch 閾值（度），小於此值（舉高）代表打前方的鼓，接近0時保持Snare位置
+const PITCH_THRESHOLD = 10;  // Pitch 閾值（度），大於此值（舉高）代表打前方的鼓，接近0時保持Snare位置
 const PITCH_Y_FACTOR = 0.003;  // Pitch 對 Y 軸影響係數
 const PITCH_Z_TILTED_MAX = 2.5;  // 打擊傾斜鼓時最大 Z 偏移（增加以達到前方鼓）
 const PITCH_Z_TILTED_FACTOR = 2.0;  // 打擊傾斜鼓時 Z 偏移係數（增加靈敏度）
-const PITCH_Z_FLAT_FACTOR = 0.002;  // 打擊平面鼓時 Z 偏移係數（減小，避免向下時過度前移）
+const PITCH_Z_FLAT_FACTOR = 0.035;  // 打擊後方鼓時 Z 偏移係數（向下打時手稍微前移，補償鼓棒旋轉）
 const ACCEL_Z_MAX = 0.3;  // 加速度對 Z 軸最大影響（增加）
 const ACCEL_Z_FACTOR = 0.02;  // 加速度對 Z 軸影響係數（增加）
 
