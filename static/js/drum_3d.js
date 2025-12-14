@@ -175,14 +175,17 @@ function mapAccelTo3D(ax, ay, az, isLeft = false) {
     const baseY = 0.8; // 手部基礎高度
     const y3d = baseY + (10 - az) * 0.02; // az 越小（手舉高）越高
     
-    // Z軸（前後）：手部位置（握把）固定在相機前方
-    const z3d = -2.0; // 手部握把固定在相機前方
+    // Z軸（前後）：手部位置（握把）基礎位置 + X軸加速度影響
+    // X軸加速度大時（左右快速移動），手會稍微往深處移動以打到後方的鼓
+    const baseZ = -2.0; // 手部握把基礎位置
+    const zOffset = Math.abs(ax) * 0.08; // X軸加速度越大，往深處偏移越多（幅度較小）
+    const z3d = baseZ + zOffset;
     
     // 限制範圍
     return [
         Math.max(-2.0, Math.min(2.0, baseX)),
         Math.max(0.5, Math.min(1.5, y3d)),
-        z3d
+        Math.max(-2.0, Math.min(-1.0, z3d)) // Z軸限制在 -2.0 到 -1.0 之間
     ];
 }
 
