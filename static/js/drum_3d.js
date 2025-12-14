@@ -527,18 +527,18 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 基礎位置
     let targetRightX = 0.2;
     let targetRightY = 0.6;
-        let targetRightZ = -2.5;
+        let targetRightZ = -1.2;  // 從 -2.5 改為 -1.2，讓鼓棒能打到更遠的鼓
     targetRightX = Math.max(-0.8, Math.min(0.8, targetRightX));
 
     // 根據 Pitch 移動 Y (高低) 和 Z (前後伸展)
     // Pitch 負值 (向上) -> 手部向前伸 (+Z) 並略微抬高 (+Y) 以打擊後方鼓 (如鈸、通鼓)
     // 增加 Pitch 對 Z 軸的影響，讓手抬高時能伸得更深，打到中鼓
-    targetRightZ -= rightPitch * 0.012; // 從 0.005 增加到 0.012，讓 pitch 大時手伸得更深
+    targetRightZ -= rightPitch * 0.025; // 從 0.012 增加到 0.025，讓 pitch 大時手伸得更深
     targetRightY -= rightPitch * 0.002; // 降低手部上下移動幅度，主要靠鼓棒旋轉
 
     // 根據 X軸加速度 往深處移動 (模擬伸手打擊 Tom/Ride)
     // 降低靈敏度，並限制最大深度 (保持在 z <= -1)
-    targetRightZ += Math.min(1.0, Math.abs(rightData.ax) * 0.05);
+    targetRightZ += Math.min(1.5, Math.abs(rightData.ax) * 0.08);  // 增加最大深度從1.0到1.5，靈敏度從0.05到0.08
     
     // 應用平滑處理
     const rightX = lerp(rightStick.position.x, targetRightX, smoothFactor);
@@ -551,15 +551,15 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, left
     // 左手握把位置計算
     let targetLeftX = 0.8; // 左手基礎 X 較偏左 (正值)
     let targetLeftY = 0.6;
-        let targetLeftZ = -2.5;
+        let targetLeftZ = -1.2;  // 從 -2.5 改為 -1.2，讓鼓棒能打到更遠的鼓
     targetLeftX = Math.max(-0.8, Math.min(0.8, targetLeftX));
 
     // 增加 Pitch 對 Z 軸的影響，讓手抬高時能伸得更深，打到中鼓
-    targetLeftZ -= leftPitch * 0.012; // 從 0.005 增加到 0.012，讓 pitch 大時手伸得更深
+    targetLeftZ -= leftPitch * 0.025; // 從 0.012 增加到 0.025，讓 pitch 大時手伸得更深
     targetLeftY -= leftPitch * 0.002;
 
     // 根據 X軸加速度 往深處移動
-    targetLeftZ += Math.min(1.0, Math.abs(leftData.ax) * 0.05);
+    targetLeftZ += Math.min(1.5, Math.abs(leftData.ax) * 0.08);  // 增加最大深度從1.0到1.5，靈敏度從0.05到0.08
     
     // 應用平滑處理
     const leftX = lerp(leftStick.position.x, targetLeftX, smoothFactor);
