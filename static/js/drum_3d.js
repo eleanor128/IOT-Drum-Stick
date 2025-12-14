@@ -195,8 +195,26 @@ let scene, camera, renderer;
 let drumMeshes = {};
 let rightStick, leftStick;
 
-// pos3d: [x, y中心點, z], 鼓面高度 = y中心點 + (鼓高度/2)
-// 鼓面高度：Hihat=1.025m, Snare=0.65m, Tom_high=1.25m, Tom_mid=1.25m, Symbal=1.825m, Ride=1.725m, Tom_floor=0.9m
+// pos3d: [x, y中心點, z], 鼓面/鈸面中心點座標（考慮傾斜後）：
+// 
+// 【鼓面中心點位置計算】(Y = y中心點 + height/2*cos(rot), Z = z + height/2*sin(rot))
+// 1. Hihat:     中心點 [1.8,  0.824, -1.009]  (鈸, height=0.05, rot=-20°)
+// 2. Snare:     中心點 [0.5,  0.642, -0.865]  (鼓, height=0.5,  rot=-15°)
+// 3. Tom_high:  中心點 [0.6,  1.025,  0.592]  (鼓, height=0.5,  rot=-26°)
+// 4. Tom_mid:   中心點 [-0.6, 1.025,  0.592]  (鼓, height=0.5,  rot=-26°)
+// 5. Symbal:    中心點 [1.6,  1.422,  0.688]  (鈸, height=0.05, rot=-30°)
+// 6. Ride:      中心點 [-1.8, 1.422, -0.113]  (鈸, height=0.05, rot=-30°)
+// 7. Tom_floor: 中心點 [-1.4, 0.670, -0.971]  (鼓, height=1.0,  rot=-20°)
+// 
+// 【鼓棒尖端移動範圍】
+// X軸: -1.8 (Ride) ～ 1.8 (Hihat)     範圍: 3.6m
+// Y軸:  0.642 (Snare) ～ 1.422 (鈸)   範圍: 0.78m
+// Z軸: -1.009 (Hihat) ～ 0.688 (鈸)   範圍: 1.697m
+// 
+// 【推算合理參數】(鼓棒長度 1.2m)
+// 握把位置Z軸範圍: -1.8 (後方) ～ -0.5 (前方)  => 移動幅度: 1.3m
+// 握把Y軸範圍: 約 0.5 ～ 1.2m (考慮手臂自然高度)
+// 握把X軸: 左右手分別固定在 ±0.2/0.8 附近，主要靠Yaw轉動覆蓋左右範圍
 const zones = [
     { name: "Hihat",     x: 675, y: 225, w: 225, h: 225, color:"#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff"},   
     { name: "Snare",     x: 450, y: 225, w: 225, h: 225, color:"#d9d9d9", pos3d: [0.5, 0.4, -0.8], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" }, 
