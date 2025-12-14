@@ -413,6 +413,8 @@ function solveStickCollision(gripPos, rotX, rotY) {
 
         if (USE_CAMERA_PROJECTION) {
             // 使用相機視角投影進行碰撞檢測（螢幕空間）
+            // 考慮鼓面傾斜，將整個鼓面邊緣投影到螢幕空間
+
             const drumVector = new THREE.Vector3(drumX, drumY, drumZ);
             const drumScreen = drumVector.clone().project(camera);
 
@@ -421,18 +423,46 @@ function solveStickCollision(gripPos, rotX, rotY) {
                 return; // 跳過不可見的鼓
             }
 
-            // 計算螢幕空間的 2D 距離
-            const dx = tipScreen.x - drumScreen.x;
-            const dy = tipScreen.y - drumScreen.y;
-            const screenDistance = Math.sqrt(dx * dx + dy * dy);
+            // 計算鼓面法向量（考慮傾斜）
+            // 鼓面繞 X 軸旋轉 drumRot 角度
+            const normalY = Math.cos(drumRot);  // Y 分量
+            const normalZ = Math.sin(drumRot);  // Z 分量（傾斜方向）
 
-            // 將鼓的半徑投影到螢幕空間
-            const drumEdgeWorld = new THREE.Vector3(drumX + radius, drumY, drumZ);
-            const drumEdgeScreen = drumEdgeWorld.clone().project(camera);
-            const screenRadius = Math.abs(drumEdgeScreen.x - drumScreen.x);
+            // 採樣鼓面邊緣多個點並投影到螢幕空間
+            const edgePoints = [];
+            const numSamples = 16;  // 採樣 16 個點以精確描述橢圓
 
-            // 螢幕空間碰撞檢測
-            isInRange = screenDistance <= screenRadius + SCREEN_HIT_RADIUS_OFFSET;
+            for (let i = 0; i < numSamples; i++) {
+                const angle = (i / numSamples) * Math.PI * 2;
+
+                // 在鼓面圓周上的點（鼓面局部座標系）
+                const localX = radius * Math.cos(angle);
+                const localRadial = radius * Math.sin(angle);  // 徑向距離
+
+                // 考慮鼓面傾斜，將局部座標轉換為世界座標
+                const edgeX = drumX + localX;
+                const edgeY = drumY + localRadial * normalY;
+                const edgeZ = drumZ + localRadial * normalZ;
+
+                // 投影到螢幕空間
+                const edgeWorld = new THREE.Vector3(edgeX, edgeY, edgeZ);
+                const edgeScreen = edgeWorld.clone().project(camera);
+                edgePoints.push(edgeScreen);
+            }
+
+            // 計算投影後的邊界框（包含傾斜的橢圓）
+            const screenMinX = Math.min(...edgePoints.map(p => p.x));
+            const screenMaxX = Math.max(...edgePoints.map(p => p.x));
+            const screenMinY = Math.min(...edgePoints.map(p => p.y));
+            const screenMaxY = Math.max(...edgePoints.map(p => p.y));
+
+            // 檢查鼓棒尖端是否在投影後的邊界框內（含容差）
+            isInRange = (
+                tipScreen.x >= screenMinX - SCREEN_HIT_RADIUS_OFFSET &&
+                tipScreen.x <= screenMaxX + SCREEN_HIT_RADIUS_OFFSET &&
+                tipScreen.y >= screenMinY - SCREEN_HIT_RADIUS_OFFSET &&
+                tipScreen.y <= screenMaxY + SCREEN_HIT_RADIUS_OFFSET
+            );
         } else {
             // 使用 XZ 平面投影進行碰撞檢測（俯視圖）
             const dx = tipX - drumX;
