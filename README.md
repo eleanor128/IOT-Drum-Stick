@@ -172,7 +172,7 @@ From the user’s point of view, the relation of each data is as follows:
 | Horizontal Drumstick Swing | rotation y | Yaw (rotation around Z-axis) |
 
 ### 5. Hitting Detection
-#### Detection Flow:
+#### Detection Flow
 Sensor Data → Hit Detection → Collision Detection → Identify Target Drum → Play Sound
 
 A drum hit is detected when **both conditions** are met:
