@@ -686,7 +686,8 @@ function checkDrumstickHit(tipX, tipY, tipZ) {
 }
 
 // 繪製函數（3D版本）- Yaw控制左右，Pitch控制揮擊
-function draw(rightPitch, rightYaw, leftPitch, leftYaw, rightAdjustedPitch, leftAdjustedPitch) {
+// 移除 adjusted_pitch 參數 - 碰撞修正完全由前端 solveStickCollision() 處理
+function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     const smoothFactor = 0.15; // 平滑係數，越小越平滑但延遲越高
 
     // 應用 Yaw 偏移 (校正漂移)
@@ -940,12 +941,10 @@ function updateLeft() {
 
 function render() {
     draw(
-        rightData["pitch (y軸轉)"], 
+        rightData["pitch (y軸轉)"],
         rightData["yaw (z軸轉)"],
-        leftData["pitch (y軸轉)"], 
-        leftData["yaw (z軸轉)"],
-        rightData.adjusted_pitch,
-        leftData.adjusted_pitch
+        leftData["pitch (y軸轉)"],
+        leftData["yaw (z軸轉)"]
     );
     updateSensorDisplay(rightData, leftData);
     updateDrumGlows(); // 更新發光動畫狀態

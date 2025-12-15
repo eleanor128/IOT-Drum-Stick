@@ -390,77 +390,54 @@ class DrumCollisionDetector:
                                tip_to_drum_y * normal_y +
                                tip_to_drum_z * normal_z)
 
-            # 檢查是否在鼓面「上空」（距離 -0.1 到 0.8 米範圍內）
+            # 檢查是否在鼓面「上空」（距離 -0.1 到 0.4 米範圍內）
             above_threshold = -0.1
-            below_threshold = 0.8
+            # 降低垂直領空範圍以避免誤判(高度差>40cm的鼓不應互相干擾)
+            # 原本0.8m會讓Snare(Y=0.4)誤判打Ride(Y=1.4)時的鼓棒
+            below_threshold = 0.4
 
             if dist_along_normal >= above_threshold and dist_along_normal <= below_threshold:
-                # 在上空範圍內，計算投影點在鼓面上的位置
-                proj_x = tip_x - dist_along_normal * normal_x
-                proj_y = tip_y - dist_along_normal * normal_y
-                proj_z = tip_z - dist_along_normal * normal_z
+                # 額外檢查：如果鼓棒尖端高度遠高於鼓面，直接跳過此鼓
+                # 防止高位置鼓棒誤觸低位置鼓(例如打Ride時不應觸發Snare)
+                vertical_separation = abs(tip_y - drum_y)
+                if vertical_separation > 0.6:  # 高度差>60cm則跳過
+                    is_in_range = False
+                else:
+                    # 在上空範圍內，計算投影點在鼓面上的位置
+                    proj_x = tip_x - dist_along_normal * normal_x
+                    proj_y = tip_y - dist_along_normal * normal_y
+                    proj_z = tip_z - dist_along_normal * normal_z
 
-                # 計算投影點到鼓中心的距離（在鼓面平面內）
-                proj_to_drum_x = proj_x - drum_x
-                proj_to_drum_y = proj_y - drum_y
-                proj_to_drum_z = proj_z - drum_z
+                    # 計算投影點到鼓中心的距離（在鼓面平面內）
+                    proj_to_drum_x = proj_x - drum_x
+                    proj_to_drum_y = proj_y - drum_y
+                    proj_to_drum_z = proj_z - drum_z
 
-                in_plane_dist = math.sqrt(
-                    proj_to_drum_x * proj_to_drum_x +
-                    proj_to_drum_y * proj_to_drum_y +
-                    proj_to_drum_z * proj_to_drum_z
-                )
+                    in_plane_dist = math.sqrt(
+                        proj_to_drum_x * proj_to_drum_x +
+                        proj_to_drum_y * proj_to_drum_y +
+                        proj_to_drum_z * proj_to_drum_z
+                    )
 
-                # 根據相機投影模式調整檢測閾值
-                distance_threshold = radius * 1.5 if self.camera_projection_mode else radius
+                    # 根據相機投影模式調整檢測閾值
+                    # 降低閾值以避免誤判(原本1.5太寬鬆,導致高位置的鼓棒也會觸發低位置的鼓)
+                    distance_threshold = radius * 1.0 if self.camera_projection_mode else radius
 
-                # 檢查是否在鼓面半徑範圍內
-                is_in_range = in_plane_dist <= distance_threshold + 0.1
+                    # 檢查是否在鼓面半徑範圍內(降低額外容差)
+                    is_in_range = in_plane_dist <= distance_threshold + 0.05
             else:
                 is_in_range = False
 
             # 只有在領空範圍內才算擊中
             if is_in_range:
-                # 除錯輸出：顯示碰撞檢測詳情
-                print(f"[Hit Detection] Drum: {drum['name']}")
-                print(f"  Tip position: ({tip_x:.2f}, {tip_y:.2f}, {tip_z:.2f})")
-                print(f"  Drum center: ({drum_x:.2f}, {drum_y:.2f}, {drum_z:.2f})")
-                print(f"  Distance along normal: {dist_along_normal:.2f}m")
-                print(f"  In-plane distance: {in_plane_dist:.2f}m")
-                print(f"  Threshold: {distance_threshold + 0.1:.2f}m")
-
-                # 碰撞發生！計算調整後的 pitch 讓鼓棒尖端停在鼓面上
-
-                # 計算鼓面高度
-                is_cymbal = "Symbal" in drum["name"] or "Ride" in drum["name"] or "Hihat" in drum["name"]
-                if is_cymbal:
-                    drum_height = 0.05  # 鈸很薄
-                elif drum["name"] == "Tom_floor":
-                    drum_height = 1.0   # 落地鼓較長
-                else:
-                    drum_height = 0.5   # 其他鼓的標準高度
-                
-                drum_top_y = drum_y + drum_height / 2
-                target_tip_y = drum_top_y + 0.03  # 鼓棒尖端停在鼓面上方 3cm
-                
-                # 計算需要的高度差
-                delta_y = target_tip_y - hand_y  # 從握把到目標高度的 Y 差
-                
-                # 使用反三角函數計算調整後的 pitch 角度
-                stick_length = cfg["STICK_LENGTH"]
-                if abs(delta_y) <= stick_length:
-                    rotation_x = math.asin(-delta_y / stick_length)
-                    adjusted_pitch = rotation_x / (math.pi / 3) * 45
-                else:
-                    adjusted_pitch = pitch  # 如果算不出來，保持原角度
-                
+                # 碰撞發生！返回擊中的鼓名稱
+                # 不再計算adjusted_pitch，讓前端自行處理碰撞修正以保持動畫流暢
                 return {
-                    "drum_name": drum["name"],
-                    "adjusted_pitch": adjusted_pitch
+                    "drum_name": drum["name"]
                 }
-        
-        # 如果沒有碰撞到任何鼓，返回原始 pitch
-        return {"drum_name": None, "adjusted_pitch": pitch}
+
+        # 如果沒有碰撞到任何鼓
+        return {"drum_name": None}
 
 # 創建全局實例
 drum_collision = DrumCollisionDetector()
