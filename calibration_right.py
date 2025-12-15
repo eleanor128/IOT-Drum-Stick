@@ -13,7 +13,8 @@ ACCEL_OFFSET = {"x": 0.0605, "y": -0.0385, "z": 0.4891}
 GYRO_OFFSET  = {"x": -4.2941, "y": -1.2928, "z": 0.2246}
 
 # Madgwick 濾波器初始化
-madgwick = Madgwick(frequency=100, gain=0.033)
+# 提高 gain 以減少陀螺儀飄移（預設 0.033，提高到 0.1）
+madgwick = Madgwick(frequency=100, gain=0.1)
 quaternion = [1.0, 0.0, 0.0, 0.0]  # 初始四元數 [w, x, y, z]
 
 prev_time = time.time()   # 用於自動計算 dt

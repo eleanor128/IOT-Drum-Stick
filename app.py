@@ -14,46 +14,51 @@ app = Flask(__name__,
 # 擊鼓偵測狀態追蹤
 class DrumStickState:
     def __init__(self):
-        self.prev_az = 0  # 上一次的 az 值（用於計算重力補償後的加速度）
-        self.az_hit_threshold = 0.8  # az 變化閾值（向下敲擊時 az 會突然增加）降低以提高靈敏度
-        self.gravity_az = 0  # 重力分量（靜止時的 az 基準值）
-        self.calibration_samples = []  # 校準樣本
+        self.prev_ay = 0  # 上一次的 ay 值
+        self.prev_az = 0  # 上一次的 az 值
+        self.hit_threshold = 1.0  # 綜合加速度變化閾值（降低以提高靈敏度）
         self.is_calibrated = False  # 是否已校準
+        self.calibration_count = 0  # 校準計數
 
-    def calibrate(self, az):
+    def calibrate(self, ay, az):
         """
-        校準重力分量（收集靜止時的 az 值）
-        前 10 個樣本用於計算靜止時的重力分量（減少校準時間）
+        簡單校準：只需要幾個樣本就開始偵測
         """
         if not self.is_calibrated:
-            self.calibration_samples.append(az)
-            if len(self.calibration_samples) >= 10:
-                # 計算平均值作為重力基準
-                self.gravity_az = sum(self.calibration_samples) / len(self.calibration_samples)
+            self.calibration_count += 1
+            if self.calibration_count >= 5:
                 self.is_calibrated = True
-                print(f"[DrumStick] Calibrated gravity_az = {self.gravity_az:.2f}")
+                print(f"[DrumStick] Calibration complete")
 
-    def detect_hit(self, az):
+    def detect_hit(self, ay, az):
         """
-        簡化的擊鼓偵測：只看 az 加速度變化
-        - 只偵測向下揮擊（正向加速）
+        改進的擊鼓偵測：結合 ay 和 az 加速度變化
+        - ay: 前後方向加速度（向前揮擊時增加）
+        - az: 垂直方向加速度（向下揮擊時增加）
 
         返回：True 代表擊鼓瞬間，False 代表非擊鼓狀態
         """
         # 先進行校準
         if not self.is_calibrated:
-            self.calibrate(az)
+            self.calibrate(ay, az)
+            self.prev_ay = ay
             self.prev_az = az
             return False
 
-        # 計算加速度變化（向下揮擊時 az 會增加）
+        # 計算加速度變化
+        ay_change = ay - self.prev_ay
         az_change = az - self.prev_az
 
-        # 偵測擊鼓：只偵測正向加速（向下揮擊）
-        # 向上舉起鼓棒時 az_change 會是負值，不應觸發
-        is_hit = az_change > self.az_hit_threshold
+        # 計算綜合加速度變化（向量長度）
+        # 向下揮擊時，ay 和 az 都會有明顯變化
+        combined_change = (ay_change**2 + az_change**2) ** 0.5
+
+        # 偵測擊鼓：綜合加速度變化超過閾值
+        # 同時確保是向下方向（az_change > 0）
+        is_hit = combined_change > self.hit_threshold and az_change > 0.3
 
         # 更新前一次的值
+        self.prev_ay = ay
         self.prev_az = az
         return is_hit
 
@@ -76,8 +81,8 @@ def right_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
 
-    # 簡化的偵測邏輯：只看 az 加速度變化（扣除重力後）
-    is_hit = right_stick_state.detect_hit(az)
+    # 改進的偵測邏輯：結合 ay 和 az 加速度變化
+    is_hit = right_stick_state.detect_hit(ay, az)
 
     # 只在擊鼓瞬間偵測鼓棒尖端位於哪個鼓上方
     hit_drum = None
@@ -105,8 +110,8 @@ def left_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
 
-    # 簡化的偵測邏輯：只看 az 加速度變化（扣除重力後）
-    is_hit = left_stick_state.detect_hit(az)
+    # 改進的偵測邏輯：結合 ay 和 az 加速度變化
+    is_hit = left_stick_state.detect_hit(ay, az)
 
     # 只在擊鼓瞬間偵測鼓棒尖端位於哪個鼓上方
     hit_drum = None
