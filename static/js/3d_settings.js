@@ -177,9 +177,11 @@ const minDrumZ = Math.min(...drumZPositions);  // 最後方鼓
 const maxDrumZ = Math.max(...drumZPositions);  // 最前方鼓 
 
 // Z軸範圍限制（根據鼓的位置和鼓棒長度自動計算）
-// 手部位置 = 鼓面位置 - 鼓棒長度，並增加額外緩衝
-const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 1.2;  // 握把最後方位置（增加緩衝，確保可以回到初始位置）
-const GRIP_Z_MAX = maxDrumZ + STICK_LENGTH * 0.1;  // 握把最前方位置（增加緩衝，確保可以打到前方鼓）
+// 確保鼓棒尖端最遠只能到達鼓面中心，不會超出
+// 邏輯：手部位置 + 鼓棒長度（水平伸展）≈ 鼓面位置
+// 因此：手部Z範圍 = 鼓面Z範圍 - 鼓棒長度
+const GRIP_Z_MIN = minDrumZ - STICK_LENGTH;  // 握把最後方位置：打最後方的鼓（Snare @ Z=-1.0）時，尖端剛好到鼓面中心 (-1.0 - 1.2 = -2.2m)
+const GRIP_Z_MAX = maxDrumZ - STICK_LENGTH;  // 握把最前方位置：打最前方的鼓（Symbal @ Z=0.5）時，尖端剛好到鼓面中心 (0.5 - 1.2 = -0.7m)
 
 // X軸範圍限制（左右手分開設定，根據鼓的位置和鼓棒長度計算）
 // 每隻手都要能打到所有的鼓
