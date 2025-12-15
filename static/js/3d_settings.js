@@ -140,7 +140,7 @@ const zones = [
         x: 675, y: 0, w: 225, h: 225, 
         color: "#e5b3ff", 
         pos3d: [1.7, 1.4, 0.5], 
-        radius: 1.0,  // 增加半徑以提高可打擊性（從 0.80 增加到 1.0）
+        radius: 0.8, 
         rotation: -Math.PI / 6,  // -30°
         glowColor: "#ff00ff" 
     },   
@@ -149,7 +149,7 @@ const zones = [
         x: 0, y: 0, w: 225, h: 225, 
         color: "#6eeee7", 
         pos3d: [-1.8, 1.4, -0.1], 
-        radius: 1.1,  // 增加半徑以提高可打擊性（從 0.90 增加到 1.1）
+        radius: 0.9,  
         rotation: -Math.PI / 6,  // -30°
         glowColor: "#00ffff" 
     },  
