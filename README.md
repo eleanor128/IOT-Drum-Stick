@@ -6,9 +6,13 @@ Drums are not like guitar which can be easily portable, and the exsisting air dr
 <div align="center">
   <img src="readme_img/image.png" alt="IOT Drum Set" width="100%">
   <img src="readme_img/full.jpg" alt="IOT Drum Set" width="100%">
+  ![alt text](image.png)
   <!-- <img src="readme_img/close.jpg" alt="IOT Drum Set" width="100%"> -->
 </div>
 
+## Demo Video
+
+[![Demo Video](readme_img/demo.png)](https://youtu.be/Q8ORrFAGLZA?si=hhA_naFbbZAaaGCb)
 
 ## Required Components
 | Item | Quantity | Purpose |
