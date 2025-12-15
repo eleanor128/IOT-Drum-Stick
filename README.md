@@ -203,7 +203,7 @@ When hitting is detected, the system will see which **air zone** the drum head i
 
 
 ### 6. Hand and Drumstick Movement
-
+To make the 
 <img src="readme_img/move_zone.jpg" alt="3D world and axis mapping" width="100%">
 
 
