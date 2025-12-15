@@ -747,9 +747,10 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 限制手部Z軸範圍：後方（Hihat）到前方（Symbal）
     targetRightZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetRightZ));
 
-    // 手部Y位置根據pitch動態調整（打高位置的鼓時手部要升高）
-    // pitch > 0 代表手舉高，手部Y增加
-    targetRightY = GRIP_BASE_Y + Math.max(0, clampedRightPitch / 30) * 0.5;
+    // 手部Y位置根據pitch動態調整
+    // pitch 減少（負值）代表手舉高，手部Y增加
+    // pitch 增加（正值）代表手向下，手部Y減少
+    targetRightY = GRIP_BASE_Y - (clampedRightPitch / 30) * 0.5;
     targetRightY = Math.max(GRIP_Y_MIN, Math.min(GRIP_Y_MAX, targetRightY));
 
     // 應用平滑處理
@@ -801,9 +802,10 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 限制手部Z軸範圍
     targetLeftZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetLeftZ));
 
-    // 手部Y位置根據pitch動態調整（打高位置的鼓時手部要升高）
-    // pitch > 0 代表手舉高，手部Y增加
-    targetLeftY = GRIP_BASE_Y + Math.max(0, clampedLeftPitch / 30) * 0.5;
+    // 手部Y位置根據pitch動態調整
+    // pitch 減少（負值）代表手舉高，手部Y增加
+    // pitch 增加（正值）代表手向下，手部Y減少
+    targetLeftY = GRIP_BASE_Y - (clampedLeftPitch / 30) * 0.5;
     targetLeftY = Math.max(GRIP_Y_MIN, Math.min(GRIP_Y_MAX, targetLeftY));
 
     // 應用平滑處理
