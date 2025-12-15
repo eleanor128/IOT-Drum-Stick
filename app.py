@@ -34,10 +34,10 @@ def right_data():
     # 綜合判斷為敲擊（降低門檻，更容易觸發）
     is_hit = is_downward_swing and has_acceleration
 
-    # 偵測打擊到哪個鼓，並取得調整後的 pitch（傳入 ax, az 加速度）
+    # 偵測打擊到哪個鼓（傳入 ax, az 加速度）
+    # 不再使用 adjusted_pitch - 碰撞修正完全由前端處理
     collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="right")
     hit_drum = collision_info["drum_name"]
-    adjusted_pitch = collision_info["adjusted_pitch"]
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -50,8 +50,7 @@ def right_data():
         "gy": gy,
         "gz": gz,
         "is_hit": is_hit,
-        "hit_drum": hit_drum,
-        "adjusted_pitch": adjusted_pitch
+        "hit_drum": hit_drum
     })
 
 @app.route("/left_data")
@@ -64,10 +63,10 @@ def left_data():
     has_acceleration = abs(az) > 0.5 or abs(ax) > 0.5  # 任意方向加速度
     is_hit = is_downward_swing and has_acceleration
 
-    # 偵測打擊到哪個鼓，並取得調整後的 pitch（傳入 ax, az 加速度）
+    # 偵測打擊到哪個鼓（傳入 ax, az 加速度）
+    # 不再使用 adjusted_pitch - 碰撞修正完全由前端處理
     collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="left")
     hit_drum = collision_info["drum_name"]
-    adjusted_pitch = collision_info["adjusted_pitch"]
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -80,8 +79,7 @@ def left_data():
         "gy": gy,
         "gz": gz,
         "is_hit": is_hit,
-        "hit_drum": hit_drum,
-        "adjusted_pitch": adjusted_pitch
+        "hit_drum": hit_drum
     })
 
 if __name__ == "__main__":
