@@ -386,18 +386,26 @@ function mapXYto3D(x, y, pitch) {
     return [x3d, y3d, z3d];
 }
 
-// 碰撞檢測與修正：基於相機視角投影或 XZ 平面投影，防止鼓棒穿透鼓面
+// 碰撞檢測與修正：防止鼓棒任何部位穿透鼓面
 function solveStickCollision(gripPos, rotX, rotY) {
     const stickLength = STICK_LENGTH;
+    let correctedGripY = gripPos[1];
     let correctedRotX = rotX;
     let correctedRotY = rotY;
 
-    // 計算鼓棒尖端的 3D 位置
-    const tipX = gripPos[0] + stickLength * Math.sin(rotY) * Math.cos(rotX);
-    const tipY = gripPos[1] - stickLength * Math.sin(rotX);
-    const tipZ = gripPos[2] + stickLength * Math.cos(rotY) * Math.cos(rotX);
+    // 計算鼓棒上多個採樣點的 3D 位置（握把、棒身、尖端）
+    const samplePoints = [];
+    for (let t = 0; t <= 1.0; t += 0.1) {  // 11個採樣點，從握把(0)到尖端(1)
+        const pointDist = t * stickLength;
+        const pointX = gripPos[0] + pointDist * Math.sin(rotY) * Math.cos(rotX);
+        const pointY = gripPos[1] - pointDist * Math.sin(rotX);
+        const pointZ = gripPos[2] + pointDist * Math.cos(rotY) * Math.cos(rotX);
+        samplePoints.push({ x: pointX, y: pointY, z: pointZ, t: t });
+    }
 
-    // 遍歷所有鼓，檢查是否在範圍內
+    // 遍歷所有鼓，檢查鼓棒是否穿透鼓面
+    let maxRequiredGripY = gripPos[1];  // 記錄需要的最小握把高度
+
     zones.forEach(zone => {
         const drumX = zone.pos3d[0];
         const drumY = zone.pos3d[1];
@@ -405,7 +413,7 @@ function solveStickCollision(gripPos, rotX, rotY) {
         const radius = zone.radius;
         const drumRot = zone.rotation !== undefined ? zone.rotation : -Math.PI / 9;
 
-        // 計算鼓的高度和鼓面位置
+        // 計算鼓的高度
         const isCymbal = zone.name.includes("Symbal") || zone.name.includes("Ride") || zone.name.includes("Hihat");
         let drumHeight;
         if (isCymbal) {
@@ -416,91 +424,47 @@ function solveStickCollision(gripPos, rotX, rotY) {
             drumHeight = STANDARD_DRUM_HEIGHT;
         }
 
-        // 計算鼓面中心位置（考慮旋轉）
+        // 計算鼓面頂部中心位置（考慮旋轉）
         const drumSurfaceY = drumY + (drumHeight / 2) * Math.cos(drumRot);
+        const drumSurfaceZ = drumZ + (drumHeight / 2) * Math.sin(drumRot);
 
-        let isInRange = false;
+        // 檢查每個採樣點
+        samplePoints.forEach(point => {
+            // 計算點到鼓中心的XZ平面距離
+            const dx = point.x - drumX;
+            const dz = point.z - drumZ;
+            const distXZ = Math.sqrt(dx * dx + dz * dz);
 
-        if (USE_CAMERA_PROJECTION) {
-            // 使用鼓面「上空領域」進行碰撞檢測
-            // 從鼓面沿著法向量往上延伸，形成一個圓柱形區域
+            // 如果點在鼓的半徑範圍內
+            if (distXZ <= radius + 0.1) {
+                // 計算該點在鼓面上對應位置的高度
+                // 鼓面是一個傾斜的平面，高度隨著 Z 位置變化
+                const surfaceYAtPoint = drumSurfaceY + (point.z - drumSurfaceZ) * Math.tan(drumRot);
 
-            // 計算鼓面法向量（考慮傾斜）
-            // 鼓面繞 X 軸旋轉 drumRot 角度
-            // 原始法向量 (0, 1, 0) 旋轉後變成 (0, cos(θ), -sin(θ))
-            const normalX = 0;                   // X 分量（鼓面不繞 Y 或 Z 軸旋轉）
-            const normalY = Math.cos(drumRot);   // Y 分量（旋轉後的向上分量）
-            const normalZ = -Math.sin(drumRot);  // Z 分量（旋轉後的前後分量，注意負號）
+                const buffer = 0.05;  // 緩衝距離
 
-            // 將鼓棒尖端投影到鼓面平面上
-            // 計算尖端到鼓面的向量
-            const tipToDrumX = tipX - drumX;
-            const tipToDrumY = tipY - drumY;
-            const tipToDrumZ = tipZ - drumZ;
+                // 如果點低於鼓面，需要調整握把高度
+                if (point.y < surfaceYAtPoint + buffer) {
+                    // 計算需要提升的高度
+                    const requiredLift = (surfaceYAtPoint + buffer) - point.y;
 
-            // 計算尖端沿著法向量的距離（垂直於鼓面的距離）
-            const distAlongNormal = tipToDrumX * normalX +
-                                   tipToDrumY * normalY +
-                                   tipToDrumZ * normalZ;
+                    // 計算握把需要的高度（考慮鼓棒傾斜）
+                    const requiredGripY = gripPos[1] + requiredLift;
 
-            // 檢查是否在鼓面「上空」（法向量正向，距離 -0.1 到 0.8 米範圍內）
-            // 擴大範圍以確保能偵測到
-            const aboveThreshold = -0.1;  // 允許稍微穿透鼓面（增加容錯）
-            const belowThreshold = 0.8;   // 上空 0.8 米（增加檢測範圍）
-
-            if (distAlongNormal >= aboveThreshold && distAlongNormal <= belowThreshold) {
-                // 在上空範圍內，計算投影點在鼓面上的位置
-                // 投影點 = 尖端位置 - 法向量方向的分量
-                const projX = tipX - distAlongNormal * normalX;
-                const projY = tipY - distAlongNormal * normalY;
-                const projZ = tipZ - distAlongNormal * normalZ;
-
-                // 計算投影點到鼓中心的距離（在鼓面平面內）
-                const projToDrumX = projX - drumX;
-                const projToDrumY = projY - drumY;
-                const projToDrumZ = projZ - drumZ;
-
-                // 在鼓面平面內的距離（排除法向量方向的分量）
-                const inPlaneDist = Math.sqrt(
-                    projToDrumX * projToDrumX +
-                    projToDrumY * projToDrumY +
-                    projToDrumZ * projToDrumZ
-                );
-
-                // 檢查是否在鼓面半徑範圍內（增加容差）
-                isInRange = inPlaneDist <= radius + SCREEN_HIT_RADIUS_OFFSET + 0.1;
-            }
-        } else {
-            // 使用 XZ 平面投影進行碰撞檢測（俯視圖）
-            const dx = tipX - drumX;
-            const dz = tipZ - drumZ;
-            const distanceXZ = Math.sqrt(dx * dx + dz * dz);
-            isInRange = distanceXZ <= radius + 0.15;  // 增加邊緣緩衝
-        }
-
-        // 如果尖端在鼓的範圍內
-        if (isInRange) {
-            // 計算尖端是否低於鼓面（簡化：只看 Y 軸）
-            const buffer = 0.1;  // 增加緩衝距離
-            if (tipY < drumSurfaceY + buffer) {
-                // 需要修正角度，讓尖端停在鼓面上方
-                const targetTipY = drumSurfaceY + buffer;
-                const deltaY = gripPos[1] - targetTipY;
-
-                // 計算需要的 rotX（pitch）角度
-                let sinRotX = deltaY / stickLength;
-                sinRotX = Math.max(-1, Math.min(1, sinRotX));
-                const newRotX = Math.asin(sinRotX);
-
-                // 修正角度（讓鼓棒更水平，防止向下穿透）
-                if (newRotX > correctedRotX) {
-                    correctedRotX = newRotX;
+                    if (requiredGripY > maxRequiredGripY) {
+                        maxRequiredGripY = requiredGripY;
+                    }
                 }
             }
-        }
+        });
     });
 
-    return { correctedRotX, correctedRotY, hitDrum: null };
+    // 如果需要調整握把高度
+    if (maxRequiredGripY > gripPos[1]) {
+        correctedGripY = maxRequiredGripY;
+    }
+
+    return { correctedGripY, correctedRotX, correctedRotY, hitDrum: null };
 }
 
 // 線性插值函數，用於平滑移動
@@ -747,10 +711,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 限制手部Z軸範圍：後方（Hihat）到前方（Symbal）
     targetRightZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetRightZ));
 
-    // 手部Y位置根據pitch動態調整
-    // pitch 減少（負值）代表手舉高，手部Y增加
-    // pitch 增加（正值）代表手向下，手部Y減少
-    targetRightY = GRIP_BASE_Y - (clampedRightPitch / 30) * 0.5;
+    // 手部Y位置根據pitch動態調整（打高位置的鼓時手部要升高）
+    // pitch > 0 代表手舉高，手部Y增加
+    targetRightY = GRIP_BASE_Y + Math.max(0, clampedRightPitch / 30) * 0.5;
     targetRightY = Math.max(GRIP_Y_MIN, Math.min(GRIP_Y_MAX, targetRightY));
 
     // 應用平滑處理
@@ -758,8 +721,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     let rightY = lerp(rightStick.position.y, targetRightY, smoothFactor);
     let rightZ = lerp(rightStick.position.z, targetRightZ, smoothFactor);
 
-    // 右手碰撞檢測與修正（防止穿透鼓面）
+    // 右手碰撞檢測與修正（防止鼓棒任何部位穿透鼓面）
     const rightCollision = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
+    rightY = rightCollision.correctedGripY;  // 應用修正後的握把高度
     rightRotX = rightCollision.correctedRotX;
     const rightRotYCorrected = rightCollision.correctedRotY;
 
@@ -802,10 +766,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 限制手部Z軸範圍
     targetLeftZ = Math.max(GRIP_Z_MIN, Math.min(GRIP_Z_MAX, targetLeftZ));
 
-    // 手部Y位置根據pitch動態調整
-    // pitch 減少（負值）代表手舉高，手部Y增加
-    // pitch 增加（正值）代表手向下，手部Y減少
-    targetLeftY = GRIP_BASE_Y - (clampedLeftPitch / 30) * 0.5;
+    // 手部Y位置根據pitch動態調整（打高位置的鼓時手部要升高）
+    // pitch > 0 代表手舉高，手部Y增加
+    targetLeftY = GRIP_BASE_Y + Math.max(0, clampedLeftPitch / 30) * 0.5;
     targetLeftY = Math.max(GRIP_Y_MIN, Math.min(GRIP_Y_MAX, targetLeftY));
 
     // 應用平滑處理
@@ -813,8 +776,9 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     let leftY = lerp(leftStick.position.y, targetLeftY, smoothFactor);
     let leftZ = lerp(leftStick.position.z, targetLeftZ, smoothFactor);
 
-    // 左手碰撞檢測與修正（防止穿透鼓面）
+    // 左手碰撞檢測與修正（防止鼓棒任何部位穿透鼓面）
     const leftCollision = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
+    leftY = leftCollision.correctedGripY;  // 應用修正後的握把高度
     leftRotX = leftCollision.correctedRotX;
     const leftRotYCorrected = leftCollision.correctedRotY;
 
