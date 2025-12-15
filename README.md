@@ -29,6 +29,14 @@ Drums are not like guitar which can be easily portable, and the exsisting air dr
 ## Getting Start
 ### 1. Environment Setup
 
+#### Install System Dependencies
+```bash
+sudo apt-get update
+sudo apt-get install i2c-tools python3-smbus ffmpeg
+```
+
+#### Required Python Packages
+`flask`  `flask-cors`  `smbus2`  `mpu6050-raspberrypi`  `flask-socketio`  `python-socketio`  `eventlet`  
 
 ---
 
@@ -79,8 +87,8 @@ By default, the MPU6050 uses I2C address `0x68`.
 |--------|--------------|
 | VCC    | 3.3V / 5V    |
 | GND    | GND          |
-| SDA    | SDA (GPIO 2) |
-| SCL    | SCL (GPIO 3) |
+| SDA    | GPIO 2       |
+| SCL    | GPIO 3       |
 | AD0    | GND          |
 
 After wiring, run `i2cdetect -y 1`.  If `0x68` appears, the sensor is connected correctly.
@@ -131,6 +139,20 @@ The following figure illustrates the setup of the 3D world and the mapping betwe
 
 <img src="readme_img/3D_settings.jpg" alt="3D world and axis mapping" width="100%">
 
+#### Actual Settings
+```js
+const zones = [
+  { name: "Hihat", x: 675, y: 225, w: 225, h: 225, color: "#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff" },
+  { name: "Snare", x: 450, y: 225, w: 225, h: 225, color: "#d9d9d9", pos3d: [0.5, 0.4, -1], radius: 0.65, rotation: -Math.PI / 12, glowColor: "#ffffff" },
+  { name: "Tom_high", x: 450, y: 0, w: 225, h: 225, color: "#ff7f2a", pos3d: [0.6, 0.8, 0.3], radius: 0.5, rotation: -Math.PI / 5, glowColor: "#ff6600" },
+  { name: "Tom_mid", x: 450, y: 0, w: 225, h: 225, color: "#ff7f2a", pos3d: [-0.6, 0.8, 0.3], radius: 0.5, rotation: -Math.PI / 5, glowColor: "#ff6600" },
+  { name: "Symbal", x: 675, y: 0, w: 225, h: 225, color: "#e5b3ff", pos3d: [1.7, 1.4, 0.5], radius: 0.80, rotation: -Math.PI / 6, glowColor: "#ff00ff" },
+  { name: "Ride", x: 0, y: 0, w: 225, h: 225, color: "#6eeee7", pos3d: [-1.8, 1.4, -0.1], radius: 0.90, rotation: -Math.PI / 6, glowColor: "#00ffff" },
+  { name: "Tom_floor", x: 675, y: 225, w: 225, h: 225, color: "#4d4d4d", pos3d: [-1.2, 0.2, -1], radius: 0.80, rotation: -Math.PI / 9, glowColor: "#aaaaaa" },
+];
+```
+
+#### 3D World
 This project uses **Three.js** (https://threejs.org/) to create the invironment and the virtual drum set.  
 Due to time limitations, the bass drum is not included in the current implementation. 
 
@@ -147,13 +169,40 @@ From the user’s point of view, the relation of each data is as follows:
 | Vertical Drumstick Swing (Hitting)| rotation x | Pitch (rotation around Y-axis) + gy (Y-axis angular velocity) |
 | Horizontal Drumstick Swing | rotation y | Yaw (rotation around Z-axis) |
 
-
-
-
-
 ### 5. Hitting Detection
+#### Detection Flow:
+Sensor Data → Hit Detection → Collision Detection → Identify Target Drum → Play Sound
+
+A drum hit is detected when **both conditions** are met:
+
+```python
+# Condition 1: Rapid downward swing (gyroscope Y-axis)
+is_downward_swing = abs(gy) > 50  # Angular velocity > 50°/s
+
+# Condition 2: Impact acceleration detected
+has_acceleration = abs(az) > 0.5 or abs(ax) > 0.5  # Acceleration > 0.5g
+
+# Hit detected when BOTH are true
+is_hit = is_downward_swing and has_acceleration
+```
+#### Drum Detection
+It's difficult to accurately implement sensor's data to precise movement and strike angles in the 3D scene.  
+Also, since each drum has a different height and a tilted surface, simple position-based collision detection is not sufficient.  
+Therefore, this project introduces **surface normal vectors** for each drum surface and defines a **strike air zone** above the drum head.
+
+For each drum:
+- The **position of the drum surface** is defined in the 3D world
+- A **surface normal vector** is calculated to represent the drum’s orientation
+- An invisible **air zone** is constructed along the normal direction above the drum surface
+
+When hitting is detected, the system will see which **air zone** the drum head is in, then play the corresponding drum sound.
+
 ---
 ### 6. Hand and Drumstick Movement
+
+<img src="readme_img/move_zone.jpg" alt="3D world and axis mapping" width="100%">
+
+
 
 ---
 ### 9. Failed Attempts
