@@ -11,6 +11,53 @@ app = Flask(__name__,
             static_folder='static',
             static_url_path='/static')
 
+# 擊鼓偵測狀態追蹤
+class DrumStickState:
+    def __init__(self):
+        self.prev_pitch = 0
+        self.peak_pitch = 0
+        self.is_rising = False  # 是否正在舉起（pitch 增加中）
+        self.rise_threshold = 3  # pitch 增加超過 3 度才算舉起
+        self.fall_threshold = 3  # pitch 減少超過 3 度才算落下
+
+    def detect_hit(self, current_pitch):
+        """
+        偵測「舉起並落下」的擊鼓動作
+        返回：True 代表剛落下（擊鼓瞬間），False 代表非擊鼓狀態
+        """
+        pitch_change = current_pitch - self.prev_pitch
+
+        # 偵測舉起階段（pitch 增加）
+        if pitch_change > 0.5:  # pitch 正在增加
+            if not self.is_rising:
+                self.is_rising = True
+                self.peak_pitch = current_pitch
+            else:
+                # 更新峰值
+                if current_pitch > self.peak_pitch:
+                    self.peak_pitch = current_pitch
+
+        # 偵測落下階段（pitch 減少）
+        elif self.is_rising and pitch_change < -0.5:  # pitch 正在減少
+            # 檢查是否有足夠的舉起幅度
+            rise_amount = self.peak_pitch - self.prev_pitch
+            if rise_amount >= self.rise_threshold:
+                # 檢查是否有足夠的落下幅度
+                fall_amount = self.peak_pitch - current_pitch
+                if fall_amount >= self.fall_threshold:
+                    # 擊鼓發生！
+                    self.is_rising = False
+                    self.peak_pitch = 0
+                    self.prev_pitch = current_pitch
+                    return True
+
+        self.prev_pitch = current_pitch
+        return False
+
+# 為左右手各創建一個狀態追蹤器
+right_stick_state = DrumStickState()
+left_stick_state = DrumStickState()
+
 
 
 @app.route("/")
@@ -26,18 +73,15 @@ def right_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
 
-    # 閥值靈敏度在這邊調整
-    # 根據數據分析調整閾值：|gy| > 50 更容易觸發
-    is_downward_swing = abs(gy) > 50  # Y軸角速度絕對值，向下揮動
-    has_acceleration = abs(az) > 0.5 or abs(ax) > 0.5  # 任意方向加速度
+    # 使用新的偵測邏輯：pitch 增加又減少 = 舉起並落下 = 擊鼓
+    is_hit = right_stick_state.detect_hit(pitch)
 
-    # 綜合判斷為敲擊（降低門檻，更容易觸發）
-    is_hit = is_downward_swing and has_acceleration
-
-    # 偵測打擊到哪個鼓（傳入 ax, az 加速度）
-    # 不再使用 adjusted_pitch - 碰撞修正完全由前端處理
-    collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="right")
-    hit_drum = collision_info["drum_name"]
+    # 只在擊鼓瞬間（落下時）偵測鼓棒尖端位於哪個鼓上方
+    hit_drum = None
+    if is_hit:
+        # 計算落下時的鼓棒尖端位置，判斷在哪個鼓上方
+        collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="right")
+        hit_drum = collision_info["drum_name"]
 
     return jsonify({
         "roll (x軸轉)": roll,
@@ -58,15 +102,15 @@ def left_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
 
-    # 左手敲擊偵測（同樣的邏輯）
-    is_downward_swing = abs(gy) > 50  # Y軸角速度絕對值
-    has_acceleration = abs(az) > 0.5 or abs(ax) > 0.5  # 任意方向加速度
-    is_hit = is_downward_swing and has_acceleration
+    # 使用新的偵測邏輯：pitch 增加又減少 = 舉起並落下 = 擊鼓
+    is_hit = left_stick_state.detect_hit(pitch)
 
-    # 偵測打擊到哪個鼓（傳入 ax, az 加速度）
-    # 不再使用 adjusted_pitch - 碰撞修正完全由前端處理
-    collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="left")
-    hit_drum = collision_info["drum_name"]
+    # 只在擊鼓瞬間（落下時）偵測鼓棒尖端位於哪個鼓上方
+    hit_drum = None
+    if is_hit:
+        # 計算落下時的鼓棒尖端位置，判斷在哪個鼓上方
+        collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="left")
+        hit_drum = collision_info["drum_name"]
 
     return jsonify({
         "roll (x軸轉)": roll,
