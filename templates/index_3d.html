@@ -45,6 +45,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             width: 280px;
             flex-shrink: 0;
+            display: none;  /* 隱藏感測器面板 */
         }
 
         .sensor-panel h3 {
@@ -115,7 +116,7 @@
     
     <div class="main-container">
         <!-- 左手數據面板 -->
-        <!-- <div class="sensor-panel left">
+        <div class="sensor-panel left">
             <h3>🔵 Left Drum Stick</h3>
             <div class="sensor-item">
                 <div class="sensor-label">Pitch (Y axis rotation)</div>
@@ -157,13 +158,13 @@
                 <div class="sensor-label">Gyroscope Z</div>
                 <div class="sensor-value" id="left-gyro-z-value">0.0°/s</div>
             </div>
-        </div> -->
+        </div>
 
         <!-- 3D 鼓組畫面 -->
         <div id="drumContainer"></div>
 
         <!-- 右手數據面板 -->
-        <!-- <div class="sensor-panel right">
+        <div class="sensor-panel right">
             <h3>🔴 Right Drum Stick</h3>
             <div class="sensor-item">
                 <div class="sensor-label">Pitch (Y axis rotation)</div>
@@ -205,8 +206,8 @@
                 <div class="sensor-label">Gyroscope Z</div>
                 <div class="sensor-value" id="gyro-z-value">0.0°/s</div>
             </div>
-        </div> -->
-
+        </div>
+        
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
