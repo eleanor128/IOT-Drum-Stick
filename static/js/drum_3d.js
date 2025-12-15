@@ -323,6 +323,7 @@ function init3D() {
     rightStick = createDrumstick(RIGHT_STICK_COLOR, RIGHT_STICK_EMISSIVE);
     // 初始位置：尖端對準 Snare 鼓面中心
     rightStick.position.set(GRIP_RIGHT_X, GRIP_BASE_Y, GRIP_BASE_Z);  // 初始位置使用配置值
+    rightStick.rotation.order = 'YXZ';  // 設定旋轉順序：先 Y (Yaw) 後 X (Pitch)，與計算公式一致
     rightStick.rotation.x = 0;  // Pitch = 0 (水平)
     rightStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
     rightStick.rotation.z = 0;  // Roll = 0
@@ -332,10 +333,23 @@ function init3D() {
     leftStick = createDrumstick(LEFT_STICK_COLOR, LEFT_STICK_EMISSIVE);
     // 初始位置：尖端對準 Snare 鼓面中心
     leftStick.position.set(GRIP_LEFT_X, GRIP_BASE_Y, GRIP_BASE_Z);  // 初始位置使用配置值
+    leftStick.rotation.order = 'YXZ';  // 設定旋轉順序：先 Y (Yaw) 後 X (Pitch)，與計算公式一致
     leftStick.rotation.x = 0;  // Pitch = 0 (水平)
     leftStick.rotation.y = 0;  // Yaw = 0 (指向z正向)
     leftStick.rotation.z = 0;  // Roll = 0
     scene.add(leftStick);
+
+    // 除錯：創建標記球來顯示計算出的鼓棒尖端位置（可選）
+    const debugRightTip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.05, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 })
+    );
+    scene.add(debugRightTip);
+    const debugLeftTip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.05, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 })
+    );
+    scene.add(debugLeftTip);
 }
 
 // 感測器角度轉 2D 座標（用於敲擊偵測）
