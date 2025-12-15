@@ -109,6 +109,8 @@ You can also refer to the following tutorial for more details:  [https://atceili
 
 
 
+---
+
 
 ### 3. Calitrate Sensor Data
 The offset values were obtained by collecting data while the sensors were **stationary and flat** on a table, then calculating the average error over multiple samples.
@@ -121,6 +123,7 @@ The offset values were obtained by collecting data while the sensors were **stat
 
 3. **Calculate  the average values** and the offest values of each sensor will be updated and used in `calibration_right.py` and `calibration_left.py`
 
+---
 
 ### 4. 3D World Setup
 
@@ -148,6 +151,11 @@ From the user’s point of view, the relation of each data is as follows:
 
 
 
+### 5. Hitting Detection
+---
+### 6. Hand and Drumstick Movement
+
+---
 ### 9. Failed Attempts
 
 #### spleeter to split drum sound form songs
