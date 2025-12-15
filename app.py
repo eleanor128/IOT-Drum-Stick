@@ -18,12 +18,15 @@ class DrumStickState:
         self.peak_pitch = 0
         self.is_rising = False  # 是否正在舉起（pitch 增加中）
         self.rise_threshold = 3  # pitch 增加超過 3 度才算舉起
-        self.fall_threshold = 3  # pitch 減少超過 3 度才算落下
+        self.az_hit_threshold = 1.0  # az 加速度閾值（向下敲擊時 az 會突然增加）
 
-    def detect_hit(self, current_pitch):
+    def detect_hit(self, current_pitch, az):
         """
         偵測「舉起並落下」的擊鼓動作
-        返回：True 代表剛落下（擊鼓瞬間），False 代表非擊鼓狀態
+        - pitch 增加：舉起階段
+        - pitch 減少 + az 突然增加：向下敲擊瞬間
+
+        返回：True 代表擊鼓瞬間，False 代表非擊鼓狀態
         """
         pitch_change = current_pitch - self.prev_pitch
 
@@ -37,14 +40,13 @@ class DrumStickState:
                 if current_pitch > self.peak_pitch:
                     self.peak_pitch = current_pitch
 
-        # 偵測落下階段（pitch 減少）
+        # 偵測落下敲擊階段（pitch 減少 + az 突然增加）
         elif self.is_rising and pitch_change < -0.5:  # pitch 正在減少
             # 檢查是否有足夠的舉起幅度
             rise_amount = self.peak_pitch - self.prev_pitch
             if rise_amount >= self.rise_threshold:
-                # 檢查是否有足夠的落下幅度
-                fall_amount = self.peak_pitch - current_pitch
-                if fall_amount >= self.fall_threshold:
+                # 關鍵：檢查 az 加速度是否突然增加（向下敲擊的物理特徵）
+                if abs(az) >= self.az_hit_threshold:
                     # 擊鼓發生！
                     self.is_rising = False
                     self.peak_pitch = 0
@@ -73,8 +75,8 @@ def right_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
 
-    # 使用新的偵測邏輯：pitch 增加又減少 = 舉起並落下 = 擊鼓
-    is_hit = right_stick_state.detect_hit(pitch)
+    # 使用新的偵測邏輯：pitch 增加又減少 + az 突然增加 = 向下敲擊
+    is_hit = right_stick_state.detect_hit(pitch, az)
 
     # 只在擊鼓瞬間（落下時）偵測鼓棒尖端位於哪個鼓上方
     hit_drum = None
@@ -102,8 +104,8 @@ def left_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
 
-    # 使用新的偵測邏輯：pitch 增加又減少 = 舉起並落下 = 擊鼓
-    is_hit = left_stick_state.detect_hit(pitch)
+    # 使用新的偵測邏輯：pitch 增加又減少 + az 突然增加 = 向下敲擊
+    is_hit = left_stick_state.detect_hit(pitch, az)
 
     # 只在擊鼓瞬間（落下時）偵測鼓棒尖端位於哪個鼓上方
     hit_drum = None
