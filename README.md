@@ -83,8 +83,7 @@ By default, the MPU6050 uses I2C address `0x68`.
 | SCL    | SCL (GPIO 3) |
 | AD0    | GND          |
 
-After wiring, run `i2cdetect -y 1`.  
-If `0x68` appears, the sensor is connected correctly.
+After wiring, run `i2cdetect -y 1`.  If `0x68` appears, the sensor is connected correctly.
 
 #### Connecting Two MPU6050 Sensors
 
@@ -103,10 +102,7 @@ Both sensors share the same SDA and SCL lines.
 | SCL    | SCL      | SCL      | GPIO 3       |
 | AD0    | GND      | VCC      | —            |
 
-After wiring, run:
-
-    i2cdetect -y 1
-
+After wiring, run `i2cdetect -y 1`.
 You should see **both `0x68` and `0x69`**, indicating that two sensors are detected successfully.
 
 You can also refer to the following tutorial for more details:  
