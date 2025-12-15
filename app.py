@@ -36,8 +36,7 @@ class DrumStickState:
     def detect_hit(self, az):
         """
         簡化的擊鼓偵測：只看 az 加速度變化
-        - 扣除重力分量
-        - 偵測向下加速（az 突然增加）
+        - 只偵測向下揮擊（正向加速）
 
         返回：True 代表擊鼓瞬間，False 代表非擊鼓狀態
         """
@@ -47,15 +46,14 @@ class DrumStickState:
             self.prev_az = az
             return False
 
-        # 扣除重力分量，得到真實加速度
-        az_compensated = az - self.gravity_az
+        # 計算加速度變化（向下揮擊時 az 會增加）
+        az_change = az - self.prev_az
 
-        # 計算加速度變化（向下加速時 az 會突然增加）
-        az_change = az_compensated - (self.prev_az - self.gravity_az)
-
-        # 偵測擊鼓：az 突然增加超過閾值
+        # 偵測擊鼓：只偵測正向加速（向下揮擊）
+        # 向上舉起鼓棒時 az_change 會是負值，不應觸發
         is_hit = az_change > self.az_hit_threshold
 
+        # 更新前一次的值
         self.prev_az = az
         return is_hit
 
