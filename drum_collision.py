@@ -421,8 +421,16 @@ class DrumCollisionDetector:
 
             # 只有在領空範圍內才算擊中
             if is_in_range:
+                # 除錯輸出：顯示碰撞檢測詳情
+                print(f"[Hit Detection] Drum: {drum['name']}")
+                print(f"  Tip position: ({tip_x:.2f}, {tip_y:.2f}, {tip_z:.2f})")
+                print(f"  Drum center: ({drum_x:.2f}, {drum_y:.2f}, {drum_z:.2f})")
+                print(f"  Distance along normal: {dist_along_normal:.2f}m")
+                print(f"  In-plane distance: {in_plane_dist:.2f}m")
+                print(f"  Threshold: {distance_threshold + 0.1:.2f}m")
+
                 # 碰撞發生！計算調整後的 pitch 讓鼓棒尖端停在鼓面上
-                
+
                 # 計算鼓面高度
                 is_cymbal = "Symbal" in drum["name"] or "Ride" in drum["name"] or "Hihat" in drum["name"]
                 if is_cymbal:
