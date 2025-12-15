@@ -706,17 +706,17 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 計算旋轉角度 (弧度)
     // Pitch 行為：舉起 → pitch 變小(負值)，敲擊向下 → pitch 變大(正值)
     // rotation.x：正值 = 尖端向下 (敲擊姿勢)，負值 = 尖端向上 (舉起姿勢)
-    // 平時保持水平 (rotation.x ≈ 0)，敲擊時才大幅旋轉
+    // 起始和平時保持水平 (rotation.x = 0)，敲擊時才旋轉
     let rightRotX, leftRotX;
     if (rightIsHitting) {
-        // 敲擊時：pitch 增加 → 鼓棒向上旋轉（尖端Y增加）
+        // 敲擊時：pitch 增加 → 鼓棒向下旋轉（尖端向下敲擊）
         // 增加旋轉幅度讓揮擊更明顯
-        rightRotX = -(clampedRightPitch / 15) * (Math.PI / 2);
+        rightRotX = (clampedRightPitch / 30) * (Math.PI / 3);
     } else {
-        // 平時：保持水平，僅微幅調整
-        rightRotX = -(clampedRightPitch / 20) * (Math.PI / 6);
+        // 平時：保持水平 (rotation.x = 0)
+        rightRotX = 0;
     }
-    // yaw 增加 → 鼓棒在水平面（平行地面）向左旋轉（尖端X減少）
+    // yaw 控制左右：yaw 增加 → 鼓棒在水平面（平行地面）向左旋轉（尖端X減少）
     // 以手為圓心、鼓棒為半徑，在XZ平面上旋轉
     // 增加旋轉幅度讓左右移動更明顯
     const rightRotY = -(effectiveRightYaw / 25) * (Math.PI / 2.5);
@@ -762,16 +762,16 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     rightRotX = rightCollision.correctedRotX;
     const rightRotYCorrected = rightCollision.correctedRotY;
 
-    // 左手鼓棒旋轉計算
+    // 左手鼓棒旋轉計算（與右手一致）
     if (leftIsHitting) {
-        // 敲擊時：pitch 增加 → 鼓棒向上旋轉（尖端Y增加）
+        // 敲擊時：pitch 增加 → 鼓棒向下旋轉（尖端向下敲擊）
         // 增加旋轉幅度讓揮擊更明顯
-        leftRotX = -(clampedLeftPitch / 15) * (Math.PI / 2);
+        leftRotX = (clampedLeftPitch / 30) * (Math.PI / 3);
     } else {
-        // 平時：保持水平，僅微幅調整
-        leftRotX = -(clampedLeftPitch / 20) * (Math.PI / 6);
+        // 平時：保持水平 (rotation.x = 0)
+        leftRotX = 0;
     }
-    // yaw 增加 → 鼓棒向左旋轉（尖端X減少）
+    // yaw 控制左右：yaw 增加 → 鼓棒向左旋轉（尖端X減少）
     // 增加旋轉幅度讓左右移動更明顯
     const leftRotY = -(effectiveLeftYaw / 25) * (Math.PI / 2.5);
     
