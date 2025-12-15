@@ -15,7 +15,7 @@ const PITCH_SENSITIVITY = 30;  // Pitch 角度靈敏度
 const PITCH_ANGLE_FACTOR = Math.PI / 2.2;  // Pitch 角度轉換係數
 const YAW_SENSITIVITY = 30;  // Yaw 角度靈敏度（降低以增加旋轉幅度）
 const YAW_ANGLE_FACTOR = Math.PI / 3;  // Yaw 角度轉換係數
-const YAW_POSITION_FACTOR = 0.8;  // Yaw 對 X 位置的影響係數（控制手部左右移動幅度）
+const YAW_POSITION_FACTOR = 1.5;  // Yaw 對 X 位置的影響係數（增加以確保可以打到所有左右兩側的鼓）
 
 // Pitch 角度範圍限制（度）
 const PITCH_MIN = -30;  // 最小 Pitch（向上抬起的最大角度）
@@ -24,8 +24,8 @@ const PITCH_MAX = 45;   // 最大 Pitch（向下最低到鼓面，不會更低�
 // 握把位置設定
 const GRIP_BASE_Z = -2.2;  // 握把基礎 Z 位置（初始鼓棒尖端對準 Snare 中心）
 const GRIP_BASE_Y = 0.65;   // 握把基礎 Y 位置（對準 Snare 鼓面高度）
-const GRIP_RIGHT_X = 0.5;   // 右手握把基礎 X 位置（右側，靠近 Snare 中心）
-const GRIP_LEFT_X = -0.5;   // 左手握把基礎 X 位置（左側，對稱於右手）
+const GRIP_RIGHT_X = 0.4;  // 右手握把基礎 X 位置（靠近 Snare 中心 0.5）
+const GRIP_LEFT_X = 0.6;    // 左手握把基礎 X 位置（靠近 Snare 中心 0.5）
 
 // Z軸移動參數（增強前伸能力以打到前方的鼓）
 const PITCH_THRESHOLD = 10;  // Pitch 閾值（度），大於此值（舉高）代表打前方的鼓，接近0時保持Snare位置
