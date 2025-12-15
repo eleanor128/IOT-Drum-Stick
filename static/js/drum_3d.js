@@ -413,9 +413,10 @@ function solveStickCollision(gripPos, rotX, rotY) {
 
             // 計算鼓面法向量（考慮傾斜）
             // 鼓面繞 X 軸旋轉 drumRot 角度
-            const normalX = 0;                  // X 分量（鼓面沿 X 軸方向不傾斜）
-            const normalY = -Math.sin(drumRot); // Y 分量（向上，注意負號因為旋轉方向）
-            const normalZ = Math.cos(drumRot);  // Z 分量（傾斜方向）
+            // 原始法向量 (0, 1, 0) 旋轉後變成 (0, cos(θ), -sin(θ))
+            const normalX = 0;                   // X 分量（鼓面不繞 Y 或 Z 軸旋轉）
+            const normalY = Math.cos(drumRot);   // Y 分量（旋轉後的向上分量）
+            const normalZ = -Math.sin(drumRot);  // Z 分量（旋轉後的前後分量，注意負號）
 
             // 將鼓棒尖端投影到鼓面平面上
             // 計算尖端到鼓面的向量
@@ -428,9 +429,10 @@ function solveStickCollision(gripPos, rotX, rotY) {
                                    tipToDrumY * normalY +
                                    tipToDrumZ * normalZ;
 
-            // 檢查是否在鼓面「上空」（法向量正向，距離 0 到 0.5 米範圍內）
-            const aboveThreshold = 0.0;   // 最低高度（鼓面）
-            const belowThreshold = 0.5;   // 最高高度（上空 0.5 米）
+            // 檢查是否在鼓面「上空」（法向量正向，距離 -0.1 到 0.8 米範圍內）
+            // 擴大範圍以確保能偵測到
+            const aboveThreshold = -0.1;  // 允許稍微穿透鼓面（增加容錯）
+            const belowThreshold = 0.8;   // 上空 0.8 米（增加檢測範圍）
 
             if (distAlongNormal >= aboveThreshold && distAlongNormal <= belowThreshold) {
                 // 在上空範圍內，計算投影點在鼓面上的位置
@@ -451,8 +453,8 @@ function solveStickCollision(gripPos, rotX, rotY) {
                     projToDrumZ * projToDrumZ
                 );
 
-                // 檢查是否在鼓面半徑範圍內
-                isInRange = inPlaneDist <= radius + SCREEN_HIT_RADIUS_OFFSET;
+                // 檢查是否在鼓面半徑範圍內（增加容差）
+                isInRange = inPlaneDist <= radius + SCREEN_HIT_RADIUS_OFFSET + 0.1;
             }
         } else {
             // 使用 XZ 平面投影進行碰撞檢測（俯視圖）
