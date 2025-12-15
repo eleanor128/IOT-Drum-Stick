@@ -15,7 +15,7 @@ app = Flask(__name__,
 class DrumStickState:
     def __init__(self):
         self.prev_az = 0  # 上一次的 az 值（用於計算重力補償後的加速度）
-        self.az_hit_threshold = 1.5  # az 變化閾值（向下敲擊時 az 會突然增加）
+        self.az_hit_threshold = 0.8  # az 變化閾值（向下敲擊時 az 會突然增加）降低以提高靈敏度
         self.gravity_az = 0  # 重力分量（靜止時的 az 基準值）
         self.calibration_samples = []  # 校準樣本
         self.is_calibrated = False  # 是否已校準
@@ -23,11 +23,11 @@ class DrumStickState:
     def calibrate(self, az):
         """
         校準重力分量（收集靜止時的 az 值）
-        前 20 個樣本用於計算靜止時的重力分量
+        前 10 個樣本用於計算靜止時的重力分量（減少校準時間）
         """
         if not self.is_calibrated:
             self.calibration_samples.append(az)
-            if len(self.calibration_samples) >= 20:
+            if len(self.calibration_samples) >= 10:
                 # 計算平均值作為重力基準
                 self.gravity_az = sum(self.calibration_samples) / len(self.calibration_samples)
                 self.is_calibrated = True
