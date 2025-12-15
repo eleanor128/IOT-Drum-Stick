@@ -14,47 +14,50 @@ app = Flask(__name__,
 # 擊鼓偵測狀態追蹤
 class DrumStickState:
     def __init__(self):
-        self.prev_pitch = 0
-        self.peak_pitch = 0
-        self.is_rising = False  # 是否正在舉起（pitch 增加中）
-        self.rise_threshold = 3  # pitch 增加超過 3 度才算舉起
-        self.az_hit_threshold = 1.0  # az 加速度閾值（向下敲擊時 az 會突然增加）
+        self.prev_az = 0  # 上一次的 az 值（用於計算重力補償後的加速度）
+        self.az_hit_threshold = 1.5  # az 變化閾值（向下敲擊時 az 會突然增加）
+        self.gravity_az = 0  # 重力分量（靜止時的 az 基準值）
+        self.calibration_samples = []  # 校準樣本
+        self.is_calibrated = False  # 是否已校準
 
-    def detect_hit(self, current_pitch, az):
+    def calibrate(self, az):
         """
-        偵測「舉起並落下」的擊鼓動作
-        - pitch 增加：舉起階段
-        - pitch 減少 + az 突然增加：向下敲擊瞬間
+        校準重力分量（收集靜止時的 az 值）
+        前 20 個樣本用於計算靜止時的重力分量
+        """
+        if not self.is_calibrated:
+            self.calibration_samples.append(az)
+            if len(self.calibration_samples) >= 20:
+                # 計算平均值作為重力基準
+                self.gravity_az = sum(self.calibration_samples) / len(self.calibration_samples)
+                self.is_calibrated = True
+                print(f"[DrumStick] Calibrated gravity_az = {self.gravity_az:.2f}")
+
+    def detect_hit(self, az):
+        """
+        簡化的擊鼓偵測：只看 az 加速度變化
+        - 扣除重力分量
+        - 偵測向下加速（az 突然增加）
 
         返回：True 代表擊鼓瞬間，False 代表非擊鼓狀態
         """
-        pitch_change = current_pitch - self.prev_pitch
+        # 先進行校準
+        if not self.is_calibrated:
+            self.calibrate(az)
+            self.prev_az = az
+            return False
 
-        # 偵測舉起階段（pitch 增加）
-        if pitch_change > 0.5:  # pitch 正在增加
-            if not self.is_rising:
-                self.is_rising = True
-                self.peak_pitch = current_pitch
-            else:
-                # 更新峰值
-                if current_pitch > self.peak_pitch:
-                    self.peak_pitch = current_pitch
+        # 扣除重力分量，得到真實加速度
+        az_compensated = az - self.gravity_az
 
-        # 偵測落下敲擊階段（pitch 減少 + az 突然增加）
-        elif self.is_rising and pitch_change < -0.5:  # pitch 正在減少
-            # 檢查是否有足夠的舉起幅度
-            rise_amount = self.peak_pitch - self.prev_pitch
-            if rise_amount >= self.rise_threshold:
-                # 關鍵：檢查 az 加速度是否突然增加（向下敲擊的物理特徵）
-                if abs(az) >= self.az_hit_threshold:
-                    # 擊鼓發生！
-                    self.is_rising = False
-                    self.peak_pitch = 0
-                    self.prev_pitch = current_pitch
-                    return True
+        # 計算加速度變化（向下加速時 az 會突然增加）
+        az_change = az_compensated - (self.prev_az - self.gravity_az)
 
-        self.prev_pitch = current_pitch
-        return False
+        # 偵測擊鼓：az 突然增加超過閾值
+        is_hit = az_change > self.az_hit_threshold
+
+        self.prev_az = az
+        return is_hit
 
 # 為左右手各創建一個狀態追蹤器
 right_stick_state = DrumStickState()
@@ -75,13 +78,13 @@ def right_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_right_angle()
 
-    # 使用新的偵測邏輯：pitch 增加又減少 + az 突然增加 = 向下敲擊
-    is_hit = right_stick_state.detect_hit(pitch, az)
+    # 簡化的偵測邏輯：只看 az 加速度變化（扣除重力後）
+    is_hit = right_stick_state.detect_hit(az)
 
-    # 只在擊鼓瞬間（落下時）偵測鼓棒尖端位於哪個鼓上方
+    # 只在擊鼓瞬間偵測鼓棒尖端位於哪個鼓上方
     hit_drum = None
     if is_hit:
-        # 計算落下時的鼓棒尖端位置，判斷在哪個鼓上方
+        # 計算擊鼓時的鼓棒尖端位置，判斷在哪個鼓上方
         collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="right")
         hit_drum = collision_info["drum_name"]
 
@@ -104,13 +107,13 @@ def left_data():
     with i2c_lock:
         roll, pitch, yaw, ax, ay, az, gx, gy, gz = update_left_angle()
 
-    # 使用新的偵測邏輯：pitch 增加又減少 + az 突然增加 = 向下敲擊
-    is_hit = left_stick_state.detect_hit(pitch, az)
+    # 簡化的偵測邏輯：只看 az 加速度變化（扣除重力後）
+    is_hit = left_stick_state.detect_hit(az)
 
-    # 只在擊鼓瞬間（落下時）偵測鼓棒尖端位於哪個鼓上方
+    # 只在擊鼓瞬間偵測鼓棒尖端位於哪個鼓上方
     hit_drum = None
     if is_hit:
-        # 計算落下時的鼓棒尖端位置，判斷在哪個鼓上方
+        # 計算擊鼓時的鼓棒尖端位置，判斷在哪個鼓上方
         collision_info = drum_collision.detect_hit_drum(ax, az, pitch, yaw, hand="left")
         hit_drum = collision_info["drum_name"]
 
