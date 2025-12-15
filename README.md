@@ -32,6 +32,6 @@ Drums are not like guitar which can be easily portable, and the exsisting air dr
 
 ### 2. MPU6050 Sensor Setup
 <div align="center" style="display: flex; gap: 10px;">
-  <img src="readme_img/mpu6050.png" alt="IOT Drum Set" width="100%">
-  <img src="readme_img/mpu6050_axis.png" alt="IOT Drum Set" width="100%">
+  <img src="readme_img/mpu6050.png" alt="IOT Drum Set" width="50%">
+  <img src="readme_img/mpu6050_axis.png" alt="IOT Drum Set" width="50%">
 </div>
