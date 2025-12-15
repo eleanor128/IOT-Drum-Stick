@@ -266,8 +266,11 @@ Early attempts mapped drum surfaces onto the XZ plane (floor) or directly onto t
 ## Reflections
 
 I am glad to have the opportunity to work hands-on on this project.  
-Although it took a considerable amount of time, it reminded me how enjoyable the brainstorming process is and how interesting coding can be.
-This is also my first project that is fully based on AI. Through this experience, I learned that breaking a complex task into smaller blocks is far more effective than tackling everything at once, and that having a clear blueprint in mind before implementation is essential.  
-After countless nights spent refining the animation and motion accuracy, I finally understand why commercial air drumsticks are so expensive :)
+Although it took a considerable amount of time, it reminded me how enjoyable the brainstorming process is and how interesting coding can be.  
+
+This is also my first project that is fully based on AI.   
+Through this experience, I learned that breaking a complex task into smaller blocks is far more effective than tackling everything at once, and that having a clear blueprint in mind before implementation is essential.  
+
+After countless nights spent refining the animation and motion accuracy, I finally understand why commercial air drumsticks are so expensive :)  
 Happy to say that I have a lot of fun with this project !!
 
