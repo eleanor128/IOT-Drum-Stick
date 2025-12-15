@@ -263,9 +263,6 @@ Unity was initially used to visualize the drumset and drumstick motion, as it's 
 #### Hitting Zone Optimization
 Early attempts mapped drum surfaces onto the XZ plane (floor) or directly onto the camera view, but both ended up with weird movement and unstable hit detection.
 
-
-## Reflections
-
 ## Reflections
 
 I am glad to have the opportunity to work hands-on on this project.  
