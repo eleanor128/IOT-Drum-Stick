@@ -383,10 +383,6 @@ function solveStickCollision(gripPos, rotX, rotY) {
     const tipY = gripPos[1] - stickLength * Math.sin(rotX);
     const tipZ = gripPos[2] + stickLength * Math.cos(rotY) * Math.cos(rotX);
 
-    // 建立尖端向量（用於相機投影）
-    const tipVector = new THREE.Vector3(tipX, tipY, tipZ);
-    const tipScreen = USE_CAMERA_PROJECTION ? tipVector.clone().project(camera) : null;
-
     // 遍歷所有鼓，檢查是否在範圍內
     zones.forEach(zone => {
         const drumX = zone.pos3d[0];
@@ -412,63 +408,52 @@ function solveStickCollision(gripPos, rotX, rotY) {
         let isInRange = false;
 
         if (USE_CAMERA_PROJECTION) {
-            // 使用相機視角投影進行碰撞檢測（螢幕空間）
-            // 將鼓面投影到螢幕，檢查鼓棒尖端是否在投影的鼓面範圍內
-
-            const drumVector = new THREE.Vector3(drumX, drumY, drumZ);
-            const drumScreen = drumVector.clone().project(camera);
-
-            // 檢查鼓是否在螢幕可見範圍內（跳過螢幕外的鼓）
-            if (drumScreen.z > 1 || drumScreen.z < -1) {
-                return; // 跳過不可見的鼓
-            }
+            // 使用鼓面「上空領域」進行碰撞檢測
+            // 從鼓面沿著法向量往上延伸，形成一個圓柱形區域
 
             // 計算鼓面法向量（考慮傾斜）
             // 鼓面繞 X 軸旋轉 drumRot 角度
-            const normalY = Math.cos(drumRot);  // Y 分量
-            const normalZ = Math.sin(drumRot);  // Z 分量（傾斜方向）
+            const normalX = 0;                  // X 分量（鼓面沿 X 軸方向不傾斜）
+            const normalY = -Math.sin(drumRot); // Y 分量（向上，注意負號因為旋轉方向）
+            const normalZ = Math.cos(drumRot);  // Z 分量（傾斜方向）
 
-            // 計算鼓面兩個主軸方向的點並投影（用於計算螢幕上的橢圓）
-            // X 軸方向（沿著鼓面的水平方向）
-            const xAxisWorld = new THREE.Vector3(drumX + radius, drumY, drumZ);
-            const xAxisScreen = xAxisWorld.clone().project(camera);
+            // 將鼓棒尖端投影到鼓面平面上
+            // 計算尖端到鼓面的向量
+            const tipToDrumX = tipX - drumX;
+            const tipToDrumY = tipY - drumY;
+            const tipToDrumZ = tipZ - drumZ;
 
-            // Y 軸方向（沿著鼓面的垂直方向，受傾斜影響）
-            const yAxisWorld = new THREE.Vector3(drumX, drumY + radius * normalY, drumZ + radius * normalZ);
-            const yAxisScreen = yAxisWorld.clone().project(camera);
+            // 計算尖端沿著法向量的距離（垂直於鼓面的距離）
+            const distAlongNormal = tipToDrumX * normalX +
+                                   tipToDrumY * normalY +
+                                   tipToDrumZ * normalZ;
 
-            // 計算螢幕上橢圓的兩個半軸長度
-            const screenRadiusX = Math.sqrt(
-                Math.pow(xAxisScreen.x - drumScreen.x, 2) +
-                Math.pow(xAxisScreen.y - drumScreen.y, 2)
-            );
-            const screenRadiusY = Math.sqrt(
-                Math.pow(yAxisScreen.x - drumScreen.x, 2) +
-                Math.pow(yAxisScreen.y - drumScreen.y, 2)
-            );
+            // 檢查是否在鼓面「上空」（法向量正向，距離 0 到 0.5 米範圍內）
+            const aboveThreshold = 0.0;   // 最低高度（鼓面）
+            const belowThreshold = 0.5;   // 最高高度（上空 0.5 米）
 
-            // 計算螢幕上橢圓的旋轉角度
-            const ellipseAngle = Math.atan2(
-                yAxisScreen.y - drumScreen.y,
-                yAxisScreen.x - drumScreen.x
-            );
+            if (distAlongNormal >= aboveThreshold && distAlongNormal <= belowThreshold) {
+                // 在上空範圍內，計算投影點在鼓面上的位置
+                // 投影點 = 尖端位置 - 法向量方向的分量
+                const projX = tipX - distAlongNormal * normalX;
+                const projY = tipY - distAlongNormal * normalY;
+                const projZ = tipZ - distAlongNormal * normalZ;
 
-            // 將鼓棒尖端相對於鼓中心的座標轉換到橢圓的局部座標系
-            const dx = tipScreen.x - drumScreen.x;
-            const dy = tipScreen.y - drumScreen.y;
+                // 計算投影點到鼓中心的距離（在鼓面平面內）
+                const projToDrumX = projX - drumX;
+                const projToDrumY = projY - drumY;
+                const projToDrumZ = projZ - drumZ;
 
-            // 旋轉到橢圓的主軸方向
-            const cosAngle = Math.cos(-ellipseAngle);
-            const sinAngle = Math.sin(-ellipseAngle);
-            const localX = dx * cosAngle - dy * sinAngle;
-            const localY = dx * sinAngle + dy * cosAngle;
+                // 在鼓面平面內的距離（排除法向量方向的分量）
+                const inPlaneDist = Math.sqrt(
+                    projToDrumX * projToDrumX +
+                    projToDrumY * projToDrumY +
+                    projToDrumZ * projToDrumZ
+                );
 
-            // 橢圓方程：(x/a)² + (y/b)² <= 1
-            const normalizedDist = Math.pow(localX / (screenRadiusX + SCREEN_HIT_RADIUS_OFFSET), 2) +
-                                  Math.pow(localY / (screenRadiusY + SCREEN_HIT_RADIUS_OFFSET), 2);
-
-            // 如果 <= 1，表示在橢圓內
-            isInRange = normalizedDist <= 1.0;
+                // 檢查是否在鼓面半徑範圍內
+                isInRange = inPlaneDist <= radius + SCREEN_HIT_RADIUS_OFFSET;
+            }
         } else {
             // 使用 XZ 平面投影進行碰撞檢測（俯視圖）
             const dx = tipX - drumX;
