@@ -105,5 +105,54 @@ Both sensors share the same SDA and SCL lines.
 After wiring, run `i2cdetect -y 1`.
 You should see **both `0x68` and `0x69`**, indicating that two sensors are detected successfully.
 
-You can also refer to the following tutorial for more details:  
-[MPU-6050 with Raspberry Pi](https://atceiling.blogspot.com/2017/02/raspberry-pi-mpu-6050.html)
+You can also refer to the following tutorial for more details:  [https://atceiling.blogspot.com/2017/02/raspberry-pi-mpu-6050.html](https://atceiling.blogspot.com/2017/02/raspberry-pi-mpu-6050.html)
+
+
+
+
+### 3. Calitrate Sensor Data
+The offset values were obtained by collecting data while the sensors were **stationary and flat** on a table, then calculating the average error over multiple samples.
+
+**Method:**
+
+1. **Place the sensor flat on a stable surface** (drumstick lying horizontally on a table)
+
+2. **Run the test script**  `mpu6050_test.py` to collect raw data. This script will record 100-200 samples of raw accelerometer and gyroscope readings while stationary
+
+3. **Calculate  the average values** and the offest values of each sensor will be updated and used in `calibration_right.py` and `calibration_left.py`
+
+
+### 4. 3D World Setup
+
+The following figure illustrates the setup of the 3D world and the mapping between the sensor directions and the virtual drum set.
+
+<img src="readme_img/3D_settings.jpg" alt="3D world and axis mapping" width="100%">
+
+This project uses **Three.js** (https://threejs.org/) to create the invironment and the virtual drum set.  
+Due to time limitations, the bass drum is not included in the current implementation. 
+
+To simplify motion interpretation, it would have been easier to predefine the axis mapping between the MPU6050 sensor and the 3D world.  
+Be careful, the coordinate system of the 3D world is fixed and does **not change with the camera position**.
+
+From the user’s point of view, the relation of each data is as follows:
+
+| Movement | 3D World Mapping | Sensor Data |
+|---------|------------------|-------------|
+| Left–Right Movement | X-axis | Yaw (rotation around Z-axis) |
+| Up–Down Movement | Y-axis | Pitch (rotation around Y-axis) |
+| Forward–Backward Movement | Z-axis | Pitch (rotation around Y-axis) + ax (X-axis acceleration) |
+| Vertical Drumstick Swing (Hitting)| rotation x | Pitch (rotation around Y-axis) + gy (Y-axis angular velocity) |
+| Horizontal Drumstick Swing | rotation y | Yaw (rotation around Z-axis) |
+
+
+
+
+
+### 9. Failed Attempts
+
+#### spleeter to split drum sound form songs
+
+#### Hitting Zone optimization 
+
+
+### References

@@ -1,8 +1,8 @@
-import mpu6050  # 這是第三方套件，名稱不變
+import mpu6050  
 import time
 
 # Create a new Mpu6050 object
-sensor = mpu6050.mpu6050(0x69)  # 改用 sensor 變數名稱避免混淆
+sensor = mpu6050.mpu6050(0x69)  
 
 # Define a function to read the sensor data
 def read_sensor_data():
