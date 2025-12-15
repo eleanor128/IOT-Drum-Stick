@@ -365,26 +365,62 @@ class DrumCollisionDetector:
         hand_z += az_contribution
         hand_z = max(GRIP_Z_MIN, min(GRIP_Z_MAX, hand_z))
 
-        # 檢查是否碰撞到任何鼓（XZ 平面 2D 投影檢測）
+        # 檢查是否碰撞到任何鼓
         # 按照 Y 座標排序（從高到低），讓鈸（Ride, Symbal）優先於鼓
         sorted_drums = sorted(self.drums, key=lambda d: d["y"], reverse=True)
 
         for drum in sorted_drums:
             drum_x, drum_y, drum_z = drum["x"], drum["y"], drum["z"]
             radius = drum["radius"]
-            
-            # 計算鼓棒尖端與鼓中心在 XZ 平面上的 2D 距離（俯視圖）
-            dx = tip_x - drum_x
-            dz = tip_z - drum_z
-            distance_2d = math.sqrt(dx * dx + dz * dz)
+            drum_rotation = drum.get("rotation", -math.pi / 9)  # 鼓面旋轉角度
 
-            # 根據相機投影模式調整檢測閾值
-            # 相機投影模式下，前端已經做了精確的螢幕空間檢測，後端只需做寬鬆的驗證
-            distance_threshold = radius * 1.5 if self.camera_projection_mode else radius
+            # 使用 3D 上空領域檢測（與前端一致）
+            # 計算鼓面法向量（繞 X 軸旋轉）
+            normal_x = 0
+            normal_y = math.cos(drum_rotation)
+            normal_z = -math.sin(drum_rotation)
 
-            # 只要鼓棒尖端在鼓的 XZ 投影範圍內，就算打擊到
-            # 不考慮 Y 軸高度，讓擊中更容易
-            if distance_2d <= distance_threshold:
+            # 計算尖端到鼓中心的向量
+            tip_to_drum_x = tip_x - drum_x
+            tip_to_drum_y = tip_y - drum_y
+            tip_to_drum_z = tip_z - drum_z
+
+            # 計算尖端沿著法向量的距離（垂直於鼓面的距離）
+            dist_along_normal = (tip_to_drum_x * normal_x +
+                               tip_to_drum_y * normal_y +
+                               tip_to_drum_z * normal_z)
+
+            # 檢查是否在鼓面「上空」（距離 -0.1 到 0.8 米範圍內）
+            above_threshold = -0.1
+            below_threshold = 0.8
+
+            if dist_along_normal >= above_threshold and dist_along_normal <= below_threshold:
+                # 在上空範圍內，計算投影點在鼓面上的位置
+                proj_x = tip_x - dist_along_normal * normal_x
+                proj_y = tip_y - dist_along_normal * normal_y
+                proj_z = tip_z - dist_along_normal * normal_z
+
+                # 計算投影點到鼓中心的距離（在鼓面平面內）
+                proj_to_drum_x = proj_x - drum_x
+                proj_to_drum_y = proj_y - drum_y
+                proj_to_drum_z = proj_z - drum_z
+
+                in_plane_dist = math.sqrt(
+                    proj_to_drum_x * proj_to_drum_x +
+                    proj_to_drum_y * proj_to_drum_y +
+                    proj_to_drum_z * proj_to_drum_z
+                )
+
+                # 根據相機投影模式調整檢測閾值
+                distance_threshold = radius * 1.5 if self.camera_projection_mode else radius
+
+                # 檢查是否在鼓面半徑範圍內
+                is_in_range = in_plane_dist <= distance_threshold + 0.1
+            else:
+                is_in_range = False
+
+            # 只有在領空範圍內才算擊中
+            if is_in_range:
                 # 碰撞發生！計算調整後的 pitch 讓鼓棒尖端停在鼓面上
                 
                 # 計算鼓面高度

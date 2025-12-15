@@ -340,16 +340,16 @@ function init3D() {
     scene.add(leftStick);
 
     // 除錯：創建標記球來顯示計算出的鼓棒尖端位置（可選）
-    const debugRightTip = new THREE.Mesh(
-        new THREE.SphereGeometry(0.05, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 })
-    );
-    scene.add(debugRightTip);
-    const debugLeftTip = new THREE.Mesh(
-        new THREE.SphereGeometry(0.05, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 })
-    );
-    scene.add(debugLeftTip);
+    // const debugRightTip = new THREE.Mesh(
+    //     new THREE.SphereGeometry(0.05, 8, 8),
+    //     new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 })
+    // );
+    // scene.add(debugRightTip);
+    // const debugLeftTip = new THREE.Mesh(
+    //     new THREE.SphereGeometry(0.05, 8, 8),
+    //     new THREE.MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.5 })
+    // );
+    // scene.add(debugLeftTip);
 }
 
 // 感測器角度轉 2D 座標（用於敲擊偵測）
