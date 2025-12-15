@@ -30,6 +30,8 @@ Drums are not like guitar which can be easily portable, and the exsisting air dr
 ### 1. Environment Setup
 
 
+---
+
 ### 2. MPU6050 Sensor Setup
 
 This section explains how to connect **one or two MPU6050 sensors** to a Raspberry Pi.
@@ -45,16 +47,13 @@ It is important to understand the relationship between the sensor axes and real-
 <br>
 <br>
 
-### Enable I2C Interface
+#### Enable I2C Interface
 
 First, open the Raspberry Pi configuration tool and enable **I2C** and **SPI**:
 
 <img src="readme_img/setting.png" alt="I2C detection result" width="100%">
 
-
----
-
-### Install I2C Tools and Detect Sensor
+#### Install I2C Tools and Detect Sensor
 
 Install I2C tools:
 
@@ -72,9 +71,7 @@ If `0x68` or `0x69` appears as shown below, the sensor is successfully detected.
 
 <img src="readme_img/I2C.png" alt="I2C detection result" width="100%">
 
----
-
-### Connecting One MPU6050 Sensor
+#### Connecting One MPU6050 Sensor
 
 By default, the MPU6050 uses I2C address `0x68`.
 
@@ -89,9 +86,7 @@ By default, the MPU6050 uses I2C address `0x68`.
 After wiring, run `i2cdetect -y 1`.  
 If `0x68` appears, the sensor is connected correctly.
 
----
-
-### Connecting Two MPU6050 Sensors
+#### Connecting Two MPU6050 Sensors
 
 To connect two MPU6050 sensors on the same I2C bus, their I2C addresses must be different.
 
@@ -113,10 +108,6 @@ After wiring, run:
     i2cdetect -y 1
 
 You should see **both `0x68` and `0x69`**, indicating that two sensors are detected successfully.
-
----
-
-### Reference
 
 You can also refer to the following tutorial for more details:  
 [MPU-6050 with Raspberry Pi](https://atceiling.blogspot.com/2017/02/raspberry-pi-mpu-6050.html)
