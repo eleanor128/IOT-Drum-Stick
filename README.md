@@ -1,9 +1,22 @@
 # IOT Drum Set
 This is a personal project in IM5032 - Practical Internet of Things.  
-Drums are not like guitar which can be easily portable, and the exsisting air drumstick is pretty expensive, so this project aims to implement an easy air drumstick using Rasberry Pi4 and mpu6050 sensor.
+Drums are not like guitar which can be easily portable, and the exsisting air drumstick is pretty expensive, so this project aims to implement an easy air drumstick using **Rasberry Pi4** and **mpu6050 sensor**.
 .
 <div align="center">
   <img src="image.png" alt="IOT Drum Set" width="100%">
 </div>
 
 ## Required Components
+| Item | Quantity | Purpose |
+|-----|----------|---------|
+| Raspberry Pi 4  | 1 | Main controller for data processing and system control |
+| MPU6050  | 2 | Detect drumstick motion |
+| Drumstick | 2 | Otherwise it can't be an air drumstick : ) |
+| Breadboard | 1 | For better wiring |
+| Jumper wires  | many | Connect MPU6050 to Raspberry Pi GPIO |
+| Tape  | many | Make everything neat |
+
+## Wiring
+<div align="center">
+  <img src="Wiring.jpg" alt="IOT Drum Set" width="100%">
+</div>
