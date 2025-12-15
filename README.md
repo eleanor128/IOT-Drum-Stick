@@ -21,6 +21,8 @@ Drums are not like guitar which can be easily portable, and the exsisting air dr
 | Breadboard | 1 | For better wiring |
 | Jumper wires  | many | Connect MPU6050 to Raspberry Pi GPIO |
 | Tape  | many | Make everything neat |
+| Drum Sounds  | many | Can visit here: https://elevenlabs.io/sound-effects |
+
 
 ## Circuit Diagram
 <div align="center">
@@ -141,7 +143,7 @@ The following figure illustrates the setup of the 3D world and the mapping betwe
 
 <img src="readme_img/3D_settings.jpg" alt="3D world and axis mapping" width="100%">
 
-#### Actual Settings
+#### Drum Position Settings
 ```js
 const zones = [
   { name: "Hihat", x: 675, y: 225, w: 225, h: 225, color: "#3232ff", pos3d: [1.8, 0.8, -1], radius: 0.65, rotation: -Math.PI / 9, glowColor: "#3399ff" },
@@ -203,17 +205,55 @@ When hitting is detected, the system will see which **air zone** the drum head i
 
 
 ### 6. Hand and Drumstick Movement
-To make the 
+
+The drumstick is composed of two parts: the **head** and the **hand**, as shown in the figure below.
+
+To avoid unnatural or unstable animations, a **movement zone** is defined for the drumstick head.  This zone is centered around the surface center of each drum. (see green area in the picture)  The head of the drumstick is only allowed to move within this zone.  Based on the fixed length of the drumstick, the movement zone of the hand can then be calculated accordingly.
+
+Note, the **z-value of the hand is always smaller than that of the head**, ensuring that the hand remains behind the striking point during motion.
+ 
 <img src="readme_img/move_zone.jpg" alt="3D world and axis mapping" width="100%">
 
+``` js
+function calculateGripRanges() {
+    // Extract X and Z positions from all drum surfaces
+    const drumXPositions = zones.map(z => z.pos3d[0]);
+    const drumZPositions = zones.map(z => z.pos3d[2]);
+    
+    // Determine the overall X and Z boundaries of the drum set
+    const minDrumX = Math.min(...drumXPositions);  //  (Ride)
+    const maxDrumX = Math.max(...drumXPositions);  // (Hi-hat)
+    const minDrumZ = Math.min(...drumZPositions);  //  (rear drums)
+    const maxDrumZ = Math.max(...drumZPositions);  //  (Cymbal)
+    
+    // Calculate the Z-axis movement range for the hand (grip)
+    // Hand position = drum surface position - stick length * scaling factor
+    const GRIP_Z_MIN = minDrumZ - STICK_LENGTH * 0.8;
+    const GRIP_Z_MAX = maxDrumZ - STICK_LENGTH * 0.7;
+    
+    // Calculate the X-axis movement range for the right hand
+    // preventing it from reaching the drumstick tip
+    const GRIP_RIGHT_X_MIN = GRIP_RIGHT_X + (minDrumX - GRIP_RIGHT_X) * 0.6;
+    const GRIP_RIGHT_X_MAX = GRIP_RIGHT_X + (maxDrumX - GRIP_RIGHT_X) * 0.6;
+    
+    return { GRIP_Z_MIN, GRIP_Z_MAX, GRIP_RIGHT_X_MIN, GRIP_RIGHT_X_MAX };
+}
+```
 
+## References
+* DIY Air Drum Arduino (https://www.youtube.com/watch?v=tQ3_pOlgquQ)
+* IMU-algorithm (https://github.com/rbv188/IMU-algorithm)
+* ElevenLabs (https://elevenlabs.io/sound-effects)
+* ECE 5730 Final Project: Air Drums (https://ece4760.github.io/Projects/Fall2023/ds2392_kx74_ac2839/Air_Drum.html)
+* 結合MPU6050 三軸陀螺儀，創建模擬飛機儀表 (https://www.youtube.com/watch?v=6L_Y4Qsh41o)
+* Rotate 3d Object in Unity (https://www.youtube.com/watch?v=zN89M_MjVKo)
+* MPU-6050 Six-Axis unity 3d and Arduino (https://www.youtube.com/watch?v=L4WfHT_58Dg)
+* Web Server with MPU-6050 Accelerometer and Gyroscope (https://www.youtube.com/watch?v=dXcF-Uqa-gw&t=15s)
 
----
-### 9. Failed Attempts
+## Failed Attempts
 
-#### spleeter to split drum sound form songs
+#### Using Unity 3D
+Unity was initially used to visualize the drumset and drumstick motion, as it's easier to adjust the scene position. However, later we found it's more smoother to visulize on web, through flask. 
 
-#### Hitting Zone optimization 
-
-
-### References
+#### Hitting Zone Optimization
+Early attempts mapped drum surfaces onto the XZ plane (floor) or directly onto the camera view, but both ended up with weird movement and unstable hit detection.
