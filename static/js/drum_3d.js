@@ -662,27 +662,17 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     const clampedRightPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, rightPitch));
     const clampedLeftPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, leftPitch));
 
-    // 偵測是否正在敲擊 (根據陀螺儀 Y 軸速度判斷)
-    // 降低閾值以更容易觸發視覺效果
-    const rightIsHitting = Math.abs(rightData.gy) > 50;  // 敲擊時陀螺儀 Y 軸速度較大
-    const leftIsHitting = Math.abs(leftData.gy) > 50;
-
     // 計算旋轉角度 (弧度)
-    // Pitch 行為：舉起 → pitch 變小(負值)，敲擊向下 → pitch 變大(正值)
-    // rotation.x：正值 = 尖端向下 (敲擊姿勢)，負值 = 尖端向上 (舉起姿勢)
-    // 起始和平時保持水平 (rotation.x = 0)，敲擊時才旋轉
-    let rightRotX, leftRotX;
-    if (rightIsHitting) {
-        // 敲擊時：pitch 增加 → 鼓棒向下旋轉（尖端向下敲擊）
-        // 增加旋轉幅度讓揮擊更明顯
-        rightRotX = (clampedRightPitch / 30) * (Math.PI / 3);
-    } else {
-        // 平時：保持水平 (rotation.x = 0)
-        rightRotX = 0;
-    }
+    // Pitch 行為：pitch 增加(正值) → 鼓棒尖端抬起，pitch 減少(負值) → 鼓棒尖端向下
+    // rotation.x：負值 = 尖端抬起 (Y值增加)，正值 = 尖端向下 (Y值減少)
+    // 起始時 pitch=0，鼓棒水平 (rotation.x = 0)
+
+    // 右手鼓棒旋轉：pitch 越大，尖端越高（rotation.x 越負）
+    // pitch=0 時水平，pitch>0 時尖端抬起，pitch<0 時尖端向下
+    const rightRotX = -(clampedRightPitch / 30) * (Math.PI / 4);  // 負號讓 pitch 增加時尖端抬起
+
     // yaw 控制左右：yaw 增加 → 鼓棒在水平面（平行地面）向左旋轉（尖端X減少）
     // 以手為圓心、鼓棒為半徑，在XZ平面上旋轉
-    // 增加旋轉幅度讓左右移動更明顯
     const rightRotY = -(effectiveRightYaw / 25) * (Math.PI / 2.5);
     
     // 右手握把位置計算 - 手在 XYZ 空間移動，鼓棒旋轉控制尖端
@@ -724,20 +714,12 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 右手碰撞檢測與修正（防止鼓棒任何部位穿透鼓面）
     const rightCollision = solveStickCollision([rightX, rightY, rightZ], rightRotX, rightRotY);
     rightY = rightCollision.correctedGripY;  // 應用修正後的握把高度
-    rightRotX = rightCollision.correctedRotX;
-    const rightRotYCorrected = rightCollision.correctedRotY;
 
     // 左手鼓棒旋轉計算（與右手一致）
-    if (leftIsHitting) {
-        // 敲擊時：pitch 增加 → 鼓棒向下旋轉（尖端向下敲擊）
-        // 增加旋轉幅度讓揮擊更明顯
-        leftRotX = (clampedLeftPitch / 30) * (Math.PI / 3);
-    } else {
-        // 平時：保持水平 (rotation.x = 0)
-        leftRotX = 0;
-    }
+    // pitch 越大，尖端越高（rotation.x 越負）
+    const leftRotX = -(clampedLeftPitch / 30) * (Math.PI / 4);  // 負號讓 pitch 增加時尖端抬起
+
     // yaw 控制左右：yaw 增加 → 鼓棒向左旋轉（尖端X減少）
-    // 增加旋轉幅度讓左右移動更明顯
     const leftRotY = -(effectiveLeftYaw / 25) * (Math.PI / 2.5);
     
     // 左手握把位置計算
@@ -779,8 +761,6 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     // 左手碰撞檢測與修正（防止鼓棒任何部位穿透鼓面）
     const leftCollision = solveStickCollision([leftX, leftY, leftZ], leftRotX, leftRotY);
     leftY = leftCollision.correctedGripY;  // 應用修正後的握把高度
-    leftRotX = leftCollision.correctedRotX;
-    const leftRotYCorrected = leftCollision.correctedRotY;
 
     // 右手感測器敲擊偵測 (從後端取得)
     const rightHitDrum = rightData.is_hit ? rightData.hit_drum : null;
@@ -790,7 +770,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
         if (!rightWasColliding && rightHitCooldown <= 0) {
             playSound(rightHitDrum);
             triggerDrumGlow(rightHitDrum);
-            rightHitCooldown = 10;
+            rightHitCooldown = HIT_COOLDOWN_FRAMES;
             console.log(`🥁 Right Hit (Sensor): ${rightHitDrum}`);
         }
         rightWasColliding = true;
@@ -799,11 +779,11 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     }
     if (rightHitCooldown > 0) rightHitCooldown--;
 
-    // 正常移動，不做 auto-aim，使用碰撞修正後的角度（防止穿透）
+    // 應用右手鼓棒位置和旋轉
     rightStick.position.set(rightX, rightY, rightZ);
     rightStick.rotation.x = rightRotX;
-    rightStick.rotation.y = rightRotYCorrected;
-    
+    rightStick.rotation.y = rightRotY;
+
     // 左手感測器敲擊偵測 (從後端取得)
     const leftHitDrum = leftData.is_hit ? leftData.hit_drum : null;
 
@@ -812,7 +792,7 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
         if (!leftWasColliding && leftHitCooldown <= 0) {
             playSound(leftHitDrum);
             triggerDrumGlow(leftHitDrum); // 觸發發光
-            leftHitCooldown = 10;
+            leftHitCooldown = HIT_COOLDOWN_FRAMES;
             console.log(`🥁 Left Hit (Sensor): ${leftHitDrum}`);
         }
         leftWasColliding = true;
@@ -821,10 +801,10 @@ function draw(rightPitch, rightYaw, leftPitch, leftYaw) {
     }
     if (leftHitCooldown > 0) leftHitCooldown--;
 
-    // 正常移動，不做 auto-aim，使用碰撞修正後的角度（防止穿透）
+    // 應用左手鼓棒位置和旋轉
     leftStick.position.set(leftX, leftY, leftZ);
     leftStick.rotation.x = leftRotX;
-    leftStick.rotation.y = leftRotYCorrected;
+    leftStick.rotation.y = leftRotY;
     
     // 渲染場景
     renderer.render(scene, camera);

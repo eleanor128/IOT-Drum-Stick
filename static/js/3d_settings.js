@@ -45,7 +45,7 @@ const USE_CAMERA_PROJECTION = true;  // 使用相機視角投影進行碰撞檢�
 const SCREEN_HIT_RADIUS_OFFSET = 0.05;  // 螢幕空間碰撞檢測額外容差
 
 // 擊打冷卻設定
-const HIT_COOLDOWN_FRAMES = 10;  // 擊打冷卻時間（幀數）
+const HIT_COOLDOWN_FRAMES = 5;  // 擊打冷卻時間（幀數）約 0.08 秒，允許更快速的連續敲擊
 
 // 自動對齊設定
 const DRUM_CENTER_BLEND_FACTOR = 0.9;  // 擊打時鼓面中心對齊混合係數（0-1，提高以增強瞄準效果）
