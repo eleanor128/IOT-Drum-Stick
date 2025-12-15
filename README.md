@@ -46,7 +46,10 @@ First, go to the configeration in Rasberry Pi, enable SPI.
 <img src="readme_img/SPI.png" alt="IOT Drum Set" width="100%">
 
 Run the following command to install I2C to detect the sensor:  
-`sudo apt-get install i2c-tools`
+        sudo apt-get install i2c-tools
+
+
+        sudo apt-get install i2c-tools
 
 Simply follow each step on this site:  
 [Raspberry Pi MPU-6050 Tutorial](https://atceiling.blogspot.com/2017/02/raspberry-pi-mpu-6050.html)
