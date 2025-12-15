@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(python:*)",
+      "Bash(node --version:*)",
+      "Bash(dir:*)"
+    ]
+  }
+}
