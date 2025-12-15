@@ -122,7 +122,7 @@ You can also refer to the following tutorial for more details:  [https://atceili
 ---
 
 
-### 3. Calitrate Sensor Data
+### 3. Calibrate Sensor Data
 The offset values were obtained by collecting data while the sensors were **stationary and flat** on a table, then calculating the average error over multiple samples.
 
 **Method:**
@@ -200,6 +200,8 @@ For each drum:
 When hitting is detected, the system will see which **air zone** the drum head is in, then play the corresponding drum sound.
 
 ---
+
+
 ### 6. Hand and Drumstick Movement
 
 <img src="readme_img/move_zone.jpg" alt="3D world and axis mapping" width="100%">
